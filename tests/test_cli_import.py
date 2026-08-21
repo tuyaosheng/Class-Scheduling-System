@@ -12,10 +12,14 @@ CONFIG_DIR = ROOT / 'scheduler' / 'config'
 
 
 @pytest.fixture(scope='module')
-def report():
-    from scheduler.cli import _read_rows
+def result():
     cfg = load_config(CONFIG_DIR)
-    result = import_excel(EXCEL, cfg, grade='初三')
+    return import_excel(EXCEL, cfg, grade='初三')
+
+
+@pytest.fixture(scope='module')
+def report(result):
+    from scheduler.cli import _read_rows
     return render_import_report(result, rows=_read_rows(EXCEL))
 
 
@@ -42,11 +46,26 @@ def test_report_shows_fixed_window_semantics(report):
     assert '周二 8,9' in report
 
 
-def test_dry_run_writes_nothing(tmp_path, capsys, monkeypatch):
-    monkeypatch.chdir(ROOT)
-    code = main(['import', str(EXCEL), '--grade', '初三'])
+def test_report_without_rows_omits_echo_section(result):
+    """rows=None 时不输出回显段，但概览部分不受影响（brief Step 4 说明的两种路径之一）。"""
+    bare = render_import_report(result)
+    assert '中文规则解析回显' not in bare
+    assert '教师 121' in bare
+
+
+def test_dry_run_writes_nothing(tmp_path, capsys):
+    """不带 --write 时，配置目录里不应新增 teaching.yaml / rules.generated.yaml。"""
+    config_dir = tmp_path / 'config'
+    config_dir.mkdir()
+    for name in ('calendar.yaml', 'courses.yaml', 'plans.yaml', 'venues.yaml'):
+        (config_dir / name).write_text(
+            (CONFIG_DIR / name).read_text(encoding='utf-8'), encoding='utf-8')
+
+    code = main(['import', str(EXCEL), '--grade', '初三', '--config-dir', str(config_dir)])
     assert code == 0
     assert '教师 121' in capsys.readouterr().out
+    assert not (config_dir / 'teaching.yaml').exists()
+    assert not (config_dir / 'rules.generated.yaml').exists()
 
 
 def test_write_flag_creates_both_files(tmp_path, monkeypatch, capsys):
