@@ -94,3 +94,25 @@ def handler(rule_type):
         _RULE_HANDLERS[rule_type] = fn
         return fn
     return register
+
+
+def _slot_set(rule):
+    """params.slots（[[day, period], ...]）→ 扁平索引集合。"""
+    return {cal.slot_index(int(d), int(p)) for d, p in rule.params.get('slots', [])}
+
+
+@handler('forbid_slots')
+def _compile_forbid_slots(c: CompiledModel, rule: Rule, with_assumptions: bool) -> None:
+    slots = _slot_set(rule)
+    for task in select_tasks(rule, c.dataset.tasks, c.cfg):
+        for slot in slots:
+            c.model.Add(c.x[(task.id, slot)] == 0)
+
+
+@handler('pin_window')
+def _compile_pin_window(c: CompiledModel, rule: Rule, with_assumptions: bool) -> None:
+    window = _slot_set(rule)
+    for task in select_tasks(rule, c.dataset.tasks, c.cfg):
+        for slot in range(cal.N_SLOTS):
+            if slot not in window:
+                c.model.Add(c.x[(task.id, slot)] == 0)
