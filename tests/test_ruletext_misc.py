@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 from scheduler.core.ruletext import (
     parse_fixed_slots, parse_requirement, parse_remark, RuleTextError,
 )
@@ -59,7 +59,7 @@ def test_requirement_alternate_psych_side():
 
 def test_requirement_alternate_tolerates_curly_quotes():
     """Excel 里用的是全角引号，正则不能依赖引号字符。"""
-    assert parse_requirement('与心理课分单双周上，即"心美"周课时1节')[0]['type'] == 'alternate_weeks'
+    assert parse_requirement('与心理课分单双周上，即“心美”周课时1节')[0]['type'] == 'alternate_weeks'
 
 
 def test_requirement_empty():
@@ -88,3 +88,4 @@ def test_unknown_requirement_raises():
 def test_unknown_remark_raises():
     with pytest.raises(RuleTextError):
         parse_remark('这个班比较活跃')
+
