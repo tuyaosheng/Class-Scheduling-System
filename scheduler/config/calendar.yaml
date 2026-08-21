@@ -1,0 +1,13 @@
+calendar:
+  days: [周一, 周二, 周三, 周四, 周五]
+  periods:
+    - {no: 1, section: 上午, start: "08:00", minutes: 38}
+    - {no: 2, section: 上午, start: "08:45", minutes: 38}
+    - {no: 3, section: 上午, start: "09:30", minutes: 38}
+    - {no: 4, section: 上午, start: "10:15", minutes: 38}
+    - {no: 5, section: 上午, start: "11:00", minutes: 38}
+    - {no: 6, section: 下午, start: "14:20", minutes: 40}
+    - {no: 7, section: 下午, start: "15:05", minutes: 40}
+    - {no: 8, section: 下午, start: "15:50", minutes: 40}
+    - {no: 9, section: 下午, start: "16:50", minutes: 40}
+  no_adjacent: [[5, 6]]   # 跨午休，判定连堂时不算相邻

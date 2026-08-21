@@ -117,7 +117,7 @@ Excel 后四列是自然语言，实测 22 种禁排写法。按「周X」正则
 已决定，无需重新讨论：
 
 ```
-后端  Python 3.11 · FastAPI · uvicorn · OR-Tools CP-SAT · pydantic · openpyxl · PyYAML
+后端  Python 3.10 · FastAPI · uvicorn · OR-Tools CP-SAT · pydantic · openpyxl · PyYAML
 AI    anthropic SDK
 前端  Vue 3 + Vite · SortableJS · ECharts
 打包  PyInstaller --onefile（前端 build 产物内嵌）
