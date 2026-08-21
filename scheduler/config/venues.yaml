@@ -1,0 +1,5 @@
+venues:
+  - {name: 物理实验室, capacity: 3}
+  - {name: 化学实验室, capacity: 3}
+  - {name: 生物实验室, capacity: 3}
+  - {name: 操场, capacity: null}   # 待教务确认实际容量，null = 不限制
