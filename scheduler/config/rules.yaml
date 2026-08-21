@@ -1,0 +1,3 @@
+# 手写规则。Excel 解析出的规则在 rules.generated.yaml，两份合并后编译。
+# M4 的软约束（preferred_periods / avoid_after / teacher_balance）加在这里。
+rules: []
