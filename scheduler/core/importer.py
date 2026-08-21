@@ -90,18 +90,20 @@ def import_excel(path, cfg, grade='初三') -> ImportResult:
 
     dataset = Dataset(grade=grade, classes=sorted(classes),
                       teachers=teachers, tasks=tasks)
-    rules = _build_rules(rows, cfg, grade)
+    rules = _build_rules(rows, cfg, grade, forbidden)
     warnings = _check_class_loads(dataset, cfg, grade)
     return ImportResult(dataset=dataset, rules=rules, warnings=warnings)
 
 
-def _build_rules(rows, cfg, grade) -> List[dict]:
+def _build_rules(rows, cfg, grade, forbidden) -> List[dict]:
+    """forbidden 由调用方（import_excel 的第一遍）算好传入 ——
+
+    教师禁排并集只应算一次；这里不再重新遍历 rows 推导它，
+    避免与 Teacher.forbidden 各自独立计算导致悄悄分叉（见 review Important）。
+    """
     rules: List[dict] = []
 
-    # 教师禁排：按教师取并集
-    forbidden = defaultdict(set)
-    for row in rows:
-        forbidden[_cell(row, '姓名')] |= parse_time_expr(_cell(row, '不能排课节次'))
+    # 教师禁排：来自 import_excel 已聚合好的并集
     for name in sorted(forbidden):
         if not forbidden[name]:
             continue
