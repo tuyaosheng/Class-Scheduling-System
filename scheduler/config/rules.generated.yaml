@@ -1,0 +1,2271 @@
+rules:
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 丁秀玲
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 余嘉欣
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 兰浩宇
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 刁海胜
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+    - - 3
+      - 2
+    - - 3
+      - 3
+    - - 3
+      - 4
+    - - 3
+      - 5
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 刘幸贤
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 刘梦莹
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 刘欢
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 单苏豪
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 叶格婷
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 叶梓欣
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 叶欢
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 周志宁
+  params:
+    slots:
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 周振红
+  params:
+    slots:
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 孙果
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 尹思炜
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 廖嘉慧
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 廖嘉赟
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张婉盈
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张志勇
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张文清
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张晓琦
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张月莹
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张泽鹏
+  params:
+    slots:
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张瀛化
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张超凡
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张越
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张雨婷
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 张霆宽
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 彭素灵
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 徐仪涵
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 戚泳辉
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 戴其芳
+  params:
+    slots:
+    - - 2
+      - 6
+    - - 2
+      - 7
+    - - 2
+      - 8
+    - - 2
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 文艺
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 方冠骅
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 曹志辉
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 曹曦
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 朱惠怡
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 李兆欣
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 李景岚
+  params:
+    slots:
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 李朗
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 李琼
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 李舒康
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 李雪华
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 李青桂
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 杨家诵
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 杨样
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 杨洪
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 杨玉瑶
+  params:
+    slots:
+    - - 2
+      - 6
+    - - 2
+      - 7
+    - - 2
+      - 8
+    - - 2
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 杨雯丽
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 林冬勤
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 林慧珍
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 林贵珠
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 桂相平
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 梁佳红
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 梁俊森
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 梁华崴
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 梁嘉颖
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 梁艳红
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 梁铖
+  params:
+    slots:
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 欧阳嘉欣
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 毛露苹
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 汤红
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 沈焯文
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 潘轶颖
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 王宝娟
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 王小娟
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 王建明
+  params:
+    slots:
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 王智鹏
+  params:
+    slots:
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 王林
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 王楚轲
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 王洵玲
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 王锴
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 甘丽萍
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 符小慧
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 罗伟明
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 罗学怡
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 肖思齐
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 胡美玲
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 艾雅娟
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 莫洁萍
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 蔡健和
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+    - - 3
+      - 2
+    - - 3
+      - 3
+    - - 3
+      - 4
+    - - 3
+      - 5
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 袁麟
+  params:
+    slots:
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 许少漫
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 赖舒婷
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 邓乐怡
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 邹丹丹
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 邹春明
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 郑子茵
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 郑艳秀
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 郭晓丹
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 钟佳如
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 闭周乾
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈佳丹
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈俊彪
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈姿娟
+  params:
+    slots:
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈帅
+  params:
+    slots:
+    - - 2
+      - 6
+    - - 2
+      - 7
+    - - 2
+      - 8
+    - - 2
+      - 9
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈微璇
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈成锋
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈文苑
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+    - - 3
+      - 2
+    - - 3
+      - 3
+    - - 3
+      - 4
+    - - 3
+      - 5
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈晓媚
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈浩逸
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈满娇
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈礼华
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 3
+      - 2
+    - - 3
+      - 3
+    - - 3
+      - 4
+    - - 3
+      - 5
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈秀
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈秀连
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈芬
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈钰
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陈雁婷
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 陶锋彪
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 雷彦
+  params:
+    slots:
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 韦凤娟
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 韦凯莲
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 黄振恒
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 黄楚榕
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 3
+      - 6
+    - - 3
+      - 7
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 黄海鑫
+  params:
+    slots:
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 黄玉凤
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 黄紫霞
+  params:
+    slots:
+    - - 1
+      - 1
+    - - 1
+      - 2
+    - - 1
+      - 3
+    - - 1
+      - 4
+    - - 1
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 黄芷茵
+  params:
+    slots:
+    - - 0
+      - 4
+    - - 0
+      - 5
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+    - - 4
+      - 4
+    - - 4
+      - 5
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
+    teacher: 黄莉莉
+  params:
+    slots:
+    - - 2
+      - 1
+    - - 2
+      - 2
+    - - 2
+      - 3
+    - - 2
+      - 4
+    - - 2
+      - 5
+  mode: hard
+- type: pin_window
+  scope:
+    grade: 初三
+    course: 体比
+  params:
+    slots:
+    - - 1
+      - 8
+    - - 1
+      - 9
+  mode: hard
+- type: pin_window
+  scope:
+    grade: 初三
+    course: 体选
+  params:
+    slots:
+    - - 4
+      - 9
+  mode: hard
+- type: pin_window
+  scope:
+    grade: 初三
+    course: 校本1
+  params:
+    slots:
+    - - 2
+      - 8
+    - - 2
+      - 9
+  mode: hard
+- type: pin_window
+  scope:
+    grade: 初三
+    course: 班会
+  params:
+    slots:
+    - - 0
+      - 9
+  mode: hard
+- type: pin_window
+  scope:
+    grade: 初三
+    course: 综实2
+  params:
+    slots:
+    - - 3
+      - 8
+    - - 3
+      - 9
+  mode: hard
+- type: daily_min
+  scope:
+    grade: 初三
+    family: 语文
+  params:
+    n: 1
+  mode: hard
+- type: consecutive
+  scope:
+    grade: 初三
+    course: 语文
+  params:
+    days: 1
+    length: 2
+  mode: hard
+- type: spacing
+  scope:
+    grade: 初三
+    course: 语文
+  params:
+    min_gap: 1
+  mode: soft
+  enabled: true
+  weight: 5
+- type: daily_min
+  scope:
+    grade: 初三
+    family: 数学
+  params:
+    n: 1
+  mode: hard
+- type: daily_min
+  scope:
+    grade: 初三
+    family: 英语
+  params:
+    n: 1
+  mode: hard
+- type: daily_max
+  scope:
+    grade: 初三
+    family: 道法
+  params:
+    n: 1
+  mode: hard
+- type: daily_max
+  scope:
+    grade: 初三
+    family: 历史
+  params:
+    n: 1
+  mode: hard
+- type: daily_max
+  scope:
+    grade: 初三
+    family: 化学
+  params:
+    n: 1
+  mode: hard
+- type: daily_min
+  scope:
+    grade: 初三
+    family: 物理
+  params:
+    n: 1
+  mode: hard
+- type: weekday_exact
+  scope:
+    grade: 初三
+    family: 体育
+  params:
+    weekdays:
+    - 周一
+    - 周三
+    - 周四
+    n: 1
+  mode: hard
+- type: daily_max
+  scope:
+    grade: 初三
+    family: 音乐
+  params:
+    n: 1
+  mode: hard
+- type: alternate_weeks
+  scope:
+    grade: 初三
+  params:
+    pair:
+    - 美术
+    - 心理
+  mode: hard

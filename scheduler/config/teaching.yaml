@@ -1,0 +1,5546 @@
+grade: 初三
+classes:
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+- 8
+- 9
+- 10
+- 11
+- 12
+- 13
+- 14
+- 15
+- 16
+- 17
+- 18
+- 19
+- 20
+- 21
+- 22
+- 23
+- 24
+- 25
+- 26
+- 27
+- 28
+- 29
+- 30
+- 31
+- 32
+teachers:
+- name: 李琼
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 郑艳秀
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 黄芷茵
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 李雪华
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 刘梦莹
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 桂相平
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 陈钰
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 罗学怡
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 林慧珍
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 邹丹丹
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 张雨婷
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 闭周乾
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 曹曦
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 陈微璇
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 陈礼华
+  duties:
+  - 办公室副主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 3
+    - 2
+  - - 3
+    - 3
+  - - 3
+    - 4
+  - - 3
+    - 5
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 韦凯莲
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 朱惠怡
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 王林
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 徐仪涵
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 黄莉莉
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 黄玉凤
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 梁佳红
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 尹思炜
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 潘轶颖
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 张超凡
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 毛露苹
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 孙果
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 杨洪
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 梁俊森
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 王小娟
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 钟佳如
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 张瀛化
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 梁华崴
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 方冠骅
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 艾雅娟
+  duties:
+  - 年级长
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 王宝娟
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 张晓琦
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 肖思齐
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 刘欢
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 梁嘉颖
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 陈雁婷
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 刘幸贤
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 陈文苑
+  duties:
+  - 教研处副主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+  - - 3
+    - 2
+  - - 3
+    - 3
+  - - 3
+    - 4
+  - - 3
+    - 5
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 汤红
+  duties:
+  - 科组长
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 彭素灵
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 陈满娇
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 张月莹
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 张越
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 文艺
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 甘丽萍
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 李兆欣
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 符小慧
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 许少漫
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 杨样
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 叶梓欣
+  duties:
+  - 班主任
+  - 科组长
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 郑子茵
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 李朗
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 叶欢
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 张文清
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 曹志辉
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 陶锋彪
+  duties: []
+  forbidden:
+  - - 2
+    - 1
+  - - 2
+    - 2
+  - - 2
+    - 3
+  - - 2
+    - 4
+  - - 2
+    - 5
+- name: 廖嘉慧
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+- name: 陈俊彪
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+- name: 莫洁萍
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+- name: 王楚轲
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+- name: 林贵珠
+  duties:
+  - 科组长
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 单苏豪
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+- name: 陈秀连
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+- name: 陈佳丹
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+- name: 杨雯丽
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+- name: 叶格婷
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 林冬勤
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 廖嘉赟
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 陈成锋
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 邓乐怡
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 刁海胜
+  duties:
+  - 德育务副主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+  - - 3
+    - 2
+  - - 3
+    - 3
+  - - 3
+    - 4
+  - - 3
+    - 5
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 余嘉欣
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 韦凤娟
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 郭晓丹
+  duties:
+  - 科组长
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 赖舒婷
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 李舒康
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 张志勇
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 李青桂
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 丁秀玲
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 陈晓媚
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 黄紫霞
+  duties: []
+  forbidden:
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+- name: 陈芬
+  duties: []
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 沈焯文
+  duties: []
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 陈浩逸
+  duties: []
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 王锴
+  duties: []
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 张婉盈
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 张霆宽
+  duties: []
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 雷彦
+  duties: []
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 邹春明
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 兰浩宇
+  duties:
+  - 年级长
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 王洵玲
+  duties: []
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 黄振恒
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 欧阳嘉欣
+  duties: []
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 杨家诵
+  duties: []
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 罗伟明
+  duties:
+  - 科组长
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 陈秀
+  duties: []
+  forbidden:
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 黄楚榕
+  duties:
+  - 班主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 3
+    - 6
+  - - 3
+    - 7
+  - - 3
+    - 8
+  - - 3
+    - 9
+- name: 周志宁
+  duties: []
+  forbidden:
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+- name: 戚泳辉
+  duties:
+  - 年级长
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 张泽鹏
+  duties: []
+  forbidden:
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+- name: 陈姿娟
+  duties: []
+  forbidden:
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+- name: 袁麟
+  duties: []
+  forbidden:
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+- name: 李景岚
+  duties: []
+  forbidden:
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+- name: 王建明
+  duties: []
+  forbidden:
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+- name: 周振红
+  duties: []
+  forbidden:
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+- name: 梁铖
+  duties: []
+  forbidden:
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+- name: 蔡健和
+  duties:
+  - 总务处副主任
+  forbidden:
+  - - 0
+    - 4
+  - - 0
+    - 5
+  - - 1
+    - 1
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+  - - 1
+    - 5
+  - - 3
+    - 2
+  - - 3
+    - 3
+  - - 3
+    - 4
+  - - 3
+    - 5
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 黄海鑫
+  duties: []
+  forbidden:
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+- name: 王智鹏
+  duties: []
+  forbidden:
+  - - 1
+    - 2
+  - - 1
+    - 3
+  - - 1
+    - 4
+- name: 陈帅
+  duties:
+  - 科组长
+  forbidden:
+  - - 2
+    - 6
+  - - 2
+    - 7
+  - - 2
+    - 8
+  - - 2
+    - 9
+  - - 4
+    - 4
+  - - 4
+    - 5
+- name: 杨玉瑶
+  duties: []
+  forbidden:
+  - - 2
+    - 6
+  - - 2
+    - 7
+  - - 2
+    - 8
+  - - 2
+    - 9
+- name: 戴其芳
+  duties: []
+  forbidden:
+  - - 2
+    - 6
+  - - 2
+    - 7
+  - - 2
+    - 8
+  - - 2
+    - 9
+- name: 梁艳红
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+- name: 胡美玲
+  duties: []
+  forbidden:
+  - - 4
+    - 1
+  - - 4
+    - 2
+  - - 4
+    - 3
+- name: 郭泽琪
+  duties: []
+  forbidden: []
+- name: 胡义城
+  duties: []
+  forbidden: []
+tasks:
+- id: 0
+  grade: 初三
+  class_id: 1
+  course: 语文
+  teacher: 李琼
+  periods: 6
+  parity: null
+- id: 1
+  grade: 初三
+  class_id: 2
+  course: 语文
+  teacher: 郑艳秀
+  periods: 6
+  parity: null
+- id: 2
+  grade: 初三
+  class_id: 3
+  course: 语文
+  teacher: 黄芷茵
+  periods: 6
+  parity: null
+- id: 3
+  grade: 初三
+  class_id: 4
+  course: 语文
+  teacher: 黄芷茵
+  periods: 6
+  parity: null
+- id: 4
+  grade: 初三
+  class_id: 5
+  course: 语文
+  teacher: 李雪华
+  periods: 6
+  parity: null
+- id: 5
+  grade: 初三
+  class_id: 6
+  course: 语文
+  teacher: 李雪华
+  periods: 6
+  parity: null
+- id: 6
+  grade: 初三
+  class_id: 7
+  course: 语文
+  teacher: 刘梦莹
+  periods: 6
+  parity: null
+- id: 7
+  grade: 初三
+  class_id: 8
+  course: 语文
+  teacher: 刘梦莹
+  periods: 6
+  parity: null
+- id: 8
+  grade: 初三
+  class_id: 9
+  course: 语文
+  teacher: 桂相平
+  periods: 6
+  parity: null
+- id: 9
+  grade: 初三
+  class_id: 10
+  course: 语文
+  teacher: 桂相平
+  periods: 6
+  parity: null
+- id: 10
+  grade: 初三
+  class_id: 11
+  course: 语文
+  teacher: 陈钰
+  periods: 6
+  parity: null
+- id: 11
+  grade: 初三
+  class_id: 12
+  course: 语文
+  teacher: 陈钰
+  periods: 6
+  parity: null
+- id: 12
+  grade: 初三
+  class_id: 13
+  course: 语文
+  teacher: 罗学怡
+  periods: 6
+  parity: null
+- id: 13
+  grade: 初三
+  class_id: 14
+  course: 语文
+  teacher: 罗学怡
+  periods: 6
+  parity: null
+- id: 14
+  grade: 初三
+  class_id: 15
+  course: 语文
+  teacher: 林慧珍
+  periods: 6
+  parity: null
+- id: 15
+  grade: 初三
+  class_id: 16
+  course: 语文
+  teacher: 林慧珍
+  periods: 6
+  parity: null
+- id: 16
+  grade: 初三
+  class_id: 17
+  course: 语文
+  teacher: 邹丹丹
+  periods: 6
+  parity: null
+- id: 17
+  grade: 初三
+  class_id: 18
+  course: 语文
+  teacher: 邹丹丹
+  periods: 6
+  parity: null
+- id: 18
+  grade: 初三
+  class_id: 19
+  course: 语文
+  teacher: 张雨婷
+  periods: 6
+  parity: null
+- id: 19
+  grade: 初三
+  class_id: 20
+  course: 语文
+  teacher: 张雨婷
+  periods: 6
+  parity: null
+- id: 20
+  grade: 初三
+  class_id: 21
+  course: 语文
+  teacher: 闭周乾
+  periods: 6
+  parity: null
+- id: 21
+  grade: 初三
+  class_id: 22
+  course: 语文
+  teacher: 闭周乾
+  periods: 6
+  parity: null
+- id: 22
+  grade: 初三
+  class_id: 23
+  course: 语文
+  teacher: 曹曦
+  periods: 6
+  parity: null
+- id: 23
+  grade: 初三
+  class_id: 24
+  course: 语文
+  teacher: 曹曦
+  periods: 6
+  parity: null
+- id: 24
+  grade: 初三
+  class_id: 25
+  course: 语文
+  teacher: 陈微璇
+  periods: 6
+  parity: null
+- id: 25
+  grade: 初三
+  class_id: 26
+  course: 语文
+  teacher: 陈礼华
+  periods: 6
+  parity: null
+- id: 26
+  grade: 初三
+  class_id: 27
+  course: 语文
+  teacher: 韦凯莲
+  periods: 6
+  parity: null
+- id: 27
+  grade: 初三
+  class_id: 28
+  course: 语文
+  teacher: 韦凯莲
+  periods: 6
+  parity: null
+- id: 28
+  grade: 初三
+  class_id: 29
+  course: 语文
+  teacher: 朱惠怡
+  periods: 6
+  parity: null
+- id: 29
+  grade: 初三
+  class_id: 30
+  course: 语文
+  teacher: 朱惠怡
+  periods: 6
+  parity: null
+- id: 30
+  grade: 初三
+  class_id: 31
+  course: 语文
+  teacher: 王林
+  periods: 6
+  parity: null
+- id: 31
+  grade: 初三
+  class_id: 32
+  course: 语文
+  teacher: 王林
+  periods: 6
+  parity: null
+- id: 32
+  grade: 初三
+  class_id: 1
+  course: 数学
+  teacher: 徐仪涵
+  periods: 5
+  parity: null
+- id: 33
+  grade: 初三
+  class_id: 2
+  course: 数学
+  teacher: 徐仪涵
+  periods: 5
+  parity: null
+- id: 34
+  grade: 初三
+  class_id: 3
+  course: 数学
+  teacher: 黄莉莉
+  periods: 5
+  parity: null
+- id: 35
+  grade: 初三
+  class_id: 4
+  course: 数学
+  teacher: 黄莉莉
+  periods: 5
+  parity: null
+- id: 36
+  grade: 初三
+  class_id: 5
+  course: 数学
+  teacher: 黄玉凤
+  periods: 5
+  parity: null
+- id: 37
+  grade: 初三
+  class_id: 6
+  course: 数学
+  teacher: 黄玉凤
+  periods: 5
+  parity: null
+- id: 38
+  grade: 初三
+  class_id: 7
+  course: 数学
+  teacher: 梁佳红
+  periods: 5
+  parity: null
+- id: 39
+  grade: 初三
+  class_id: 8
+  course: 数学
+  teacher: 梁佳红
+  periods: 5
+  parity: null
+- id: 40
+  grade: 初三
+  class_id: 9
+  course: 数学
+  teacher: 尹思炜
+  periods: 5
+  parity: null
+- id: 41
+  grade: 初三
+  class_id: 10
+  course: 数学
+  teacher: 潘轶颖
+  periods: 5
+  parity: null
+- id: 42
+  grade: 初三
+  class_id: 11
+  course: 数学
+  teacher: 张超凡
+  periods: 5
+  parity: null
+- id: 43
+  grade: 初三
+  class_id: 12
+  course: 数学
+  teacher: 张超凡
+  periods: 5
+  parity: null
+- id: 44
+  grade: 初三
+  class_id: 13
+  course: 数学
+  teacher: 毛露苹
+  periods: 5
+  parity: null
+- id: 45
+  grade: 初三
+  class_id: 14
+  course: 数学
+  teacher: 毛露苹
+  periods: 5
+  parity: null
+- id: 46
+  grade: 初三
+  class_id: 15
+  course: 数学
+  teacher: 孙果
+  periods: 5
+  parity: null
+- id: 47
+  grade: 初三
+  class_id: 16
+  course: 数学
+  teacher: 孙果
+  periods: 5
+  parity: null
+- id: 48
+  grade: 初三
+  class_id: 17
+  course: 数学
+  teacher: 杨洪
+  periods: 5
+  parity: null
+- id: 49
+  grade: 初三
+  class_id: 18
+  course: 数学
+  teacher: 杨洪
+  periods: 5
+  parity: null
+- id: 50
+  grade: 初三
+  class_id: 19
+  course: 数学
+  teacher: 梁俊森
+  periods: 5
+  parity: null
+- id: 51
+  grade: 初三
+  class_id: 20
+  course: 数学
+  teacher: 梁俊森
+  periods: 5
+  parity: null
+- id: 52
+  grade: 初三
+  class_id: 21
+  course: 数学
+  teacher: 王小娟
+  periods: 5
+  parity: null
+- id: 53
+  grade: 初三
+  class_id: 22
+  course: 数学
+  teacher: 王小娟
+  periods: 5
+  parity: null
+- id: 54
+  grade: 初三
+  class_id: 23
+  course: 数学
+  teacher: 钟佳如
+  periods: 5
+  parity: null
+- id: 55
+  grade: 初三
+  class_id: 24
+  course: 数学
+  teacher: 钟佳如
+  periods: 5
+  parity: null
+- id: 56
+  grade: 初三
+  class_id: 25
+  course: 数学
+  teacher: 张瀛化
+  periods: 5
+  parity: null
+- id: 57
+  grade: 初三
+  class_id: 26
+  course: 数学
+  teacher: 张瀛化
+  periods: 5
+  parity: null
+- id: 58
+  grade: 初三
+  class_id: 27
+  course: 数学
+  teacher: 梁华崴
+  periods: 5
+  parity: null
+- id: 59
+  grade: 初三
+  class_id: 28
+  course: 数学
+  teacher: 梁华崴
+  periods: 5
+  parity: null
+- id: 60
+  grade: 初三
+  class_id: 29
+  course: 数学
+  teacher: 方冠骅
+  periods: 5
+  parity: null
+- id: 61
+  grade: 初三
+  class_id: 30
+  course: 数学
+  teacher: 方冠骅
+  periods: 5
+  parity: null
+- id: 62
+  grade: 初三
+  class_id: 31
+  course: 数学
+  teacher: 艾雅娟
+  periods: 5
+  parity: null
+- id: 63
+  grade: 初三
+  class_id: 32
+  course: 数学
+  teacher: 艾雅娟
+  periods: 5
+  parity: null
+- id: 64
+  grade: 初三
+  class_id: 1
+  course: 英语
+  teacher: 王宝娟
+  periods: 5
+  parity: null
+- id: 65
+  grade: 初三
+  class_id: 2
+  course: 英语
+  teacher: 王宝娟
+  periods: 5
+  parity: null
+- id: 66
+  grade: 初三
+  class_id: 3
+  course: 英语
+  teacher: 张晓琦
+  periods: 5
+  parity: null
+- id: 67
+  grade: 初三
+  class_id: 4
+  course: 英语
+  teacher: 张晓琦
+  periods: 5
+  parity: null
+- id: 68
+  grade: 初三
+  class_id: 5
+  course: 英语
+  teacher: 肖思齐
+  periods: 5
+  parity: null
+- id: 69
+  grade: 初三
+  class_id: 6
+  course: 英语
+  teacher: 肖思齐
+  periods: 5
+  parity: null
+- id: 70
+  grade: 初三
+  class_id: 7
+  course: 英语
+  teacher: 刘欢
+  periods: 5
+  parity: null
+- id: 71
+  grade: 初三
+  class_id: 8
+  course: 英语
+  teacher: 刘欢
+  periods: 5
+  parity: null
+- id: 72
+  grade: 初三
+  class_id: 9
+  course: 英语
+  teacher: 梁嘉颖
+  periods: 5
+  parity: null
+- id: 73
+  grade: 初三
+  class_id: 10
+  course: 英语
+  teacher: 梁嘉颖
+  periods: 5
+  parity: null
+- id: 74
+  grade: 初三
+  class_id: 11
+  course: 英语
+  teacher: 陈雁婷
+  periods: 5
+  parity: null
+- id: 75
+  grade: 初三
+  class_id: 12
+  course: 英语
+  teacher: 陈雁婷
+  periods: 5
+  parity: null
+- id: 76
+  grade: 初三
+  class_id: 13
+  course: 英语
+  teacher: 刘幸贤
+  periods: 5
+  parity: null
+- id: 77
+  grade: 初三
+  class_id: 14
+  course: 英语
+  teacher: 刘幸贤
+  periods: 5
+  parity: null
+- id: 78
+  grade: 初三
+  class_id: 15
+  course: 英语
+  teacher: 陈文苑
+  periods: 5
+  parity: null
+- id: 79
+  grade: 初三
+  class_id: 16
+  course: 英语
+  teacher: 汤红
+  periods: 5
+  parity: null
+- id: 80
+  grade: 初三
+  class_id: 17
+  course: 英语
+  teacher: 彭素灵
+  periods: 5
+  parity: null
+- id: 81
+  grade: 初三
+  class_id: 18
+  course: 英语
+  teacher: 彭素灵
+  periods: 5
+  parity: null
+- id: 82
+  grade: 初三
+  class_id: 19
+  course: 英语
+  teacher: 陈满娇
+  periods: 5
+  parity: null
+- id: 83
+  grade: 初三
+  class_id: 20
+  course: 英语
+  teacher: 陈满娇
+  periods: 5
+  parity: null
+- id: 84
+  grade: 初三
+  class_id: 21
+  course: 英语
+  teacher: 张月莹
+  periods: 5
+  parity: null
+- id: 85
+  grade: 初三
+  class_id: 22
+  course: 英语
+  teacher: 张月莹
+  periods: 5
+  parity: null
+- id: 86
+  grade: 初三
+  class_id: 23
+  course: 英语
+  teacher: 张越
+  periods: 5
+  parity: null
+- id: 87
+  grade: 初三
+  class_id: 24
+  course: 英语
+  teacher: 张越
+  periods: 5
+  parity: null
+- id: 88
+  grade: 初三
+  class_id: 25
+  course: 英语
+  teacher: 文艺
+  periods: 5
+  parity: null
+- id: 89
+  grade: 初三
+  class_id: 26
+  course: 英语
+  teacher: 文艺
+  periods: 5
+  parity: null
+- id: 90
+  grade: 初三
+  class_id: 27
+  course: 英语
+  teacher: 甘丽萍
+  periods: 5
+  parity: null
+- id: 91
+  grade: 初三
+  class_id: 28
+  course: 英语
+  teacher: 甘丽萍
+  periods: 5
+  parity: null
+- id: 92
+  grade: 初三
+  class_id: 29
+  course: 英语
+  teacher: 李兆欣
+  periods: 5
+  parity: null
+- id: 93
+  grade: 初三
+  class_id: 30
+  course: 英语
+  teacher: 李兆欣
+  periods: 5
+  parity: null
+- id: 94
+  grade: 初三
+  class_id: 31
+  course: 英语
+  teacher: 符小慧
+  periods: 5
+  parity: null
+- id: 95
+  grade: 初三
+  class_id: 32
+  course: 英语
+  teacher: 符小慧
+  periods: 5
+  parity: null
+- id: 96
+  grade: 初三
+  class_id: 1
+  course: 道法
+  teacher: 许少漫
+  periods: 3
+  parity: null
+- id: 97
+  grade: 初三
+  class_id: 2
+  course: 道法
+  teacher: 许少漫
+  periods: 3
+  parity: null
+- id: 98
+  grade: 初三
+  class_id: 3
+  course: 道法
+  teacher: 许少漫
+  periods: 3
+  parity: null
+- id: 99
+  grade: 初三
+  class_id: 4
+  course: 道法
+  teacher: 许少漫
+  periods: 3
+  parity: null
+- id: 100
+  grade: 初三
+  class_id: 5
+  course: 道法
+  teacher: 杨样
+  periods: 3
+  parity: null
+- id: 101
+  grade: 初三
+  class_id: 6
+  course: 道法
+  teacher: 杨样
+  periods: 3
+  parity: null
+- id: 102
+  grade: 初三
+  class_id: 7
+  course: 道法
+  teacher: 杨样
+  periods: 3
+  parity: null
+- id: 103
+  grade: 初三
+  class_id: 8
+  course: 道法
+  teacher: 杨样
+  periods: 3
+  parity: null
+- id: 104
+  grade: 初三
+  class_id: 9
+  course: 道法
+  teacher: 叶梓欣
+  periods: 3
+  parity: null
+- id: 105
+  grade: 初三
+  class_id: 10
+  course: 道法
+  teacher: 叶梓欣
+  periods: 3
+  parity: null
+- id: 106
+  grade: 初三
+  class_id: 11
+  course: 道法
+  teacher: 郑子茵
+  periods: 3
+  parity: null
+- id: 107
+  grade: 初三
+  class_id: 12
+  course: 道法
+  teacher: 郑子茵
+  periods: 3
+  parity: null
+- id: 108
+  grade: 初三
+  class_id: 13
+  course: 道法
+  teacher: 郑子茵
+  periods: 3
+  parity: null
+- id: 109
+  grade: 初三
+  class_id: 17
+  course: 道法
+  teacher: 郑子茵
+  periods: 3
+  parity: null
+- id: 110
+  grade: 初三
+  class_id: 14
+  course: 道法
+  teacher: 李朗
+  periods: 3
+  parity: null
+- id: 111
+  grade: 初三
+  class_id: 15
+  course: 道法
+  teacher: 李朗
+  periods: 3
+  parity: null
+- id: 112
+  grade: 初三
+  class_id: 16
+  course: 道法
+  teacher: 李朗
+  periods: 3
+  parity: null
+- id: 113
+  grade: 初三
+  class_id: 18
+  course: 道法
+  teacher: 叶欢
+  periods: 3
+  parity: null
+- id: 114
+  grade: 初三
+  class_id: 19
+  course: 道法
+  teacher: 叶欢
+  periods: 3
+  parity: null
+- id: 115
+  grade: 初三
+  class_id: 20
+  course: 道法
+  teacher: 叶欢
+  periods: 3
+  parity: null
+- id: 116
+  grade: 初三
+  class_id: 21
+  course: 道法
+  teacher: 张文清
+  periods: 3
+  parity: null
+- id: 117
+  grade: 初三
+  class_id: 22
+  course: 道法
+  teacher: 张文清
+  periods: 3
+  parity: null
+- id: 118
+  grade: 初三
+  class_id: 23
+  course: 道法
+  teacher: 张文清
+  periods: 3
+  parity: null
+- id: 119
+  grade: 初三
+  class_id: 24
+  course: 道法
+  teacher: 张文清
+  periods: 3
+  parity: null
+- id: 120
+  grade: 初三
+  class_id: 25
+  course: 道法
+  teacher: 曹志辉
+  periods: 3
+  parity: null
+- id: 121
+  grade: 初三
+  class_id: 26
+  course: 道法
+  teacher: 曹志辉
+  periods: 3
+  parity: null
+- id: 122
+  grade: 初三
+  class_id: 27
+  course: 道法
+  teacher: 曹志辉
+  periods: 3
+  parity: null
+- id: 123
+  grade: 初三
+  class_id: 28
+  course: 道法
+  teacher: 曹志辉
+  periods: 3
+  parity: null
+- id: 124
+  grade: 初三
+  class_id: 29
+  course: 道法
+  teacher: 陶锋彪
+  periods: 3
+  parity: null
+- id: 125
+  grade: 初三
+  class_id: 30
+  course: 道法
+  teacher: 陶锋彪
+  periods: 3
+  parity: null
+- id: 126
+  grade: 初三
+  class_id: 31
+  course: 道法
+  teacher: 陶锋彪
+  periods: 3
+  parity: null
+- id: 127
+  grade: 初三
+  class_id: 32
+  course: 道法
+  teacher: 陶锋彪
+  periods: 3
+  parity: null
+- id: 128
+  grade: 初三
+  class_id: 1
+  course: 历史
+  teacher: 廖嘉慧
+  periods: 3
+  parity: null
+- id: 129
+  grade: 初三
+  class_id: 2
+  course: 历史
+  teacher: 廖嘉慧
+  periods: 3
+  parity: null
+- id: 130
+  grade: 初三
+  class_id: 3
+  course: 历史
+  teacher: 廖嘉慧
+  periods: 3
+  parity: null
+- id: 131
+  grade: 初三
+  class_id: 4
+  course: 历史
+  teacher: 廖嘉慧
+  periods: 3
+  parity: null
+- id: 132
+  grade: 初三
+  class_id: 5
+  course: 历史
+  teacher: 陈俊彪
+  periods: 3
+  parity: null
+- id: 133
+  grade: 初三
+  class_id: 6
+  course: 历史
+  teacher: 陈俊彪
+  periods: 3
+  parity: null
+- id: 134
+  grade: 初三
+  class_id: 7
+  course: 历史
+  teacher: 陈俊彪
+  periods: 3
+  parity: null
+- id: 135
+  grade: 初三
+  class_id: 8
+  course: 历史
+  teacher: 陈俊彪
+  periods: 3
+  parity: null
+- id: 136
+  grade: 初三
+  class_id: 9
+  course: 历史
+  teacher: 莫洁萍
+  periods: 3
+  parity: null
+- id: 137
+  grade: 初三
+  class_id: 10
+  course: 历史
+  teacher: 莫洁萍
+  periods: 3
+  parity: null
+- id: 138
+  grade: 初三
+  class_id: 11
+  course: 历史
+  teacher: 莫洁萍
+  periods: 3
+  parity: null
+- id: 139
+  grade: 初三
+  class_id: 12
+  course: 历史
+  teacher: 莫洁萍
+  periods: 3
+  parity: null
+- id: 140
+  grade: 初三
+  class_id: 13
+  course: 历史
+  teacher: 王楚轲
+  periods: 3
+  parity: null
+- id: 141
+  grade: 初三
+  class_id: 14
+  course: 历史
+  teacher: 王楚轲
+  periods: 3
+  parity: null
+- id: 142
+  grade: 初三
+  class_id: 15
+  course: 历史
+  teacher: 林贵珠
+  periods: 3
+  parity: null
+- id: 143
+  grade: 初三
+  class_id: 16
+  course: 历史
+  teacher: 林贵珠
+  periods: 3
+  parity: null
+- id: 144
+  grade: 初三
+  class_id: 17
+  course: 历史
+  teacher: 林贵珠
+  periods: 3
+  parity: null
+- id: 145
+  grade: 初三
+  class_id: 18
+  course: 历史
+  teacher: 林贵珠
+  periods: 3
+  parity: null
+- id: 146
+  grade: 初三
+  class_id: 19
+  course: 历史
+  teacher: 单苏豪
+  periods: 3
+  parity: null
+- id: 147
+  grade: 初三
+  class_id: 20
+  course: 历史
+  teacher: 单苏豪
+  periods: 3
+  parity: null
+- id: 148
+  grade: 初三
+  class_id: 21
+  course: 历史
+  teacher: 单苏豪
+  periods: 3
+  parity: null
+- id: 149
+  grade: 初三
+  class_id: 22
+  course: 历史
+  teacher: 单苏豪
+  periods: 3
+  parity: null
+- id: 150
+  grade: 初三
+  class_id: 23
+  course: 历史
+  teacher: 陈秀连
+  periods: 3
+  parity: null
+- id: 151
+  grade: 初三
+  class_id: 24
+  course: 历史
+  teacher: 陈秀连
+  periods: 3
+  parity: null
+- id: 152
+  grade: 初三
+  class_id: 25
+  course: 历史
+  teacher: 陈秀连
+  periods: 3
+  parity: null
+- id: 153
+  grade: 初三
+  class_id: 26
+  course: 历史
+  teacher: 陈佳丹
+  periods: 3
+  parity: null
+- id: 154
+  grade: 初三
+  class_id: 27
+  course: 历史
+  teacher: 陈佳丹
+  periods: 3
+  parity: null
+- id: 155
+  grade: 初三
+  class_id: 28
+  course: 历史
+  teacher: 陈佳丹
+  periods: 3
+  parity: null
+- id: 156
+  grade: 初三
+  class_id: 29
+  course: 历史
+  teacher: 杨雯丽
+  periods: 3
+  parity: null
+- id: 157
+  grade: 初三
+  class_id: 30
+  course: 历史
+  teacher: 杨雯丽
+  periods: 3
+  parity: null
+- id: 158
+  grade: 初三
+  class_id: 31
+  course: 历史
+  teacher: 杨雯丽
+  periods: 3
+  parity: null
+- id: 159
+  grade: 初三
+  class_id: 32
+  course: 历史
+  teacher: 杨雯丽
+  periods: 3
+  parity: null
+- id: 160
+  grade: 初三
+  class_id: 1
+  course: 化学
+  teacher: 叶格婷
+  periods: 4
+  parity: null
+- id: 161
+  grade: 初三
+  class_id: 2
+  course: 化学
+  teacher: 叶格婷
+  periods: 4
+  parity: null
+- id: 162
+  grade: 初三
+  class_id: 3
+  course: 化学
+  teacher: 林冬勤
+  periods: 4
+  parity: null
+- id: 163
+  grade: 初三
+  class_id: 4
+  course: 化学
+  teacher: 林冬勤
+  periods: 4
+  parity: null
+- id: 164
+  grade: 初三
+  class_id: 5
+  course: 化学
+  teacher: 廖嘉赟
+  periods: 4
+  parity: null
+- id: 165
+  grade: 初三
+  class_id: 6
+  course: 化学
+  teacher: 廖嘉赟
+  periods: 4
+  parity: null
+- id: 166
+  grade: 初三
+  class_id: 7
+  course: 化学
+  teacher: 陈成锋
+  periods: 4
+  parity: null
+- id: 167
+  grade: 初三
+  class_id: 8
+  course: 化学
+  teacher: 陈成锋
+  periods: 4
+  parity: null
+- id: 168
+  grade: 初三
+  class_id: 9
+  course: 化学
+  teacher: 邓乐怡
+  periods: 4
+  parity: null
+- id: 169
+  grade: 初三
+  class_id: 10
+  course: 化学
+  teacher: 邓乐怡
+  periods: 4
+  parity: null
+- id: 170
+  grade: 初三
+  class_id: 11
+  course: 化学
+  teacher: 刁海胜
+  periods: 4
+  parity: null
+- id: 171
+  grade: 初三
+  class_id: 12
+  course: 化学
+  teacher: 余嘉欣
+  periods: 4
+  parity: null
+- id: 172
+  grade: 初三
+  class_id: 13
+  course: 化学
+  teacher: 余嘉欣
+  periods: 4
+  parity: null
+- id: 173
+  grade: 初三
+  class_id: 14
+  course: 化学
+  teacher: 韦凤娟
+  periods: 4
+  parity: null
+- id: 174
+  grade: 初三
+  class_id: 15
+  course: 化学
+  teacher: 韦凤娟
+  periods: 4
+  parity: null
+- id: 175
+  grade: 初三
+  class_id: 16
+  course: 化学
+  teacher: 韦凤娟
+  periods: 4
+  parity: null
+- id: 176
+  grade: 初三
+  class_id: 17
+  course: 化学
+  teacher: 郭晓丹
+  periods: 4
+  parity: null
+- id: 177
+  grade: 初三
+  class_id: 18
+  course: 化学
+  teacher: 郭晓丹
+  periods: 4
+  parity: null
+- id: 178
+  grade: 初三
+  class_id: 19
+  course: 化学
+  teacher: 赖舒婷
+  periods: 4
+  parity: null
+- id: 179
+  grade: 初三
+  class_id: 20
+  course: 化学
+  teacher: 赖舒婷
+  periods: 4
+  parity: null
+- id: 180
+  grade: 初三
+  class_id: 21
+  course: 化学
+  teacher: 李舒康
+  periods: 4
+  parity: null
+- id: 181
+  grade: 初三
+  class_id: 22
+  course: 化学
+  teacher: 李舒康
+  periods: 4
+  parity: null
+- id: 182
+  grade: 初三
+  class_id: 23
+  course: 化学
+  teacher: 张志勇
+  periods: 4
+  parity: null
+- id: 183
+  grade: 初三
+  class_id: 24
+  course: 化学
+  teacher: 张志勇
+  periods: 4
+  parity: null
+- id: 184
+  grade: 初三
+  class_id: 25
+  course: 化学
+  teacher: 李青桂
+  periods: 4
+  parity: null
+- id: 185
+  grade: 初三
+  class_id: 26
+  course: 化学
+  teacher: 李青桂
+  periods: 4
+  parity: null
+- id: 186
+  grade: 初三
+  class_id: 27
+  course: 化学
+  teacher: 丁秀玲
+  periods: 4
+  parity: null
+- id: 187
+  grade: 初三
+  class_id: 28
+  course: 化学
+  teacher: 丁秀玲
+  periods: 4
+  parity: null
+- id: 188
+  grade: 初三
+  class_id: 29
+  course: 化学
+  teacher: 陈晓媚
+  periods: 4
+  parity: null
+- id: 189
+  grade: 初三
+  class_id: 30
+  course: 化学
+  teacher: 陈晓媚
+  periods: 4
+  parity: null
+- id: 190
+  grade: 初三
+  class_id: 31
+  course: 化学
+  teacher: 黄紫霞
+  periods: 4
+  parity: null
+- id: 191
+  grade: 初三
+  class_id: 32
+  course: 化学
+  teacher: 黄紫霞
+  periods: 4
+  parity: null
+- id: 192
+  grade: 初三
+  class_id: 1
+  course: 物理
+  teacher: 陈芬
+  periods: 4
+  parity: null
+- id: 193
+  grade: 初三
+  class_id: 2
+  course: 物理
+  teacher: 陈芬
+  periods: 4
+  parity: null
+- id: 194
+  grade: 初三
+  class_id: 3
+  course: 物理
+  teacher: 沈焯文
+  periods: 4
+  parity: null
+- id: 195
+  grade: 初三
+  class_id: 4
+  course: 物理
+  teacher: 沈焯文
+  periods: 4
+  parity: null
+- id: 196
+  grade: 初三
+  class_id: 5
+  course: 物理
+  teacher: 陈浩逸
+  periods: 4
+  parity: null
+- id: 197
+  grade: 初三
+  class_id: 6
+  course: 物理
+  teacher: 陈浩逸
+  periods: 4
+  parity: null
+- id: 198
+  grade: 初三
+  class_id: 7
+  course: 物理
+  teacher: 王锴
+  periods: 4
+  parity: null
+- id: 199
+  grade: 初三
+  class_id: 8
+  course: 物理
+  teacher: 王锴
+  periods: 4
+  parity: null
+- id: 200
+  grade: 初三
+  class_id: 9
+  course: 物理
+  teacher: 张婉盈
+  periods: 4
+  parity: null
+- id: 201
+  grade: 初三
+  class_id: 10
+  course: 物理
+  teacher: 张婉盈
+  periods: 4
+  parity: null
+- id: 202
+  grade: 初三
+  class_id: 11
+  course: 物理
+  teacher: 张霆宽
+  periods: 4
+  parity: null
+- id: 203
+  grade: 初三
+  class_id: 14
+  course: 物理
+  teacher: 张霆宽
+  periods: 4
+  parity: null
+- id: 204
+  grade: 初三
+  class_id: 12
+  course: 物理
+  teacher: 雷彦
+  periods: 4
+  parity: null
+- id: 205
+  grade: 初三
+  class_id: 13
+  course: 物理
+  teacher: 雷彦
+  periods: 4
+  parity: null
+- id: 206
+  grade: 初三
+  class_id: 15
+  course: 物理
+  teacher: 邹春明
+  periods: 4
+  parity: null
+- id: 207
+  grade: 初三
+  class_id: 16
+  course: 物理
+  teacher: 邹春明
+  periods: 4
+  parity: null
+- id: 208
+  grade: 初三
+  class_id: 17
+  course: 物理
+  teacher: 兰浩宇
+  periods: 4
+  parity: null
+- id: 209
+  grade: 初三
+  class_id: 18
+  course: 物理
+  teacher: 兰浩宇
+  periods: 4
+  parity: null
+- id: 210
+  grade: 初三
+  class_id: 19
+  course: 物理
+  teacher: 王洵玲
+  periods: 4
+  parity: null
+- id: 211
+  grade: 初三
+  class_id: 20
+  course: 物理
+  teacher: 王洵玲
+  periods: 4
+  parity: null
+- id: 212
+  grade: 初三
+  class_id: 21
+  course: 物理
+  teacher: 黄振恒
+  periods: 4
+  parity: null
+- id: 213
+  grade: 初三
+  class_id: 22
+  course: 物理
+  teacher: 黄振恒
+  periods: 4
+  parity: null
+- id: 214
+  grade: 初三
+  class_id: 23
+  course: 物理
+  teacher: 欧阳嘉欣
+  periods: 4
+  parity: null
+- id: 215
+  grade: 初三
+  class_id: 24
+  course: 物理
+  teacher: 欧阳嘉欣
+  periods: 4
+  parity: null
+- id: 216
+  grade: 初三
+  class_id: 25
+  course: 物理
+  teacher: 杨家诵
+  periods: 4
+  parity: null
+- id: 217
+  grade: 初三
+  class_id: 26
+  course: 物理
+  teacher: 杨家诵
+  periods: 4
+  parity: null
+- id: 218
+  grade: 初三
+  class_id: 27
+  course: 物理
+  teacher: 罗伟明
+  periods: 4
+  parity: null
+- id: 219
+  grade: 初三
+  class_id: 28
+  course: 物理
+  teacher: 罗伟明
+  periods: 4
+  parity: null
+- id: 220
+  grade: 初三
+  class_id: 29
+  course: 物理
+  teacher: 陈秀
+  periods: 4
+  parity: null
+- id: 221
+  grade: 初三
+  class_id: 30
+  course: 物理
+  teacher: 陈秀
+  periods: 4
+  parity: null
+- id: 222
+  grade: 初三
+  class_id: 31
+  course: 物理
+  teacher: 黄楚榕
+  periods: 4
+  parity: null
+- id: 223
+  grade: 初三
+  class_id: 32
+  course: 物理
+  teacher: 黄楚榕
+  periods: 4
+  parity: null
+- id: 224
+  grade: 初三
+  class_id: 1
+  course: 体育
+  teacher: 周志宁
+  periods: 3
+  parity: null
+- id: 225
+  grade: 初三
+  class_id: 2
+  course: 体育
+  teacher: 周志宁
+  periods: 3
+  parity: null
+- id: 226
+  grade: 初三
+  class_id: 25
+  course: 体育
+  teacher: 周志宁
+  periods: 3
+  parity: null
+- id: 227
+  grade: 初三
+  class_id: 3
+  course: 体育
+  teacher: 戚泳辉
+  periods: 3
+  parity: null
+- id: 228
+  grade: 初三
+  class_id: 4
+  course: 体育
+  teacher: 戚泳辉
+  periods: 3
+  parity: null
+- id: 229
+  grade: 初三
+  class_id: 5
+  course: 体育
+  teacher: 张泽鹏
+  periods: 3
+  parity: null
+- id: 230
+  grade: 初三
+  class_id: 6
+  course: 体育
+  teacher: 张泽鹏
+  periods: 3
+  parity: null
+- id: 231
+  grade: 初三
+  class_id: 7
+  course: 体育
+  teacher: 张泽鹏
+  periods: 3
+  parity: null
+- id: 232
+  grade: 初三
+  class_id: 8
+  course: 体育
+  teacher: 陈姿娟
+  periods: 3
+  parity: null
+- id: 233
+  grade: 初三
+  class_id: 9
+  course: 体育
+  teacher: 陈姿娟
+  periods: 3
+  parity: null
+- id: 234
+  grade: 初三
+  class_id: 10
+  course: 体育
+  teacher: 袁麟
+  periods: 3
+  parity: null
+- id: 235
+  grade: 初三
+  class_id: 11
+  course: 体育
+  teacher: 袁麟
+  periods: 3
+  parity: null
+- id: 236
+  grade: 初三
+  class_id: 12
+  course: 体育
+  teacher: 袁麟
+  periods: 3
+  parity: null
+- id: 237
+  grade: 初三
+  class_id: 13
+  course: 体育
+  teacher: 李景岚
+  periods: 3
+  parity: null
+- id: 238
+  grade: 初三
+  class_id: 14
+  course: 体育
+  teacher: 李景岚
+  periods: 3
+  parity: null
+- id: 239
+  grade: 初三
+  class_id: 15
+  course: 体育
+  teacher: 李景岚
+  periods: 3
+  parity: null
+- id: 240
+  grade: 初三
+  class_id: 16
+  course: 体育
+  teacher: 王建明
+  periods: 3
+  parity: null
+- id: 241
+  grade: 初三
+  class_id: 17
+  course: 体育
+  teacher: 王建明
+  periods: 3
+  parity: null
+- id: 242
+  grade: 初三
+  class_id: 18
+  course: 体育
+  teacher: 王建明
+  periods: 3
+  parity: null
+- id: 243
+  grade: 初三
+  class_id: 19
+  course: 体育
+  teacher: 周振红
+  periods: 3
+  parity: null
+- id: 244
+  grade: 初三
+  class_id: 20
+  course: 体育
+  teacher: 周振红
+  periods: 3
+  parity: null
+- id: 245
+  grade: 初三
+  class_id: 21
+  course: 体育
+  teacher: 周振红
+  periods: 3
+  parity: null
+- id: 246
+  grade: 初三
+  class_id: 22
+  course: 体育
+  teacher: 梁铖
+  periods: 3
+  parity: null
+- id: 247
+  grade: 初三
+  class_id: 23
+  course: 体育
+  teacher: 梁铖
+  periods: 3
+  parity: null
+- id: 248
+  grade: 初三
+  class_id: 24
+  course: 体育
+  teacher: 梁铖
+  periods: 3
+  parity: null
+- id: 249
+  grade: 初三
+  class_id: 26
+  course: 体育
+  teacher: 蔡健和
+  periods: 3
+  parity: null
+- id: 250
+  grade: 初三
+  class_id: 27
+  course: 体育
+  teacher: 黄海鑫
+  periods: 3
+  parity: null
+- id: 251
+  grade: 初三
+  class_id: 28
+  course: 体育
+  teacher: 黄海鑫
+  periods: 3
+  parity: null
+- id: 252
+  grade: 初三
+  class_id: 29
+  course: 体育
+  teacher: 黄海鑫
+  periods: 3
+  parity: null
+- id: 253
+  grade: 初三
+  class_id: 30
+  course: 体育
+  teacher: 王智鹏
+  periods: 3
+  parity: null
+- id: 254
+  grade: 初三
+  class_id: 31
+  course: 体育
+  teacher: 王智鹏
+  periods: 3
+  parity: null
+- id: 255
+  grade: 初三
+  class_id: 32
+  course: 体育
+  teacher: 王智鹏
+  periods: 3
+  parity: null
+- id: 256
+  grade: 初三
+  class_id: 1
+  course: 音乐
+  teacher: 陈帅
+  periods: 1
+  parity: null
+- id: 257
+  grade: 初三
+  class_id: 2
+  course: 音乐
+  teacher: 陈帅
+  periods: 1
+  parity: null
+- id: 258
+  grade: 初三
+  class_id: 3
+  course: 音乐
+  teacher: 陈帅
+  periods: 1
+  parity: null
+- id: 259
+  grade: 初三
+  class_id: 4
+  course: 音乐
+  teacher: 陈帅
+  periods: 1
+  parity: null
+- id: 260
+  grade: 初三
+  class_id: 5
+  course: 音乐
+  teacher: 陈帅
+  periods: 1
+  parity: null
+- id: 261
+  grade: 初三
+  class_id: 6
+  course: 音乐
+  teacher: 陈帅
+  periods: 1
+  parity: null
+- id: 262
+  grade: 初三
+  class_id: 7
+  course: 音乐
+  teacher: 陈帅
+  periods: 1
+  parity: null
+- id: 263
+  grade: 初三
+  class_id: 8
+  course: 音乐
+  teacher: 陈帅
+  periods: 1
+  parity: null
+- id: 264
+  grade: 初三
+  class_id: 9
+  course: 音乐
+  teacher: 陈帅
+  periods: 1
+  parity: null
+- id: 265
+  grade: 初三
+  class_id: 10
+  course: 音乐
+  teacher: 陈帅
+  periods: 1
+  parity: null
+- id: 266
+  grade: 初三
+  class_id: 11
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 267
+  grade: 初三
+  class_id: 12
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 268
+  grade: 初三
+  class_id: 13
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 269
+  grade: 初三
+  class_id: 14
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 270
+  grade: 初三
+  class_id: 15
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 271
+  grade: 初三
+  class_id: 16
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 272
+  grade: 初三
+  class_id: 17
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 273
+  grade: 初三
+  class_id: 18
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 274
+  grade: 初三
+  class_id: 19
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 275
+  grade: 初三
+  class_id: 20
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 276
+  grade: 初三
+  class_id: 21
+  course: 音乐
+  teacher: 杨玉瑶
+  periods: 1
+  parity: null
+- id: 277
+  grade: 初三
+  class_id: 22
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 278
+  grade: 初三
+  class_id: 23
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 279
+  grade: 初三
+  class_id: 24
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 280
+  grade: 初三
+  class_id: 25
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 281
+  grade: 初三
+  class_id: 26
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 282
+  grade: 初三
+  class_id: 27
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 283
+  grade: 初三
+  class_id: 28
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 284
+  grade: 初三
+  class_id: 29
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 285
+  grade: 初三
+  class_id: 30
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 286
+  grade: 初三
+  class_id: 31
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 287
+  grade: 初三
+  class_id: 32
+  course: 音乐
+  teacher: 戴其芳
+  periods: 1
+  parity: null
+- id: 288
+  grade: 初三
+  class_id: 1
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 289
+  grade: 初三
+  class_id: 2
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 290
+  grade: 初三
+  class_id: 3
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 291
+  grade: 初三
+  class_id: 4
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 292
+  grade: 初三
+  class_id: 5
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 293
+  grade: 初三
+  class_id: 6
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 294
+  grade: 初三
+  class_id: 7
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 295
+  grade: 初三
+  class_id: 8
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 296
+  grade: 初三
+  class_id: 9
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 297
+  grade: 初三
+  class_id: 10
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 298
+  grade: 初三
+  class_id: 11
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 299
+  grade: 初三
+  class_id: 12
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 300
+  grade: 初三
+  class_id: 13
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 301
+  grade: 初三
+  class_id: 14
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 302
+  grade: 初三
+  class_id: 15
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 303
+  grade: 初三
+  class_id: 16
+  course: 美术
+  teacher: 梁艳红
+  periods: 1
+  parity: 单周
+- id: 304
+  grade: 初三
+  class_id: 17
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 305
+  grade: 初三
+  class_id: 18
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 306
+  grade: 初三
+  class_id: 19
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 307
+  grade: 初三
+  class_id: 20
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 308
+  grade: 初三
+  class_id: 21
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 309
+  grade: 初三
+  class_id: 22
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 310
+  grade: 初三
+  class_id: 23
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 311
+  grade: 初三
+  class_id: 24
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 312
+  grade: 初三
+  class_id: 25
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 313
+  grade: 初三
+  class_id: 26
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 314
+  grade: 初三
+  class_id: 27
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 315
+  grade: 初三
+  class_id: 28
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 316
+  grade: 初三
+  class_id: 29
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 317
+  grade: 初三
+  class_id: 30
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 318
+  grade: 初三
+  class_id: 31
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 319
+  grade: 初三
+  class_id: 32
+  course: 美术
+  teacher: 胡美玲
+  periods: 1
+  parity: 单周
+- id: 320
+  grade: 初三
+  class_id: 1
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 321
+  grade: 初三
+  class_id: 2
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 322
+  grade: 初三
+  class_id: 3
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 323
+  grade: 初三
+  class_id: 4
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 324
+  grade: 初三
+  class_id: 5
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 325
+  grade: 初三
+  class_id: 6
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 326
+  grade: 初三
+  class_id: 7
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 327
+  grade: 初三
+  class_id: 8
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 328
+  grade: 初三
+  class_id: 9
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 329
+  grade: 初三
+  class_id: 10
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 330
+  grade: 初三
+  class_id: 11
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 331
+  grade: 初三
+  class_id: 12
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 332
+  grade: 初三
+  class_id: 13
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 333
+  grade: 初三
+  class_id: 14
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 334
+  grade: 初三
+  class_id: 15
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 335
+  grade: 初三
+  class_id: 16
+  course: 心理
+  teacher: 郭泽琪
+  periods: 1
+  parity: 双周
+- id: 336
+  grade: 初三
+  class_id: 17
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 337
+  grade: 初三
+  class_id: 18
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 338
+  grade: 初三
+  class_id: 19
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 339
+  grade: 初三
+  class_id: 20
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 340
+  grade: 初三
+  class_id: 21
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 341
+  grade: 初三
+  class_id: 22
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 342
+  grade: 初三
+  class_id: 23
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 343
+  grade: 初三
+  class_id: 24
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 344
+  grade: 初三
+  class_id: 25
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 345
+  grade: 初三
+  class_id: 26
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 346
+  grade: 初三
+  class_id: 27
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 347
+  grade: 初三
+  class_id: 28
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 348
+  grade: 初三
+  class_id: 29
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 349
+  grade: 初三
+  class_id: 30
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 350
+  grade: 初三
+  class_id: 31
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 351
+  grade: 初三
+  class_id: 32
+  course: 心理
+  teacher: 胡义城
+  periods: 1
+  parity: 双周
+- id: 352
+  grade: 初三
+  class_id: 1
+  course: 综实1
+  teacher: 陈芬
+  periods: 1
+  parity: null
+- id: 353
+  grade: 初三
+  class_id: 2
+  course: 综实1
+  teacher: 陈芬
+  periods: 1
+  parity: null
+- id: 354
+  grade: 初三
+  class_id: 3
+  course: 综实1
+  teacher: 沈焯文
+  periods: 1
+  parity: null
+- id: 355
+  grade: 初三
+  class_id: 4
+  course: 综实1
+  teacher: 沈焯文
+  periods: 1
+  parity: null
+- id: 356
+  grade: 初三
+  class_id: 5
+  course: 综实1
+  teacher: 陈浩逸
+  periods: 1
+  parity: null
+- id: 357
+  grade: 初三
+  class_id: 6
+  course: 综实1
+  teacher: 陈浩逸
+  periods: 1
+  parity: null
+- id: 358
+  grade: 初三
+  class_id: 7
+  course: 综实1
+  teacher: 王锴
+  periods: 1
+  parity: null
+- id: 359
+  grade: 初三
+  class_id: 8
+  course: 综实1
+  teacher: 王锴
+  periods: 1
+  parity: null
+- id: 360
+  grade: 初三
+  class_id: 9
+  course: 综实1
+  teacher: 张婉盈
+  periods: 1
+  parity: null
+- id: 361
+  grade: 初三
+  class_id: 10
+  course: 综实1
+  teacher: 张婉盈
+  periods: 1
+  parity: null
+- id: 362
+  grade: 初三
+  class_id: 11
+  course: 综实1
+  teacher: 张霆宽
+  periods: 1
+  parity: null
+- id: 363
+  grade: 初三
+  class_id: 14
+  course: 综实1
+  teacher: 张霆宽
+  periods: 1
+  parity: null
+- id: 364
+  grade: 初三
+  class_id: 12
+  course: 综实1
+  teacher: 雷彦
+  periods: 1
+  parity: null
+- id: 365
+  grade: 初三
+  class_id: 13
+  course: 综实1
+  teacher: 雷彦
+  periods: 1
+  parity: null
+- id: 366
+  grade: 初三
+  class_id: 15
+  course: 综实1
+  teacher: 邹春明
+  periods: 1
+  parity: null
+- id: 367
+  grade: 初三
+  class_id: 16
+  course: 综实1
+  teacher: 邹春明
+  periods: 1
+  parity: null
+- id: 368
+  grade: 初三
+  class_id: 17
+  course: 综实1
+  teacher: 兰浩宇
+  periods: 1
+  parity: null
+- id: 369
+  grade: 初三
+  class_id: 18
+  course: 综实1
+  teacher: 兰浩宇
+  periods: 1
+  parity: null
+- id: 370
+  grade: 初三
+  class_id: 19
+  course: 综实1
+  teacher: 王洵玲
+  periods: 1
+  parity: null
+- id: 371
+  grade: 初三
+  class_id: 20
+  course: 综实1
+  teacher: 王洵玲
+  periods: 1
+  parity: null
+- id: 372
+  grade: 初三
+  class_id: 21
+  course: 综实1
+  teacher: 黄振恒
+  periods: 1
+  parity: null
+- id: 373
+  grade: 初三
+  class_id: 22
+  course: 综实1
+  teacher: 黄振恒
+  periods: 1
+  parity: null
+- id: 374
+  grade: 初三
+  class_id: 23
+  course: 综实1
+  teacher: 欧阳嘉欣
+  periods: 1
+  parity: null
+- id: 375
+  grade: 初三
+  class_id: 24
+  course: 综实1
+  teacher: 欧阳嘉欣
+  periods: 1
+  parity: null
+- id: 376
+  grade: 初三
+  class_id: 25
+  course: 综实1
+  teacher: 杨家诵
+  periods: 1
+  parity: null
+- id: 377
+  grade: 初三
+  class_id: 26
+  course: 综实1
+  teacher: 杨家诵
+  periods: 1
+  parity: null
+- id: 378
+  grade: 初三
+  class_id: 27
+  course: 综实1
+  teacher: 罗伟明
+  periods: 1
+  parity: null
+- id: 379
+  grade: 初三
+  class_id: 28
+  course: 综实1
+  teacher: 罗伟明
+  periods: 1
+  parity: null
+- id: 380
+  grade: 初三
+  class_id: 29
+  course: 综实1
+  teacher: 陈秀
+  periods: 1
+  parity: null
+- id: 381
+  grade: 初三
+  class_id: 30
+  course: 综实1
+  teacher: 陈秀
+  periods: 1
+  parity: null
+- id: 382
+  grade: 初三
+  class_id: 31
+  course: 综实1
+  teacher: 黄楚榕
+  periods: 1
+  parity: null
+- id: 383
+  grade: 初三
+  class_id: 32
+  course: 综实1
+  teacher: 黄楚榕
+  periods: 1
+  parity: null
+- id: 384
+  grade: 初三
+  class_id: 1
+  course: 校本1
+  teacher: 王宝娟
+  periods: 1
+  parity: null
+- id: 385
+  grade: 初三
+  class_id: 2
+  course: 校本1
+  teacher: 王宝娟
+  periods: 1
+  parity: null
+- id: 386
+  grade: 初三
+  class_id: 3
+  course: 校本1
+  teacher: 张晓琦
+  periods: 1
+  parity: null
+- id: 387
+  grade: 初三
+  class_id: 4
+  course: 校本1
+  teacher: 张晓琦
+  periods: 1
+  parity: null
+- id: 388
+  grade: 初三
+  class_id: 5
+  course: 校本1
+  teacher: 肖思齐
+  periods: 1
+  parity: null
+- id: 389
+  grade: 初三
+  class_id: 6
+  course: 校本1
+  teacher: 肖思齐
+  periods: 1
+  parity: null
+- id: 390
+  grade: 初三
+  class_id: 7
+  course: 校本1
+  teacher: 刘欢
+  periods: 1
+  parity: null
+- id: 391
+  grade: 初三
+  class_id: 8
+  course: 校本1
+  teacher: 刘欢
+  periods: 1
+  parity: null
+- id: 392
+  grade: 初三
+  class_id: 9
+  course: 校本1
+  teacher: 梁嘉颖
+  periods: 1
+  parity: null
+- id: 393
+  grade: 初三
+  class_id: 10
+  course: 校本1
+  teacher: 梁嘉颖
+  periods: 1
+  parity: null
+- id: 394
+  grade: 初三
+  class_id: 11
+  course: 校本1
+  teacher: 陈雁婷
+  periods: 1
+  parity: null
+- id: 395
+  grade: 初三
+  class_id: 12
+  course: 校本1
+  teacher: 陈雁婷
+  periods: 1
+  parity: null
+- id: 396
+  grade: 初三
+  class_id: 13
+  course: 校本1
+  teacher: 刘幸贤
+  periods: 1
+  parity: null
+- id: 397
+  grade: 初三
+  class_id: 14
+  course: 校本1
+  teacher: 刘幸贤
+  periods: 1
+  parity: null
+- id: 398
+  grade: 初三
+  class_id: 15
+  course: 校本1
+  teacher: 陈文苑
+  periods: 1
+  parity: null
+- id: 399
+  grade: 初三
+  class_id: 16
+  course: 校本1
+  teacher: 汤红
+  periods: 1
+  parity: null
+- id: 400
+  grade: 初三
+  class_id: 17
+  course: 校本1
+  teacher: 彭素灵
+  periods: 1
+  parity: null
+- id: 401
+  grade: 初三
+  class_id: 18
+  course: 校本1
+  teacher: 彭素灵
+  periods: 1
+  parity: null
+- id: 402
+  grade: 初三
+  class_id: 19
+  course: 校本1
+  teacher: 陈满娇
+  periods: 1
+  parity: null
+- id: 403
+  grade: 初三
+  class_id: 20
+  course: 校本1
+  teacher: 陈满娇
+  periods: 1
+  parity: null
+- id: 404
+  grade: 初三
+  class_id: 21
+  course: 校本1
+  teacher: 张月莹
+  periods: 1
+  parity: null
+- id: 405
+  grade: 初三
+  class_id: 22
+  course: 校本1
+  teacher: 张月莹
+  periods: 1
+  parity: null
+- id: 406
+  grade: 初三
+  class_id: 23
+  course: 校本1
+  teacher: 张越
+  periods: 1
+  parity: null
+- id: 407
+  grade: 初三
+  class_id: 24
+  course: 校本1
+  teacher: 张越
+  periods: 1
+  parity: null
+- id: 408
+  grade: 初三
+  class_id: 25
+  course: 校本1
+  teacher: 文艺
+  periods: 1
+  parity: null
+- id: 409
+  grade: 初三
+  class_id: 26
+  course: 校本1
+  teacher: 文艺
+  periods: 1
+  parity: null
+- id: 410
+  grade: 初三
+  class_id: 27
+  course: 校本1
+  teacher: 甘丽萍
+  periods: 1
+  parity: null
+- id: 411
+  grade: 初三
+  class_id: 28
+  course: 校本1
+  teacher: 甘丽萍
+  periods: 1
+  parity: null
+- id: 412
+  grade: 初三
+  class_id: 29
+  course: 校本1
+  teacher: 李兆欣
+  periods: 1
+  parity: null
+- id: 413
+  grade: 初三
+  class_id: 30
+  course: 校本1
+  teacher: 李兆欣
+  periods: 1
+  parity: null
+- id: 414
+  grade: 初三
+  class_id: 31
+  course: 校本1
+  teacher: 符小慧
+  periods: 1
+  parity: null
+- id: 415
+  grade: 初三
+  class_id: 32
+  course: 校本1
+  teacher: 符小慧
+  periods: 1
+  parity: null
+- id: 416
+  grade: 初三
+  class_id: 1
+  course: 综实2
+  teacher: 徐仪涵
+  periods: 1
+  parity: null
+- id: 417
+  grade: 初三
+  class_id: 2
+  course: 综实2
+  teacher: 徐仪涵
+  periods: 1
+  parity: null
+- id: 418
+  grade: 初三
+  class_id: 3
+  course: 综实2
+  teacher: 黄莉莉
+  periods: 1
+  parity: null
+- id: 419
+  grade: 初三
+  class_id: 4
+  course: 综实2
+  teacher: 黄莉莉
+  periods: 1
+  parity: null
+- id: 420
+  grade: 初三
+  class_id: 5
+  course: 综实2
+  teacher: 黄玉凤
+  periods: 1
+  parity: null
+- id: 421
+  grade: 初三
+  class_id: 6
+  course: 综实2
+  teacher: 黄玉凤
+  periods: 1
+  parity: null
+- id: 422
+  grade: 初三
+  class_id: 7
+  course: 综实2
+  teacher: 梁佳红
+  periods: 1
+  parity: null
+- id: 423
+  grade: 初三
+  class_id: 8
+  course: 综实2
+  teacher: 梁佳红
+  periods: 1
+  parity: null
+- id: 424
+  grade: 初三
+  class_id: 9
+  course: 综实2
+  teacher: 尹思炜
+  periods: 1
+  parity: null
+- id: 425
+  grade: 初三
+  class_id: 10
+  course: 综实2
+  teacher: 潘轶颖
+  periods: 1
+  parity: null
+- id: 426
+  grade: 初三
+  class_id: 11
+  course: 综实2
+  teacher: 张超凡
+  periods: 1
+  parity: null
+- id: 427
+  grade: 初三
+  class_id: 12
+  course: 综实2
+  teacher: 张超凡
+  periods: 1
+  parity: null
+- id: 428
+  grade: 初三
+  class_id: 13
+  course: 综实2
+  teacher: 毛露苹
+  periods: 1
+  parity: null
+- id: 429
+  grade: 初三
+  class_id: 14
+  course: 综实2
+  teacher: 毛露苹
+  periods: 1
+  parity: null
+- id: 430
+  grade: 初三
+  class_id: 15
+  course: 综实2
+  teacher: 孙果
+  periods: 1
+  parity: null
+- id: 431
+  grade: 初三
+  class_id: 16
+  course: 综实2
+  teacher: 孙果
+  periods: 1
+  parity: null
+- id: 432
+  grade: 初三
+  class_id: 17
+  course: 综实2
+  teacher: 杨洪
+  periods: 1
+  parity: null
+- id: 433
+  grade: 初三
+  class_id: 18
+  course: 综实2
+  teacher: 杨洪
+  periods: 1
+  parity: null
+- id: 434
+  grade: 初三
+  class_id: 19
+  course: 综实2
+  teacher: 梁俊森
+  periods: 1
+  parity: null
+- id: 435
+  grade: 初三
+  class_id: 20
+  course: 综实2
+  teacher: 梁俊森
+  periods: 1
+  parity: null
+- id: 436
+  grade: 初三
+  class_id: 21
+  course: 综实2
+  teacher: 王小娟
+  periods: 1
+  parity: null
+- id: 437
+  grade: 初三
+  class_id: 22
+  course: 综实2
+  teacher: 王小娟
+  periods: 1
+  parity: null
+- id: 438
+  grade: 初三
+  class_id: 23
+  course: 综实2
+  teacher: 钟佳如
+  periods: 1
+  parity: null
+- id: 439
+  grade: 初三
+  class_id: 24
+  course: 综实2
+  teacher: 钟佳如
+  periods: 1
+  parity: null
+- id: 440
+  grade: 初三
+  class_id: 25
+  course: 综实2
+  teacher: 张瀛化
+  periods: 1
+  parity: null
+- id: 441
+  grade: 初三
+  class_id: 26
+  course: 综实2
+  teacher: 张瀛化
+  periods: 1
+  parity: null
+- id: 442
+  grade: 初三
+  class_id: 27
+  course: 综实2
+  teacher: 梁华崴
+  periods: 1
+  parity: null
+- id: 443
+  grade: 初三
+  class_id: 28
+  course: 综实2
+  teacher: 梁华崴
+  periods: 1
+  parity: null
+- id: 444
+  grade: 初三
+  class_id: 29
+  course: 综实2
+  teacher: 方冠骅
+  periods: 1
+  parity: null
+- id: 445
+  grade: 初三
+  class_id: 30
+  course: 综实2
+  teacher: 方冠骅
+  periods: 1
+  parity: null
+- id: 446
+  grade: 初三
+  class_id: 31
+  course: 综实2
+  teacher: 艾雅娟
+  periods: 1
+  parity: null
+- id: 447
+  grade: 初三
+  class_id: 32
+  course: 综实2
+  teacher: 艾雅娟
+  periods: 1
+  parity: null
+- id: 448
+  grade: 初三
+  class_id: 1
+  course: 体比
+  teacher: 周志宁
+  periods: 1
+  parity: null
+- id: 449
+  grade: 初三
+  class_id: 2
+  course: 体比
+  teacher: 周志宁
+  periods: 1
+  parity: null
+- id: 450
+  grade: 初三
+  class_id: 25
+  course: 体比
+  teacher: 周志宁
+  periods: 1
+  parity: null
+- id: 451
+  grade: 初三
+  class_id: 3
+  course: 体比
+  teacher: 戚泳辉
+  periods: 1
+  parity: null
+- id: 452
+  grade: 初三
+  class_id: 4
+  course: 体比
+  teacher: 戚泳辉
+  periods: 1
+  parity: null
+- id: 453
+  grade: 初三
+  class_id: 5
+  course: 体比
+  teacher: 张泽鹏
+  periods: 1
+  parity: null
+- id: 454
+  grade: 初三
+  class_id: 6
+  course: 体比
+  teacher: 张泽鹏
+  periods: 1
+  parity: null
+- id: 455
+  grade: 初三
+  class_id: 7
+  course: 体比
+  teacher: 张泽鹏
+  periods: 1
+  parity: null
+- id: 456
+  grade: 初三
+  class_id: 8
+  course: 体比
+  teacher: 陈姿娟
+  periods: 1
+  parity: null
+- id: 457
+  grade: 初三
+  class_id: 9
+  course: 体比
+  teacher: 陈姿娟
+  periods: 1
+  parity: null
+- id: 458
+  grade: 初三
+  class_id: 10
+  course: 体比
+  teacher: 袁麟
+  periods: 1
+  parity: null
+- id: 459
+  grade: 初三
+  class_id: 11
+  course: 体比
+  teacher: 袁麟
+  periods: 1
+  parity: null
+- id: 460
+  grade: 初三
+  class_id: 12
+  course: 体比
+  teacher: 袁麟
+  periods: 1
+  parity: null
+- id: 461
+  grade: 初三
+  class_id: 13
+  course: 体比
+  teacher: 李景岚
+  periods: 1
+  parity: null
+- id: 462
+  grade: 初三
+  class_id: 14
+  course: 体比
+  teacher: 李景岚
+  periods: 1
+  parity: null
+- id: 463
+  grade: 初三
+  class_id: 15
+  course: 体比
+  teacher: 李景岚
+  periods: 1
+  parity: null
+- id: 464
+  grade: 初三
+  class_id: 16
+  course: 体比
+  teacher: 王建明
+  periods: 1
+  parity: null
+- id: 465
+  grade: 初三
+  class_id: 17
+  course: 体比
+  teacher: 王建明
+  periods: 1
+  parity: null
+- id: 466
+  grade: 初三
+  class_id: 18
+  course: 体比
+  teacher: 王建明
+  periods: 1
+  parity: null
+- id: 467
+  grade: 初三
+  class_id: 19
+  course: 体比
+  teacher: 周振红
+  periods: 1
+  parity: null
+- id: 468
+  grade: 初三
+  class_id: 20
+  course: 体比
+  teacher: 周振红
+  periods: 1
+  parity: null
+- id: 469
+  grade: 初三
+  class_id: 21
+  course: 体比
+  teacher: 周振红
+  periods: 1
+  parity: null
+- id: 470
+  grade: 初三
+  class_id: 22
+  course: 体比
+  teacher: 梁铖
+  periods: 1
+  parity: null
+- id: 471
+  grade: 初三
+  class_id: 23
+  course: 体比
+  teacher: 梁铖
+  periods: 1
+  parity: null
+- id: 472
+  grade: 初三
+  class_id: 24
+  course: 体比
+  teacher: 梁铖
+  periods: 1
+  parity: null
+- id: 473
+  grade: 初三
+  class_id: 26
+  course: 体比
+  teacher: 蔡健和
+  periods: 1
+  parity: null
+- id: 474
+  grade: 初三
+  class_id: 27
+  course: 体比
+  teacher: 黄海鑫
+  periods: 1
+  parity: null
+- id: 475
+  grade: 初三
+  class_id: 28
+  course: 体比
+  teacher: 黄海鑫
+  periods: 1
+  parity: null
+- id: 476
+  grade: 初三
+  class_id: 29
+  course: 体比
+  teacher: 黄海鑫
+  periods: 1
+  parity: null
+- id: 477
+  grade: 初三
+  class_id: 30
+  course: 体比
+  teacher: 王智鹏
+  periods: 1
+  parity: null
+- id: 478
+  grade: 初三
+  class_id: 31
+  course: 体比
+  teacher: 王智鹏
+  periods: 1
+  parity: null
+- id: 479
+  grade: 初三
+  class_id: 32
+  course: 体比
+  teacher: 王智鹏
+  periods: 1
+  parity: null
+- id: 480
+  grade: 初三
+  class_id: 1
+  course: 体选
+  teacher: 周志宁
+  periods: 1
+  parity: null
+- id: 481
+  grade: 初三
+  class_id: 2
+  course: 体选
+  teacher: 周志宁
+  periods: 1
+  parity: null
+- id: 482
+  grade: 初三
+  class_id: 25
+  course: 体选
+  teacher: 周志宁
+  periods: 1
+  parity: null
+- id: 483
+  grade: 初三
+  class_id: 3
+  course: 体选
+  teacher: 戚泳辉
+  periods: 1
+  parity: null
+- id: 484
+  grade: 初三
+  class_id: 4
+  course: 体选
+  teacher: 戚泳辉
+  periods: 1
+  parity: null
+- id: 485
+  grade: 初三
+  class_id: 5
+  course: 体选
+  teacher: 张泽鹏
+  periods: 1
+  parity: null
+- id: 486
+  grade: 初三
+  class_id: 6
+  course: 体选
+  teacher: 张泽鹏
+  periods: 1
+  parity: null
+- id: 487
+  grade: 初三
+  class_id: 7
+  course: 体选
+  teacher: 张泽鹏
+  periods: 1
+  parity: null
+- id: 488
+  grade: 初三
+  class_id: 8
+  course: 体选
+  teacher: 陈姿娟
+  periods: 1
+  parity: null
+- id: 489
+  grade: 初三
+  class_id: 9
+  course: 体选
+  teacher: 陈姿娟
+  periods: 1
+  parity: null
+- id: 490
+  grade: 初三
+  class_id: 10
+  course: 体选
+  teacher: 袁麟
+  periods: 1
+  parity: null
+- id: 491
+  grade: 初三
+  class_id: 11
+  course: 体选
+  teacher: 袁麟
+  periods: 1
+  parity: null
+- id: 492
+  grade: 初三
+  class_id: 12
+  course: 体选
+  teacher: 袁麟
+  periods: 1
+  parity: null
+- id: 493
+  grade: 初三
+  class_id: 13
+  course: 体选
+  teacher: 李景岚
+  periods: 1
+  parity: null
+- id: 494
+  grade: 初三
+  class_id: 14
+  course: 体选
+  teacher: 李景岚
+  periods: 1
+  parity: null
+- id: 495
+  grade: 初三
+  class_id: 15
+  course: 体选
+  teacher: 李景岚
+  periods: 1
+  parity: null
+- id: 496
+  grade: 初三
+  class_id: 16
+  course: 体选
+  teacher: 王建明
+  periods: 1
+  parity: null
+- id: 497
+  grade: 初三
+  class_id: 17
+  course: 体选
+  teacher: 王建明
+  periods: 1
+  parity: null
+- id: 498
+  grade: 初三
+  class_id: 18
+  course: 体选
+  teacher: 王建明
+  periods: 1
+  parity: null
+- id: 499
+  grade: 初三
+  class_id: 19
+  course: 体选
+  teacher: 周振红
+  periods: 1
+  parity: null
+- id: 500
+  grade: 初三
+  class_id: 20
+  course: 体选
+  teacher: 周振红
+  periods: 1
+  parity: null
+- id: 501
+  grade: 初三
+  class_id: 21
+  course: 体选
+  teacher: 周振红
+  periods: 1
+  parity: null
+- id: 502
+  grade: 初三
+  class_id: 22
+  course: 体选
+  teacher: 梁铖
+  periods: 1
+  parity: null
+- id: 503
+  grade: 初三
+  class_id: 23
+  course: 体选
+  teacher: 梁铖
+  periods: 1
+  parity: null
+- id: 504
+  grade: 初三
+  class_id: 24
+  course: 体选
+  teacher: 梁铖
+  periods: 1
+  parity: null
+- id: 505
+  grade: 初三
+  class_id: 26
+  course: 体选
+  teacher: 蔡健和
+  periods: 1
+  parity: null
+- id: 506
+  grade: 初三
+  class_id: 27
+  course: 体选
+  teacher: 黄海鑫
+  periods: 1
+  parity: null
+- id: 507
+  grade: 初三
+  class_id: 28
+  course: 体选
+  teacher: 黄海鑫
+  periods: 1
+  parity: null
+- id: 508
+  grade: 初三
+  class_id: 29
+  course: 体选
+  teacher: 黄海鑫
+  periods: 1
+  parity: null
+- id: 509
+  grade: 初三
+  class_id: 30
+  course: 体选
+  teacher: 王智鹏
+  periods: 1
+  parity: null
+- id: 510
+  grade: 初三
+  class_id: 31
+  course: 体选
+  teacher: 王智鹏
+  periods: 1
+  parity: null
+- id: 511
+  grade: 初三
+  class_id: 32
+  course: 体选
+  teacher: 王智鹏
+  periods: 1
+  parity: null
+- id: 512
+  grade: 初三
+  class_id: 1
+  course: 班会
+  teacher: 李琼
+  periods: 1
+  parity: null
+- id: 513
+  grade: 初三
+  class_id: 2
+  course: 班会
+  teacher: 徐仪涵
+  periods: 1
+  parity: null
+- id: 514
+  grade: 初三
+  class_id: 3
+  course: 班会
+  teacher: 黄芷茵
+  periods: 1
+  parity: null
+- id: 515
+  grade: 初三
+  class_id: 4
+  course: 班会
+  teacher: 林冬勤
+  periods: 1
+  parity: null
+- id: 516
+  grade: 初三
+  class_id: 5
+  course: 班会
+  teacher: 李雪华
+  periods: 1
+  parity: null
+- id: 517
+  grade: 初三
+  class_id: 6
+  course: 班会
+  teacher: 黄玉凤
+  periods: 1
+  parity: null
+- id: 518
+  grade: 初三
+  class_id: 7
+  course: 班会
+  teacher: 刘欢
+  periods: 1
+  parity: null
+- id: 519
+  grade: 初三
+  class_id: 8
+  course: 班会
+  teacher: 梁佳红
+  periods: 1
+  parity: null
+- id: 520
+  grade: 初三
+  class_id: 9
+  course: 班会
+  teacher: 张婉盈
+  periods: 1
+  parity: null
+- id: 521
+  grade: 初三
+  class_id: 10
+  course: 班会
+  teacher: 叶梓欣
+  periods: 1
+  parity: null
+- id: 522
+  grade: 初三
+  class_id: 11
+  course: 班会
+  teacher: 张超凡
+  periods: 1
+  parity: null
+- id: 523
+  grade: 初三
+  class_id: 12
+  course: 班会
+  teacher: 陈雁婷
+  periods: 1
+  parity: null
+- id: 524
+  grade: 初三
+  class_id: 13
+  course: 班会
+  teacher: 罗学怡
+  periods: 1
+  parity: null
+- id: 525
+  grade: 初三
+  class_id: 14
+  course: 班会
+  teacher: 李朗
+  periods: 1
+  parity: null
+- id: 526
+  grade: 初三
+  class_id: 15
+  course: 班会
+  teacher: 孙果
+  periods: 1
+  parity: null
+- id: 527
+  grade: 初三
+  class_id: 16
+  course: 班会
+  teacher: 邹春明
+  periods: 1
+  parity: null
+- id: 528
+  grade: 初三
+  class_id: 17
+  course: 班会
+  teacher: 邹丹丹
+  periods: 1
+  parity: null
+- id: 529
+  grade: 初三
+  class_id: 18
+  course: 班会
+  teacher: 杨洪
+  periods: 1
+  parity: null
+- id: 530
+  grade: 初三
+  class_id: 19
+  course: 班会
+  teacher: 陈满娇
+  periods: 1
+  parity: null
+- id: 531
+  grade: 初三
+  class_id: 20
+  course: 班会
+  teacher: 梁俊森
+  periods: 1
+  parity: null
+- id: 532
+  grade: 初三
+  class_id: 21
+  course: 班会
+  teacher: 王小娟
+  periods: 1
+  parity: null
+- id: 533
+  grade: 初三
+  class_id: 22
+  course: 班会
+  teacher: 黄振恒
+  periods: 1
+  parity: null
+- id: 534
+  grade: 初三
+  class_id: 23
+  course: 班会
+  teacher: 陈秀连
+  periods: 1
+  parity: null
+- id: 535
+  grade: 初三
+  class_id: 24
+  course: 班会
+  teacher: 张越
+  periods: 1
+  parity: null
+- id: 536
+  grade: 初三
+  class_id: 25
+  course: 班会
+  teacher: 陈微璇
+  periods: 1
+  parity: null
+- id: 537
+  grade: 初三
+  class_id: 26
+  course: 班会
+  teacher: 文艺
+  periods: 1
+  parity: null
+- id: 538
+  grade: 初三
+  class_id: 27
+  course: 班会
+  teacher: 韦凯莲
+  periods: 1
+  parity: null
+- id: 539
+  grade: 初三
+  class_id: 28
+  course: 班会
+  teacher: 丁秀玲
+  periods: 1
+  parity: null
+- id: 540
+  grade: 初三
+  class_id: 29
+  course: 班会
+  teacher: 方冠骅
+  periods: 1
+  parity: null
+- id: 541
+  grade: 初三
+  class_id: 30
+  course: 班会
+  teacher: 朱惠怡
+  periods: 1
+  parity: null
+- id: 542
+  grade: 初三
+  class_id: 31
+  course: 班会
+  teacher: 王林
+  periods: 1
+  parity: null
+- id: 543
+  grade: 初三
+  class_id: 32
+  course: 班会
+  teacher: 黄楚榕
+  periods: 1
+  parity: null
