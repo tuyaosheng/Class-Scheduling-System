@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 from scheduler.core.ruletext import (
     parse_fixed_slots, parse_requirement, parse_remark, RuleTextError,
 )
