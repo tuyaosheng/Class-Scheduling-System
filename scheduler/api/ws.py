@@ -65,65 +65,84 @@ def _solve_streaming(dataset, cfg, rules, *, count, min_diff, max_seconds, on_ca
 
 
 def _run_job(job_id, grade, count, min_diff, max_seconds, loop, queue):
+    """在后台线程里跑完一整个求解任务。
+
+    这段代码运行在 run_in_executor 的工作线程里，返回的 future 没人等待、
+    没人 await——任何未捕获的异常都会被线程静默吞掉：WebSocket 客户端会永远
+    卡在 `await queue.get()`，`GET /api/solve/{job_id}` 会一直报旧状态，
+    与「还在正常求解」无法区分。所以整个函数体必须包在 try/except 里，
+    确保不管哪一步炸了，队列里终归会出现一个终结事件（error + done）。
+    """
     job = sessions.get_job(job_id)
-    cfg = load_config(DEFAULT_CONFIG_DIR)
-    teaching_path = DEFAULT_CONFIG_DIR / 'teaching.yaml'
-    data = yaml.safe_load(teaching_path.read_text(encoding='utf-8'))
 
     def emit(event):
         loop.call_soon_threadsafe(queue.put_nowait, event)
 
-    if data['grade'] != grade:
-        job.status = 'precheck_failed'
-        job.issues = [{'kind': '年级不匹配',
-                       'detail': '已导入的数据是 %s，但排课请求指定的是 %s' % (data['grade'], grade)}]
-        emit({'type': 'precheck_failed', 'issues': job.issues})
+    try:
+        cfg = load_config(DEFAULT_CONFIG_DIR)
+        teaching_path = DEFAULT_CONFIG_DIR / 'teaching.yaml'
+        data = yaml.safe_load(teaching_path.read_text(encoding='utf-8'))
+        if not isinstance(data, dict) or 'grade' not in data:
+            raise ValueError('teaching.yaml 内容损坏或缺少 grade 字段')
+
+        if data['grade'] != grade:
+            job.status = 'precheck_failed'
+            job.issues = [{'kind': '年级不匹配',
+                           'detail': '已导入的数据是 %s，但排课请求指定的是 %s'
+                                     % (data['grade'], grade)}]
+            emit({'type': 'precheck_failed', 'issues': job.issues})
+            emit({'type': 'done', 'count': 0})
+            return
+
+        dataset = Dataset(
+            grade=data['grade'], classes=data['classes'],
+            teachers={t['name']: Teacher(**t) for t in data['teachers']},
+            tasks=[TeachingTask(**t) for t in data['tasks']],
+        )
+        rules = load_rules(DEFAULT_CONFIG_DIR / 'rules.yaml',
+                           DEFAULT_CONFIG_DIR / 'rules.generated.yaml')
+
+        job.dataset, job.cfg = dataset, cfg
+        issues = precheck(dataset, cfg, rules)
+        if issues:
+            job.status = 'precheck_failed'
+            job.issues = [{'kind': i.kind, 'detail': i.detail} for i in issues]
+            emit({'type': 'precheck_failed', 'issues': job.issues})
+            emit({'type': 'done', 'count': 0})
+            return
+
+        job.status = 'solving'
+        emit({'type': 'solving'})
+
+        def on_candidate(solution):
+            idx = len(job.solutions) + 1
+            violations = verify(solution, dataset, cfg, rules)
+            job.solutions.append(solution)
+            job.violations.append(violations)
+            emit({
+                'type': 'candidate', 'index': idx, 'status': solution.status,
+                'wall_time': solution.wall_time,
+                'violations': [v.model_dump() for v in violations],
+                'placements': [p.model_dump() for p in solution.placements],
+            })
+
+        produced = _solve_streaming(dataset, cfg, rules, count=count, min_diff=min_diff,
+                                    max_seconds=max_seconds, on_candidate=on_candidate)
+
+        if produced == 0:
+            job.status = 'infeasible'
+            conflict = minimal_conflict(dataset, cfg, rules, max_seconds=max_seconds)
+            job.conflict = format_conflict(conflict)
+            emit({'type': 'infeasible', 'conflict': job.conflict})
+        else:
+            job.status = 'done'
+        emit({'type': 'done', 'count': produced})
+    except Exception as exc:
+        job.status = 'error'
+        message = '求解任务异常终止（%s）：%s' % (type(exc).__name__, exc)
+        job.conflict = message
+        emit({'type': 'error', 'message': message})
         emit({'type': 'done', 'count': 0})
-        return
-
-    dataset = Dataset(
-        grade=data['grade'], classes=data['classes'],
-        teachers={t['name']: Teacher(**t) for t in data['teachers']},
-        tasks=[TeachingTask(**t) for t in data['tasks']],
-    )
-    rules = load_rules(DEFAULT_CONFIG_DIR / 'rules.yaml',
-                       DEFAULT_CONFIG_DIR / 'rules.generated.yaml')
-
-    job.dataset, job.cfg = dataset, cfg
-    issues = precheck(dataset, cfg, rules)
-    if issues:
-        job.status = 'precheck_failed'
-        job.issues = [{'kind': i.kind, 'detail': i.detail} for i in issues]
-        emit({'type': 'precheck_failed', 'issues': job.issues})
-        emit({'type': 'done', 'count': 0})
-        return
-
-    job.status = 'solving'
-    emit({'type': 'solving'})
-
-    def on_candidate(solution):
-        idx = len(job.solutions) + 1
-        violations = verify(solution, dataset, cfg, rules)
-        job.solutions.append(solution)
-        job.violations.append(violations)
-        emit({
-            'type': 'candidate', 'index': idx, 'status': solution.status,
-            'wall_time': solution.wall_time,
-            'violations': [v.model_dump() for v in violations],
-            'placements': [p.model_dump() for p in solution.placements],
-        })
-
-    produced = _solve_streaming(dataset, cfg, rules, count=count, min_diff=min_diff,
-                                max_seconds=max_seconds, on_candidate=on_candidate)
-
-    if produced == 0:
-        job.status = 'infeasible'
-        conflict = minimal_conflict(dataset, cfg, rules, max_seconds=max_seconds)
-        job.conflict = format_conflict(conflict)
-        emit({'type': 'infeasible', 'conflict': job.conflict})
-    else:
-        job.status = 'done'
-    emit({'type': 'done', 'count': produced})
 
 
 @ws_router.post('/solve', response_model=SolveJobCreated)
@@ -166,6 +185,10 @@ async def solve_ws(websocket: WebSocket, job_id: str):
             event = await queue.get()
             await websocket.send_json(event)
             if event['type'] in ('done',):
+                # 'error' 之后 _run_job 也总会紧跟着补一条 'done'（见 _run_job 的
+                # except 分支），所以协议里唯一的终结标记始终是 'done'——这里不需要
+                # 也不应该额外在 'error' 上提前 break，否则 'done' 事件会被丢在
+                # 队列里没人转发，破坏「done 是终结事件」这个不变量。
                 break
     except WebSocketDisconnect:
         pass
