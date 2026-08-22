@@ -172,3 +172,61 @@ def _compile_daily_max(c, rule, with_assumptions):
 @handler('weekday_exact')
 def _compile_weekday_exact(c, rule, with_assumptions):
     _add_daily(c, rule, with_assumptions, '==')
+
+
+# 跨午休的 (5, 6) 不算相邻，对应 calendar.yaml 的 no_adjacent
+NO_ADJACENT = frozenset({(5, 6)})
+
+
+def adjacent_pairs():
+    """一天之内可构成连堂的节次对。"""
+    return [(p, p + 1) for p in range(1, cal.PERIODS_PER_DAY)
+            if (p, p + 1) not in NO_ADJACENT]
+
+
+@handler('alternate_weeks')
+def _compile_alternate_weeks(c: CompiledModel, rule: Rule, with_assumptions: bool) -> None:
+    """把单双周课程对绑到同一时间格。
+
+    两门课分属不同教师、不同周次，共用一格不构成冲突 ——
+    教师/班级不分身约束已按周次分组处理（见 _add_teacher_no_clash）。
+    """
+    first, second = rule.params['pair']
+    for class_id, tasks in _group_by_class(select_tasks(rule, c.dataset.tasks, c.cfg)).items():
+        a = [t for t in tasks if t.course == first]
+        b = [t for t in tasks if t.course == second]
+        if not a or not b:
+            continue                     # 缺一半就跳过，容量问题交给预检层报
+        for ta in a:
+            for tb in b:
+                for slot in range(cal.N_SLOTS):
+                    c.model.Add(c.x[(ta.id, slot)] == c.x[(tb.id, slot)])
+
+
+@handler('consecutive')
+def _compile_consecutive(c: CompiledModel, rule: Rule, with_assumptions: bool) -> None:
+    days_needed = int(rule.params.get('days', 1))
+    length = int(rule.params.get('length', 2))
+    pairs = adjacent_pairs()
+    for class_id, tasks in _group_by_class(select_tasks(rule, c.dataset.tasks, c.cfg)).items():
+        indicators = []
+        for task in tasks:
+            for day in range(len(cal.DAYS)):
+                for start, _ in pairs:
+                    run_periods = list(range(start, start + length))
+                    if run_periods[-1] > cal.PERIODS_PER_DAY:
+                        continue
+                    if any((p, p + 1) in NO_ADJACENT for p in run_periods[:-1]):
+                        continue
+                    y = c.model.NewBoolVar('cons_%d_%d_%d_%d' % (class_id, task.id, day, start))
+                    # 半具体化：y 为真则整段都是这门课；反向不需要
+                    c.model.AddBoolAnd(
+                        [c.x[(task.id, cal.slot_index(day, p))] for p in run_periods]
+                    ).OnlyEnforceIf(y)
+                    indicators.append(y)
+        if not indicators:
+            continue
+        constraint = c.model.Add(sum(indicators) >= days_needed)
+        lit = _guarded(c, rule, with_assumptions)
+        if lit is not None:
+            constraint.OnlyEnforceIf(lit)
