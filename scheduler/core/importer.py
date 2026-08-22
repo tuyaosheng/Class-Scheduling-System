@@ -71,6 +71,10 @@ def import_excel(path, cfg, grade='初三') -> ImportResult:
         name, course = _cell(row, '姓名'), _cell(row, '学科')
         if course not in cfg.courses:
             raise ValueError('Excel 中的学科 %r 不在课程目录里' % course)
+        if cfg.courses[course].external:
+            for class_id in _class_ids(_cell(row, '任教班')):
+                classes.add(class_id)
+            continue
         hours = float(_cell(row, '周课时'))
         parity = None
         if hours == 0.5:
@@ -114,17 +118,31 @@ def _build_rules(rows, cfg, grade, forbidden) -> List[dict]:
             'mode': 'hard',
         })
 
-    # 固定节次：按课程去重
+    # 固定节次：按课程去重。教务已固定安排的课程（external）不生成任务，
+    # 也就不需要 pin_window——它们的窗口改由 reserved_slots 统一挖空处理。
     pins = defaultdict(set)
     for row in rows:
+        course = _cell(row, '学科')
+        if cfg.courses[course].external:
+            continue
         slots = parse_fixed_slots(_cell(row, '固定节次'))
         if slots:
-            pins[_cell(row, '学科')] |= slots
+            pins[course] |= slots
     for course in sorted(pins):
         rules.append({
             'type': 'pin_window',
             'scope': {'grade': grade, 'course': course},
             'params': {'slots': sorted([d, p] for d, p in pins[course])},
+            'mode': 'hard',
+        })
+
+    # 教务固定占位的时段：整体从求解器可用格位里挖空，禁止任何常规任务占用
+    reserved = cfg.reserved_slots.get(grade) or []
+    if reserved:
+        rules.append({
+            'type': 'forbid_slots',
+            'scope': {'grade': grade},
+            'params': {'slots': sorted([d, p] for d, p in reserved)},
             'mode': 'hard',
         })
 

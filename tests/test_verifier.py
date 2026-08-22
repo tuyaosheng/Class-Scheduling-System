@@ -72,11 +72,20 @@ def test_detects_class_double_booking(real):
     assert '班级重课' in kinds(verify(broken, dataset, cfg, rules))
 
 
-def test_detects_pin_window_violation(real):
-    cfg, dataset, rules, solution = real
-    victim = next(p for p in solution.placements if p.course == '班会' and p.class_id == 1)
-    broken = tamper(solution, victim.task_id, victim.slot, cal.slot_index(2, 3))
-    assert '越出窗口' in kinds(verify(broken, dataset, cfg, rules))
+def test_detects_pin_window_violation():
+    """班会/体比等固定窗口课程已改为教务直接安排（external），不再进入求解器，
+    真实数据里也就不再含 pin_window 规则——用合成数据单独验证这条判定逻辑。"""
+    from scheduler.core.models import Dataset, Teacher, TeachingTask
+    cfg = load_config(CONFIG_DIR)
+    task = TeachingTask(id=0, grade='初三', class_id=1, course='语文',
+                        teacher='张老师', periods=1)
+    dataset = Dataset(grade='初三', classes=[1],
+                      teachers={'张老师': Teacher(name='张老师')}, tasks=[task])
+    rules = [Rule(type='pin_window', scope={'course': '语文'}, params={'slots': [[0, 9]]})]
+    solution = Solution(status='FEASIBLE', wall_time=0.0, placements=[
+        Placement(task_id=0, class_id=1, course='语文', teacher='张老师',
+                  slot=cal.slot_index(2, 3))])
+    assert '越出窗口' in kinds(verify(solution, dataset, cfg, rules))
 
 
 def test_detects_forbidden_slot_violation(real):
@@ -113,19 +122,6 @@ def test_detects_wrong_period_count(real):
     broken = Solution(status='FEASIBLE', wall_time=0.0, placements=placements)
     assert '课时数不符' in kinds(verify(broken, dataset, cfg, rules))
 
-
-def test_detects_teacher_clash_but_not_for_multi_class(real):
-    """体比是合班课：同教师同格多个班合法，不该报违规。"""
-    cfg, dataset, rules, solution = real
-    tibi = [p for p in solution.placements if p.course == '体比' and p.teacher == '周志宁']
-    assert len(tibi) >= 2
-    placements = [p.model_copy() for p in solution.placements]
-    target = tibi[0].slot
-    for p in placements:
-        if p.course == '体比' and p.teacher == '周志宁':
-            p.slot = target
-    broken = Solution(status='FEASIBLE', wall_time=0.0, placements=placements)
-    assert '教师分身' not in kinds(verify(broken, dataset, cfg, rules))
 
 
 def test_detects_venue_overflow():

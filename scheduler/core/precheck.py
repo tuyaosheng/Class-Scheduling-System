@@ -20,7 +20,7 @@ class Issue(BaseModel):
 def precheck(dataset, cfg, rules) -> List[Issue]:
     issues: List[Issue] = []
     issues += _check_teacher_capacity(dataset, cfg)
-    issues += _check_class_capacity(dataset)
+    issues += _check_class_capacity(dataset, cfg)
     issues += _check_rule_contradictions(dataset, cfg, rules)
     issues += _check_pin_windows(dataset, cfg, rules)
     issues += _check_venue_capacity(dataset, cfg)
@@ -43,29 +43,32 @@ def _teacher_demand(dataset, cfg):
 
 def _check_teacher_capacity(dataset, cfg) -> List[Issue]:
     demand = _teacher_demand(dataset, cfg)
+    reserved = cfg.reserved_slot_indices(dataset.grade)
     out = []
     for name, needed in sorted(demand.items()):
         teacher = dataset.teachers.get(name)
-        blocked = len(teacher.forbidden) if teacher else 0
+        personal = {cal.slot_index(d, p) for d, p in teacher.forbidden} if teacher else set()
+        blocked = len(personal | reserved)
         available = cal.N_SLOTS - blocked
         if needed > available:
             out.append(Issue(
                 kind='教师超载',
                 detail='%s 需要 %d 节，但可用时段只有 %d 格'
-                       '（全周 %d 格，被禁排占用 %d 格）→ 缺 %d 格'
+                       '（全周 %d 格，被禁排/教务固定占位共占用 %d 格）→ 缺 %d 格'
                        % (name, needed, available, cal.N_SLOTS, blocked, needed - available)))
     return out
 
 
-def _check_class_capacity(dataset) -> List[Issue]:
+def _check_class_capacity(dataset, cfg) -> List[Issue]:
     used = defaultdict(int)
     for task in dataset.tasks:
         if task.consumes_slot:
             used[task.class_id] += task.periods
+    available = cal.N_SLOTS - len(cfg.reserved_slot_indices(dataset.grade))
     return [Issue(kind='班级超载',
-                  detail='%d班 需占 %d 格，每周只有 %d 格 → 超 %d 格'
-                         % (class_id, total, cal.N_SLOTS, total - cal.N_SLOTS))
-            for class_id, total in sorted(used.items()) if total > cal.N_SLOTS]
+                  detail='%d班 需占 %d 格，每周可用 %d 格（教务固定占位 %d 格）→ 超 %d 格'
+                         % (class_id, total, available, cal.N_SLOTS - available, total - available))
+            for class_id, total in sorted(used.items()) if total > available]
 
 
 def _family_totals(dataset, cfg, rule):

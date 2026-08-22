@@ -133,7 +133,7 @@ def cmd_solve(args) -> int:
         return 1
 
     print('\n' + format_violations(verify(solution, result.dataset, cfg, rules)))
-    export_excel(solution, result.dataset, args.out)
+    export_excel(solution, result.dataset, args.out, cfg=cfg)
     print('已导出 %s' % args.out)
     return 0
 

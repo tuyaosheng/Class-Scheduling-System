@@ -38,12 +38,16 @@ def kinds(issues):
 
 
 def test_teacher_overload_reports_exact_gap(cfg):
-    """设计文档 §8 的示例格式：需要 48 节，可用 42 格，缺 6 格。"""
+    """设计文档 §8 的示例格式：需要 48 节，可用 42 格，缺 6 格。
+
+    用不带 reserved_slots 的裸 cfg，避免这个纯算术场景被教务固定占位的 8 格干扰。
+    """
+    bare_cfg = cfg.model_copy(update={'reserved_slots': {}})
     tasks = [TeachingTask(id=i, grade='初三', class_id=i + 1, course='语文',
                           teacher='梁艳红', periods=6) for i in range(8)]     # 48 节
     teachers = {'梁艳红': Teacher(name='梁艳红',
                                   forbidden=[[0, 4], [0, 5], [4, 1]])}        # 占 3 格
-    issues = precheck(ds(tasks, teachers), cfg, [])
+    issues = precheck(ds(tasks, teachers), bare_cfg, [])
     assert '教师超载' in kinds(issues)
     detail = next(i.detail for i in issues if i.kind == '教师超载')
     assert '梁艳红' in detail and '48' in detail and '42' in detail and '6' in detail
@@ -59,6 +63,16 @@ def test_multi_class_course_counted_once_per_course(cfg):
     tasks = [TeachingTask(id=i, grade='初三', class_id=i + 1, course='体比',
                           teacher='周志宁', periods=2) for i in range(30)]
     assert '教师超载' not in kinds(precheck(ds(tasks), cfg, []))
+
+
+def test_class_capacity_accounts_for_reserved_slots(cfg):
+    """37 节课占满系统可用格位（45-8），38 节就该报超载，而不是拿 45 当上限。"""
+    tasks = [TeachingTask(id=0, grade='初三', class_id=1, course='语文',
+                          teacher='A', periods=38)]
+    issues = precheck(ds(tasks), cfg, [])
+    assert '班级超载' in kinds(issues)
+    detail = next(i.detail for i in issues if i.kind == '班级超载')
+    assert '37' in detail and '教务固定占位 8 格' in detail
 
 
 def test_class_overload(cfg):

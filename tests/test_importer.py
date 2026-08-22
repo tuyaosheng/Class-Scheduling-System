@@ -21,30 +21,32 @@ def test_teacher_count_is_121(result):
     assert len(result.dataset.teachers) == 121
 
 
-def test_task_count_is_544(result):
-    """227 行 × 各自班数 = 544 个 (教师,课程,班) 三元组。"""
-    assert len(result.dataset.tasks) == 544
+def test_task_count_is_384(result):
+    """227 行中 90 行属于教务固定安排的 5 门课（external），不生成任务。
+    544 - 160 个 (教师,课程,班) 三元组 = 384。"""
+    assert len(result.dataset.tasks) == 384
 
 
-def test_slot_consuming_task_count_is_512(result):
-    """扣掉 32 个双周（心理）任务，得到设计文档实测的 512。"""
-    assert sum(1 for t in result.dataset.tasks if t.consumes_slot) == 512
+def test_slot_consuming_task_count_is_352(result):
+    """扣掉 32 个双周（心理）任务，384 - 32 = 352。"""
+    assert sum(1 for t in result.dataset.tasks if t.consumes_slot) == 352
 
 
-def test_32_classes_each_with_17_courses(result):
+def test_32_classes_each_with_12_courses(result):
+    """17 门课减去教务固定安排的 5 门（班会/体比/体选/校本1/综实2），剩 12 门进求解器。"""
     assert sorted(result.dataset.classes) == list(range(1, 33))
     from collections import Counter
     per_class = Counter(t.class_id for t in result.dataset.tasks)
-    assert set(per_class.values()) == {17}
+    assert set(per_class.values()) == {12}
 
 
-def test_every_class_occupies_41_slots(result):
+def test_every_class_occupies_37_slots(result):
     from collections import Counter
     used = Counter()
     for t in result.dataset.tasks:
         if t.consumes_slot:
             used[t.class_id] += t.periods
-    assert set(used.values()) == {41}
+    assert set(used.values()) == {37}
 
 
 def test_no_warnings_on_real_data(result):
@@ -102,19 +104,28 @@ def rules_of(result, rtype):
 
 
 def test_forbid_slots_rule_per_teacher(result):
-    assert len(rules_of(result, 'forbid_slots')) == 119
-    rule = next(r for r in rules_of(result, 'forbid_slots')
-                if r['scope']['teacher'] == '陈芬')
+    forbid = rules_of(result, 'forbid_slots')
+    per_teacher = [r for r in forbid if 'teacher' in r['scope']]
+    assert len(per_teacher) == 119
+    rule = next(r for r in per_teacher if r['scope']['teacher'] == '陈芬')
     assert rule['mode'] == 'hard'
     assert [3, 6] in rule['params']['slots']
 
 
-def test_pin_window_rules(result):
-    pins = {r['scope']['course']: r for r in rules_of(result, 'pin_window')}
-    assert set(pins) == {'班会', '综实2', '校本1', '体比', '体选'}
-    assert pins['班会']['params']['slots'] == [[0, 9]]
-    assert sorted(pins['体比']['params']['slots']) == [[1, 8], [1, 9]]
-    assert sorted(pins['校本1']['params']['slots']) == [[2, 8], [2, 9]]
+def test_no_pin_window_rules_for_external_courses(result):
+    """班会/体比/体选/校本1/综实2 教务已固定安排，不生成任务，也就不需要 pin_window。"""
+    assert rules_of(result, 'pin_window') == []
+
+
+def test_reserved_slots_generate_one_grade_wide_forbid_rule(result):
+    """8 格教务固定占位整体挖空：一条不含 course/teacher 的 forbid_slots 规则。"""
+    forbid = rules_of(result, 'forbid_slots')
+    reserved_rules = [r for r in forbid if 'teacher' not in r['scope']]
+    assert len(reserved_rules) == 1
+    rule = reserved_rules[0]
+    assert rule['scope'] == {'grade': '初三'}
+    assert sorted(rule['params']['slots']) == sorted(
+        [[0, 9], [1, 8], [1, 9], [2, 8], [2, 9], [3, 8], [3, 9], [4, 9]])
 
 
 def test_daily_min_rules_use_family_scope(result):
@@ -163,6 +174,6 @@ def test_yaml_roundtrip(tmp_path, result):
     write_rules_yaml(result, rpath)
     teaching = yaml.safe_load(tpath.read_text(encoding='utf-8'))
     rules = yaml.safe_load(rpath.read_text(encoding='utf-8'))
-    assert len(teaching['tasks']) == 544
+    assert len(teaching['tasks']) == 384
     assert len(teaching['teachers']) == 121
     assert len(rules['rules']) == len(result.rules)

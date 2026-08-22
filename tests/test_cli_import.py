@@ -26,7 +26,7 @@ def report(result):
 def test_report_shows_headline_numbers(report):
     assert '教师 121' in report
     assert '班级 32' in report
-    assert '任务 544' in report
+    assert '任务 384' in report
 
 
 def test_report_echoes_original_text_next_to_parse_result(report):

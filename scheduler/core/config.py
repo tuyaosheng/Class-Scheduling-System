@@ -17,6 +17,10 @@ class SchedulerConfig(BaseModel):
     courses: Dict[str, Course]
     plans: Dict[str, Dict[str, int]]
     venues: Dict[str, Venue]
+    reserved_slots: Dict[str, List[List[int]]] = {}   # 年级 -> 教务固定占位的 [day, period] 列表
+
+    def reserved_slot_indices(self, grade: str) -> set:
+        return {cal.slot_index(d, p) for d, p in self.reserved_slots.get(grade, [])}
 
     def family_of(self, course_name: str) -> str:
         try:
@@ -45,9 +49,11 @@ class SchedulerConfig(BaseModel):
         for key in plan:
             self.resolve_plan_key(key)          # 未知项在这里抛错
         total = sum(plan.values())
-        if total > cal.N_SLOTS:
+        available = cal.N_SLOTS - len(self.reserved_slots.get(grade, ()))
+        if total > available:
             raise ConfigError(
-                '%s 每班周课时 %d 超出每周 %d 格' % (grade, total, cal.N_SLOTS))
+                '%s 每班周课时 %d 超出可用 %d 格（每周 %d 格，教务固定占位 %d 格）'
+                % (grade, total, available, cal.N_SLOTS, cal.N_SLOTS - available))
 
 
 def _read(path: Path, key: str):
@@ -65,13 +71,18 @@ def load_config(config_dir) -> SchedulerConfig:
     courses = {c['name']: Course(**c) for c in _read(config_dir / 'courses.yaml', 'courses')}
     venues = {v['name']: Venue(**v) for v in _read(config_dir / 'venues.yaml', 'venues')}
     plans = _read(config_dir / 'plans.yaml', 'plans') or {}
+    plans_path = config_dir / 'plans.yaml'
+    reserved_slots = {}
+    if plans_path.exists():
+        raw = yaml.safe_load(plans_path.read_text(encoding='utf-8')) or {}
+        reserved_slots = raw.get('reserved_slots') or {}
 
     for course in courses.values():
         if course.venue and course.venue not in venues:
             raise ConfigError('课程 %s 引用了未声明的场地 %r' % (course.name, course.venue))
 
     cfg = SchedulerConfig(courses=courses, plans={g: (p or {}) for g, p in plans.items()},
-                          venues=venues)
+                          venues=venues, reserved_slots=reserved_slots)
     for grade in cfg.plans:
         cfg.validate_plan(grade)
     return cfg

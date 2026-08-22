@@ -39,13 +39,13 @@ def test_placement_count_matches_total_periods(solved):
     assert len(solution.placements) == sum(t.periods for t in dataset.tasks)
 
 
-def test_every_class_uses_41_distinct_slots(solved):
+def test_every_class_uses_37_distinct_slots(solved):
     _, dataset, solution = solved
     by_class = defaultdict(set)
     for p in solution.placements:
         if p.parity != '双周':
             by_class[p.class_id].add(p.slot)
-    assert set(Counter({c: len(s) for c, s in by_class.items()}).values()) == {41}
+    assert set(Counter({c: len(s) for c, s in by_class.items()}).values()) == {37}
 
 
 def test_no_class_double_booked(solved):
@@ -72,11 +72,11 @@ def test_art_and_psych_share_slots(solved):
     assert art == psy and len(art) == 32
 
 
-def test_banhui_pinned_to_monday_period9(solved):
-    _, _, solution = solved
-    banhui = [p for p in solution.placements if p.course == '班会']
-    assert len(banhui) == 32
-    assert all(cal.slot_of(p.slot) == (0, 9) for p in banhui)
+def test_reserved_slots_stay_empty_in_solver_output(solved):
+    """班会/体比/体选/校本1/综实2 是教务固定安排，求解器不该在这 8 格放任何课。"""
+    cfg, _, solution = solved
+    reserved = cfg.reserved_slot_indices('初三')
+    assert not any(p.slot in reserved for p in solution.placements)
 
 
 def test_physics_family_every_day(solved):
@@ -93,14 +93,18 @@ def test_physics_family_every_day(solved):
 def test_export_excel(tmp_path, solved):
     import openpyxl
     from scheduler.core.exporter import export_excel
-    _, dataset, solution = solved
+    cfg, dataset, solution = solved
     path = tmp_path / '课表.xlsx'
-    export_excel(solution, dataset, path)
+    export_excel(solution, dataset, path, cfg=cfg)
     wb = openpyxl.load_workbook(path)
     assert '班级课表' in wb.sheetnames and '教师课表' in wb.sheetnames
     ws = wb['班级课表']
     assert ws.max_row == cal.N_SLOTS + 1        # 表头 + 45 格
     assert ws.max_column == 32 + 2              # 星期、节次 + 32 个班
+    # 周一第9节（班会，教务固定安排）对每个班都应显示占位标签，而非空白
+    row = cal.slot_index(0, 9) + 2
+    assert all(ws.cell(row=row, column=col).value == '（教务固定安排）'
+               for col in range(3, 3 + 32))
 
 
 def test_cli_solve(tmp_path, monkeypatch, capsys):

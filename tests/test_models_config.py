@@ -58,10 +58,16 @@ def test_resolve_plan_key_expands_alternate_family(cfg):
     assert cfg.resolve_plan_key('语文') == ['语文']
 
 
-def test_grade3_plan_totals_41_slots(cfg):
-    """每班 41 节课占 45 格中的 41 格。心美 1 格由美术/心理共用。"""
-    assert sum(cfg.plans['初三'].values()) == 41
+def test_grade3_plan_totals_37_slots(cfg):
+    """每班 37 节课占用系统求解的 37 格（另 8 格教务固定安排，见 reserved_slots）。"""
+    assert sum(cfg.plans['初三'].values()) == 37
     cfg.validate_plan('初三')
+
+
+def test_grade3_reserved_slots_are_eight(cfg):
+    """周一T9/周二T8T9/周三T8T9/周四T8T9/周五T9 共 8 格，系统不建模不校验。"""
+    assert len(cfg.reserved_slots['初三']) == 8
+    assert len(cfg.reserved_slot_indices('初三')) == 8
 
 
 def test_empty_plan_is_allowed(cfg):

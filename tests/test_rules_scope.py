@@ -101,8 +101,18 @@ def test_select_tasks(cfg):
 
 def test_load_generated_rules(cfg):
     rules = load_rules(CONFIG_DIR / 'rules.yaml', CONFIG_DIR / 'rules.generated.yaml')
-    assert any(r.type == 'pin_window' for r in rules)
+    assert any(r.type == 'daily_min' for r in rules)
     assert all(r.type in RULE_TYPES for r in rules)
+
+
+def test_generated_rules_include_reserved_slot_forbid(cfg):
+    """校本1/综实2/体比/体选/班会已改为教务固定安排（external），不再生成 pin_window；
+    取而代之的是一条年级级的 forbid_slots，把这 8 格整体挖空。"""
+    rules = load_rules(CONFIG_DIR / 'rules.yaml', CONFIG_DIR / 'rules.generated.yaml')
+    assert not any(r.type == 'pin_window' for r in rules)
+    reserved = [r for r in rules if r.type == 'forbid_slots' and 'teacher' not in r.scope]
+    assert len(reserved) == 1
+    assert len(reserved[0].params['slots']) == 8
 
 
 def test_describe_is_human_readable(cfg):

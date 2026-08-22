@@ -14,6 +14,7 @@ class Course(BaseModel):
     venue: Optional[str] = None
     multi_class: bool = False       # 一位教师可同时面向多个班（体比/体选）
     alternate: Optional[str] = None  # '单周' | '双周' | None
+    external: bool = False          # 教务已固定安排，不生成任务、不进求解器
 
 
 class Venue(BaseModel):

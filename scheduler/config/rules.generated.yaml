@@ -2126,55 +2126,26 @@ rules:
     - - 2
       - 5
   mode: hard
-- type: pin_window
+- type: forbid_slots
   scope:
     grade: 初三
-    course: 体比
-  params:
-    slots:
-    - - 1
-      - 8
-    - - 1
-      - 9
-  mode: hard
-- type: pin_window
-  scope:
-    grade: 初三
-    course: 体选
-  params:
-    slots:
-    - - 4
-      - 9
-  mode: hard
-- type: pin_window
-  scope:
-    grade: 初三
-    course: 校本1
-  params:
-    slots:
-    - - 2
-      - 8
-    - - 2
-      - 9
-  mode: hard
-- type: pin_window
-  scope:
-    grade: 初三
-    course: 班会
   params:
     slots:
     - - 0
       - 9
-  mode: hard
-- type: pin_window
-  scope:
-    grade: 初三
-    course: 综实2
-  params:
-    slots:
+    - - 1
+      - 8
+    - - 1
+      - 9
+    - - 2
+      - 8
+    - - 2
+      - 9
     - - 3
       - 8
     - - 3
+      - 9
+    - - 4
       - 9
   mode: hard
 - type: daily_min
