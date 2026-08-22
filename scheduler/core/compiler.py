@@ -116,3 +116,59 @@ def _compile_pin_window(c: CompiledModel, rule: Rule, with_assumptions: bool) ->
         for slot in range(cal.N_SLOTS):
             if slot not in window:
                 c.model.Add(c.x[(task.id, slot)] == 0)
+
+
+def _slots_of_day(day):
+    return [cal.slot_index(day, p) for p in range(1, cal.PERIODS_PER_DAY + 1)]
+
+
+def _group_by_class(tasks):
+    grouped = defaultdict(list)
+    for task in tasks:
+        grouped[task.class_id].append(task)
+    return grouped
+
+
+def _guarded(c: CompiledModel, rule: Rule, with_assumptions: bool):
+    """需要时给一条约束挂 assumption 开关，供 L2 取回最小冲突集。"""
+    if not (with_assumptions and rule.relaxable):
+        return None
+    lit = c.model.NewBoolVar('assume_%s_%d' % (rule.type, len(c.assumptions)))
+    c.model.AddAssumption(lit)
+    c.assumptions[lit.Index()] = rule
+    return lit
+
+
+def _add_daily(c: CompiledModel, rule: Rule, with_assumptions: bool, op: str) -> None:
+    """按 (班级 × 天) 聚合命中任务的节数。
+
+    注：这里不按单双周拆分 —— Excel 现有数据中心美家族只产出 alternate_weeks，
+    不产出 daily_*。若将来某个单双周学科系需要 daily 规则，须在此按周次拆开统计。
+    """
+    n = int(rule.params['n'])
+    weekdays = rule.params.get('weekdays')
+    days = [cal.day_index(d) for d in weekdays] if weekdays else range(len(cal.DAYS))
+    for tasks in _group_by_class(select_tasks(rule, c.dataset.tasks, c.cfg)).values():
+        for day in days:
+            total = sum(c.x[(t.id, s)] for t in tasks for s in _slots_of_day(day))
+            constraint = {'>=': lambda: c.model.Add(total >= n),
+                          '<=': lambda: c.model.Add(total <= n),
+                          '==': lambda: c.model.Add(total == n)}[op]()
+            lit = _guarded(c, rule, with_assumptions)
+            if lit is not None:
+                constraint.OnlyEnforceIf(lit)
+
+
+@handler('daily_min')
+def _compile_daily_min(c, rule, with_assumptions):
+    _add_daily(c, rule, with_assumptions, '>=')
+
+
+@handler('daily_max')
+def _compile_daily_max(c, rule, with_assumptions):
+    _add_daily(c, rule, with_assumptions, '<=')
+
+
+@handler('weekday_exact')
+def _compile_weekday_exact(c, rule, with_assumptions):
+    _add_daily(c, rule, with_assumptions, '==')
