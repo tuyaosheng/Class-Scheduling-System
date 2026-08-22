@@ -102,21 +102,37 @@ def cmd_import(args) -> int:
 
 
 def cmd_solve(args) -> int:
+    from .core.diagnose import format_conflict, minimal_conflict
     from .core.exporter import export_excel
+    from .core.importer import import_excel
+    from .core.precheck import format_issues, precheck
     from .core.rules import load_rules
     from .core.solver import solve
+    from .core.verifier import format_violations, verify
 
     config_dir = Path(args.config_dir)
     cfg = load_config(config_dir)
     result = import_excel(args.excel, cfg, grade=args.grade)
     rules = load_rules(config_dir / 'rules.yaml', config_dir / 'rules.generated.yaml')
 
+    # L1：总是先跑，毫秒级
+    issues = precheck(result.dataset, cfg, rules)
+    print(format_issues(issues))
+    if issues:
+        print('\n预检未通过，不进入求解器。请先处理上述问题。')
+        return 2
+
     solution = solve(result.dataset, cfg, rules, max_seconds=args.max_seconds)
-    print('状态 %s，耗时 %.2f 秒，放置 %d 节课'
+    print('\n状态 %s，耗时 %.2f 秒，放置 %d 节课'
           % (solution.status, solution.wall_time, len(solution.placements)))
+
     if not solution.feasible:
-        print('排不出来。M3 的预检与冲突集将在此给出原因。')
+        # L2：预检通过却无解，取最小冲突集
+        print('\n' + format_conflict(
+            minimal_conflict(result.dataset, cfg, rules, max_seconds=args.max_seconds)))
         return 1
+
+    print('\n' + format_violations(verify(solution, result.dataset, cfg, rules)))
     export_excel(solution, result.dataset, args.out)
     print('已导出 %s' % args.out)
     return 0
