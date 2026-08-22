@@ -22,10 +22,12 @@ function onRulesFileChange(event: Event) {
 
 async function runImport() {
   error.value = ''
+  if (!teachingFile.value || !rulesFile.value) {
+    error.value = '请先选择任课表和排课说明两份文件'
+    return
+  }
   try {
-    preview.value = await importFiles(
-      teachingFile.value as File, rulesFile.value as File, grade.value, ruleEngine.value,
-    )
+    preview.value = await importFiles(teachingFile.value, rulesFile.value, grade.value, ruleEngine.value)
   } catch (err) {
     error.value = (err as Error).message
   }

@@ -1,7 +1,25 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import ImportPanel from '../components/ImportPanel.vue'
 import * as api from '../api'
+
+function makeFile(name: string): File {
+  return new File(['fake content'], name, {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+}
+
+async function selectFile(wrapper: VueWrapper, testId: string, fileName: string) {
+  const fileInput = wrapper.find(`[data-test="${testId}"]`)
+  const input = fileInput.element as HTMLInputElement
+  Object.defineProperty(input, 'files', { value: [makeFile(fileName)], writable: false, configurable: true })
+  await fileInput.trigger('change')
+}
+
+async function selectBothFiles(wrapper: VueWrapper) {
+  await selectFile(wrapper, 'teaching-file', 'teaching.xlsx')
+  await selectFile(wrapper, 'rules-file', 'rules.xlsx')
+}
 
 describe('ImportPanel', () => {
   it('disables confirm and shows conflicts when the preview has conflicts', async () => {
@@ -14,9 +32,7 @@ describe('ImportPanel', () => {
     })
 
     const wrapper = mount(ImportPanel)
-    await wrapper.find('[data-test="teaching-file"]').setValue('')
-    await wrapper.find('[data-test="rules-file"]').setValue('')
-    // setValue 对 <input type="file"> 不填真实文件，这里改为直接触发组件方法验证流程
+    await selectBothFiles(wrapper)
     await (wrapper.vm as unknown as { runImport: () => Promise<void> }).runImport()
 
     expect(wrapper.text()).toContain('廖文峰')
@@ -38,6 +54,7 @@ describe('ImportPanel', () => {
     })
 
     const wrapper = mount(ImportPanel)
+    await selectBothFiles(wrapper)
     await (wrapper.vm as unknown as { runImport: () => Promise<void> }).runImport()
     expect(wrapper.text()).toContain('周五上午不排课')
 
@@ -46,5 +63,15 @@ describe('ImportPanel', () => {
 
     expect(wrapper.emitted('confirmed')).toBeTruthy()
     expect(wrapper.emitted('confirmed')![0][0]).toEqual({ teaching_path: 'a.yaml', rules_path: 'b.yaml' })
+  })
+
+  it('shows a guidance error and skips importFiles when no files are selected', async () => {
+    const importFilesSpy = vi.spyOn(api, 'importFiles')
+
+    const wrapper = mount(ImportPanel)
+    await (wrapper.vm as unknown as { runImport: () => Promise<void> }).runImport()
+
+    expect(wrapper.text()).toContain('请先选择任课表和排课说明两份文件')
+    expect(importFilesSpy).not.toHaveBeenCalled()
   })
 })
