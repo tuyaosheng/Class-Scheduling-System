@@ -49,6 +49,7 @@ def compile_model(dataset, cfg, rules, *, with_assumptions=False) -> CompiledMod
             compiled.skipped_soft.append(rule)   # 软约束是 M4 的事
             continue
         _RULE_HANDLERS[rule.type](compiled, rule, with_assumptions)
+    add_venue_constraints(compiled)
     return compiled
 
 
@@ -236,3 +237,31 @@ def _compile_consecutive(c: CompiledModel, rule: Rule, with_assumptions: bool) -
         lit = _guarded(c, rule, with_assumptions)
         if lit is not None:
             constraint.OnlyEnforceIf(lit)
+
+
+@handler('venue_capacity')
+def _compile_venue_capacity(c: CompiledModel, rule: Rule, with_assumptions: bool) -> None:
+    venue = rule.params['venue']
+    capacity = rule.params.get('capacity')
+    if capacity is None:
+        return
+    _limit_venue(c, venue, int(capacity))
+
+
+def _limit_venue(c: CompiledModel, venue: str, capacity: int) -> None:
+    tasks = [t for t in c.dataset.tasks if c.cfg.courses[t.course].venue == venue]
+    if not tasks:
+        return
+    for parity in PARITIES:
+        active = [t for t in tasks if active_in(t, parity)]
+        if len(active) <= capacity:
+            continue
+        for slot in range(cal.N_SLOTS):
+            c.model.Add(sum(c.x[(t.id, slot)] for t in active) <= capacity)
+
+
+def add_venue_constraints(c: CompiledModel) -> None:
+    """按 venues.yaml 的容量自动加约束。capacity 为 None 表示不限制。"""
+    for venue in c.cfg.venues.values():
+        if venue.capacity is not None:
+            _limit_venue(c, venue.name, venue.capacity)

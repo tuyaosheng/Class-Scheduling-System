@@ -101,6 +101,27 @@ def cmd_import(args) -> int:
     return 0
 
 
+def cmd_solve(args) -> int:
+    from .core.exporter import export_excel
+    from .core.rules import load_rules
+    from .core.solver import solve
+
+    config_dir = Path(args.config_dir)
+    cfg = load_config(config_dir)
+    result = import_excel(args.excel, cfg, grade=args.grade)
+    rules = load_rules(config_dir / 'rules.yaml', config_dir / 'rules.generated.yaml')
+
+    solution = solve(result.dataset, cfg, rules, max_seconds=args.max_seconds)
+    print('状态 %s，耗时 %.2f 秒，放置 %d 节课'
+          % (solution.status, solution.wall_time, len(solution.placements)))
+    if not solution.feasible:
+        print('排不出来。M3 的预检与冲突集将在此给出原因。')
+        return 1
+    export_excel(solution, result.dataset, args.out)
+    print('已导出 %s' % args.out)
+    return 0
+
+
 def main(argv=None) -> int:
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
@@ -114,6 +135,14 @@ def main(argv=None) -> int:
     p.add_argument('--out-dir', default=None)
     p.add_argument('--write', action='store_true', help='确认无误后写入 YAML')
     p.set_defaults(func=cmd_import)
+
+    p = sub.add_parser('solve', help='求解课表并导出 Excel')
+    p.add_argument('excel', nargs='?', default='任课与排课说明.xlsx')
+    p.add_argument('--grade', default='初三')
+    p.add_argument('--config-dir', default=str(DEFAULT_CONFIG_DIR))
+    p.add_argument('--out', default='output/课表.xlsx')
+    p.add_argument('--max-seconds', type=int, default=60)
+    p.set_defaults(func=cmd_solve)
 
     args = parser.parse_args(argv)
     return args.func(args)
