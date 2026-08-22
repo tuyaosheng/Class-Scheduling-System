@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目状态
 
-中小学（初中）排课系统。**设计已完成，代码尚未开始编写。**
+中小学（初中）排课系统。**M1–M3 已完成**（领域模型/配置/Excel 导入/中文规则解析 → 规则 DSL/约束编译/求解/场地 → 校验器/预检/冲突集）。M4 起未开始。
+
+实测：初三 32 班 OPTIMAL 0.70 秒，独立校验 0 处违规，预检 4.7 毫秒零假阳性。
 
 完整设计见 `docs/superpowers/specs/2026-08-21-中小学排课系统-design.md`——动手前必读，本文件只记录其中最容易被违反的约束。
 
@@ -125,7 +127,33 @@ AI    anthropic SDK
 
 开发机需 Node.js；交付给教务的仅一个 exe。
 
-构建与测试命令待 M1 落地后补入本文件。
+## 构建与测试
+
+```bash
+pip install -r requirements.txt      # ortools 9.15.6755 / pydantic 2 / openpyxl / PyYAML / pytest
+
+python -m pytest -q                  # 全套测试（当前 220 项）
+
+# 导入 Excel 并回显中文规则解析结果供教务逐条核对（不落盘）
+python -m scheduler.cli import 任课与排课说明.xlsx --grade 初三
+# 确认无误后固化成 config/teaching.yaml 与 config/rules.generated.yaml
+python -m scheduler.cli import 任课与排课说明.xlsx --grade 初三 --write
+
+# 排课：L1 预检 → 求解 → 独立校验 → 导出 Excel
+python -m scheduler.cli solve --out output/初三课表.xlsx
+```
+
+`solve` 的退出码：`0` 成功、`1` 无解（已打印 L2 最小冲突集）、`2` 预检未通过（未进求解器）。
+
+Windows 控制台默认 GBK，脚本入口已设 `sys.stdout.reconfigure(encoding='utf-8')`；自己写临时脚本时记得加 `PYTHONIOENCODING=utf-8`。
+
+## 铁律 4 的能力边界
+
+`compiler.py` 与 `verifier.py` 双实现能抓两侧**写法不同**导致的分歧，**抓不住共模建模错误**——两边代码不同却编码了同一个错误的物理模型时，「0 处违规」对它无效。
+
+已发生过一次：合班豁免曾被两侧同时实现成「把合班任务从教师冲突推理里整体删掉」，导致一位教师可被排成同一格既上体育又上体比，编译器 OPTIMAL、校验器 0 违规。正确语义是「同教师同一门合班课的多个班折叠成**一节课**，这节课仍要与他的其他课互斥」（session 模型）。
+
+**推论**：涉及物理语义的建模决策，不能只靠双实现互证，要单独回到设计文档核对原意。
 
 ## 实施路线
 
