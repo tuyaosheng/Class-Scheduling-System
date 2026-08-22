@@ -187,3 +187,43 @@ def test_get_plan_returns_400_when_config_missing(client, tmp_path, monkeypatch)
     monkeypatch.setattr(routes_module, 'DEFAULT_CONFIG_DIR', tmp_path)
     resp = client.get('/api/config/plan', params={'grade': '初三'})
     assert resp.status_code == 400
+
+
+def test_put_plan_persists_valid_change(client, tmp_path, monkeypatch):
+    import shutil
+    import scheduler.api.routes as routes_module
+    shutil.copytree(CONFIG_DIR, tmp_path, dirs_exist_ok=True)
+    monkeypatch.setattr(routes_module, 'DEFAULT_CONFIG_DIR', tmp_path)
+
+    get_resp = client.get('/api/config/plan', params={'grade': '初三'})
+    assert get_resp.status_code == 200
+    plan = get_resp.json()['plan']
+
+    put_resp = client.put('/api/config/plan', json={'grade': '初三', 'plan': plan})
+    assert put_resp.status_code == 200
+
+    reread = client.get('/api/config/plan', params={'grade': '初三'})
+    assert reread.json()['plan'] == plan
+
+
+def test_put_plan_rejects_plan_exceeding_available_slots(client, tmp_path, monkeypatch):
+    import shutil
+    import scheduler.api.routes as routes_module
+    shutil.copytree(CONFIG_DIR, tmp_path, dirs_exist_ok=True)
+    monkeypatch.setattr(routes_module, 'DEFAULT_CONFIG_DIR', tmp_path)
+
+    bad_plan = {'语文': 40, '数学': 5}
+    resp = client.put('/api/config/plan', json={'grade': '初三', 'plan': bad_plan})
+    assert resp.status_code == 400
+    assert '超出可用' in resp.json()['detail']
+
+
+def test_put_plan_rejects_unknown_course_name(client, tmp_path, monkeypatch):
+    import shutil
+    import scheduler.api.routes as routes_module
+    shutil.copytree(CONFIG_DIR, tmp_path, dirs_exist_ok=True)
+    monkeypatch.setattr(routes_module, 'DEFAULT_CONFIG_DIR', tmp_path)
+
+    resp = client.put('/api/config/plan',
+                      json={'grade': '初三', 'plan': {'不存在的课': 3}})
+    assert resp.status_code == 400
