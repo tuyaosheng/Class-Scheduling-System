@@ -209,9 +209,10 @@ def _compile_consecutive(c: CompiledModel, rule: Rule, with_assumptions: bool) -
     length = int(rule.params.get('length', 2))
     pairs = adjacent_pairs()
     for class_id, tasks in _group_by_class(select_tasks(rule, c.dataset.tasks, c.cfg)).items():
-        indicators = []
-        for task in tasks:
-            for day in range(len(cal.DAYS)):
+        day_flags = []
+        for day in range(len(cal.DAYS)):
+            day_indicators = []          # 这一天的全部 y
+            for task in tasks:
                 for start, _ in pairs:
                     run_periods = list(range(start, start + length))
                     if run_periods[-1] > cal.PERIODS_PER_DAY:
@@ -223,10 +224,15 @@ def _compile_consecutive(c: CompiledModel, rule: Rule, with_assumptions: bool) -
                     c.model.AddBoolAnd(
                         [c.x[(task.id, cal.slot_index(day, p))] for p in run_periods]
                     ).OnlyEnforceIf(y)
-                    indicators.append(y)
-        if not indicators:
+                    day_indicators.append(y)
+            if not day_indicators:
+                continue
+            flag = c.model.NewBoolVar('cons_day_%d_%d' % (class_id, day))
+            c.model.AddBoolOr(day_indicators).OnlyEnforceIf(flag)   # flag ⇒ 这天至少一处连堂
+            day_flags.append(flag)
+        if not day_flags:
             continue
-        constraint = c.model.Add(sum(indicators) >= days_needed)
+        constraint = c.model.Add(sum(day_flags) >= days_needed)
         lit = _guarded(c, rule, with_assumptions)
         if lit is not None:
             constraint.OnlyEnforceIf(lit)

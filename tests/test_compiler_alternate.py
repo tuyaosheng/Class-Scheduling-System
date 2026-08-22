@@ -103,6 +103,20 @@ def test_consecutive_produces_a_double_period(cfg):
     assert has_double
 
 
+def test_consecutive_days_must_be_distinct(cfg):
+    """days=2 时，同一天里的多个连堂只能算一天。"""
+    task = TeachingTask(id=0, grade='初三', class_id=1, course='语文',
+                        teacher='李琼', periods=4)
+    rules = [
+        Rule(type='pin_window', scope={'course': '语文'},
+             params={'slots': [[0, 1], [0, 2], [0, 3], [0, 4]]}),
+        Rule(type='consecutive', scope={'course': '语文'},
+             params={'days': 2, 'length': 2}),
+    ]
+    _, status = run(compile_model(ds([task]), cfg, rules))
+    assert status == cp_model.INFEASIBLE
+
+
 def test_consecutive_infeasible_when_forced_apart(cfg):
     """只给周一 1、3、5 三格（互不相邻），连堂无处安放。"""
     task = TeachingTask(id=0, grade='初三', class_id=1, course='语文',
