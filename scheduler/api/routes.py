@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import ValidationError
 
-from scheduler.core.config import load_config
+from scheduler.core.config import ConfigError, load_config
 from scheduler.core.importer import (
     merge_teaching_and_rules, write_rules_yaml, write_teaching_yaml,
 )
@@ -21,14 +21,28 @@ DEFAULT_CONFIG_DIR = Path(__file__).resolve().parents[1] / 'config'
 router = APIRouter(prefix='/api')
 
 
+def _load_config_or_400():
+    """`load_config` 在配置缺失/不自洽时抛 `ConfigError`——统一转成 400，
+    不能让它裸传播成未格式化的 500。"""
+    try:
+        return load_config(DEFAULT_CONFIG_DIR)
+    except ConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 @router.post('/import', response_model=ImportPreview)
 async def import_files(teaching_file: UploadFile = File(...),
                        rules_file: UploadFile = File(...),
                        grade: str = '初三', rule_engine: str = 'regex'):
-    cfg = load_config(DEFAULT_CONFIG_DIR)
+    cfg = _load_config_or_400()
     with tempfile.TemporaryDirectory() as tmpdir:
-        teaching_path = Path(tmpdir) / teaching_file.filename
-        rules_path = Path(tmpdir) / rules_file.filename
+        # 绝不能用客户端上传的文件名拼路径——那是攻击者可控字符串，
+        # 塞入 `..` 段或绝对路径能让写入落到 tmpdir 之外。固定文件名，
+        # 只保留后缀方便调试。
+        teaching_suffix = Path(teaching_file.filename or '').suffix or '.xlsx'
+        rules_suffix = Path(rules_file.filename or '').suffix or '.xlsx'
+        teaching_path = Path(tmpdir) / f'teaching{teaching_suffix}'
+        rules_path = Path(tmpdir) / f'rules{rules_suffix}'
         teaching_path.write_bytes(await teaching_file.read())
         rules_path.write_bytes(await rules_file.read())
         try:
@@ -88,7 +102,7 @@ def config_status():
 
 @router.get('/config/plan', response_model=PlanGetResponse)
 def get_plan(grade: str = '初三'):
-    cfg = load_config(DEFAULT_CONFIG_DIR)
+    cfg = _load_config_or_400()
     return PlanGetResponse(grade=grade, plan=cfg.plans.get(grade, {}),
                            reserved_slots=cfg.reserved_slots.get(grade, []))
 
@@ -96,9 +110,8 @@ def get_plan(grade: str = '初三'):
 @router.put('/config/plan', response_model=PlanGetResponse)
 def put_plan(body: PlanPutRequest):
     import yaml
-    from scheduler.core.config import ConfigError
 
-    cfg = load_config(DEFAULT_CONFIG_DIR)
+    cfg = _load_config_or_400()
     candidate = cfg.model_copy(deep=True)
     candidate.plans[body.grade] = body.plan
     try:
