@@ -126,3 +126,32 @@ def put_plan(body: PlanPutRequest):
                           encoding='utf-8')
     return PlanGetResponse(grade=body.grade, plan=body.plan,
                            reserved_slots=cfg.reserved_slots.get(body.grade, []))
+
+
+from fastapi.responses import FileResponse
+
+
+@router.get('/export/{job_id}/{candidate_index}')
+def export_candidate(job_id: str, candidate_index: int, template: int = 0):
+    import tempfile
+
+    from scheduler.core.exporter import export_excel, export_to_template
+
+    job = sessions.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail='任务不存在')
+    if candidate_index < 1 or candidate_index > len(job.solutions):
+        raise HTTPException(status_code=404, detail='该任务下没有这个候选方案')
+
+    solution = job.solutions[candidate_index - 1]
+    out_path = Path(tempfile.mkdtemp()) / ('候选%d.xlsx' % candidate_index)
+    if template:
+        template_path = Path(__file__).resolve().parents[2] / '课程表模板.xlsx'
+        export_to_template(solution, job.dataset, template_path, out_path)
+    else:
+        export_excel(solution, job.dataset, out_path, cfg=job.cfg)
+    return FileResponse(
+        out_path,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        filename=out_path.name,
+    )
