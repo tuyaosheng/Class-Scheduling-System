@@ -1,6 +1,6 @@
 """AI 规则解析：把排课说明里的中文规则文本解析成结构化片段。
 
-与 scheduler/core/ruletext.py（正则解析）产出同一种数据形状，供导入合并
+与 scheduler/core/ruletext.py（正则解析）产出同一种语义内容，供导入合并
 逻辑按 rule_engine 参数二选一调用；解析结果照样要走人工回显确认——
 AI 只负责「这句话是什么规则」的翻译，不做任何硬性判定（CLAUDE.md 铁律 5）。
 """
@@ -52,15 +52,15 @@ def _default_client():
 
 def parse_row_ai(not_available_text, fixed_slots_text, requirement_text, remark_text,
                  *, client=None) -> ParsedRow:
-    client = client or _default_client()
-    prompt = _USER_TEMPLATE.format(
-        not_available=not_available_text or "（空）",
-        fixed_slots=fixed_slots_text or "（空）",
-        requirement=requirement_text or "（空）",
-        remark=remark_text or "（空）",
-        rule_types=sorted(RULE_TYPES),
-    )
     try:
+        client = client or _default_client()
+        prompt = _USER_TEMPLATE.format(
+            not_available=not_available_text or "（空）",
+            fixed_slots=fixed_slots_text or "（空）",
+            requirement=requirement_text or "（空）",
+            remark=remark_text or "（空）",
+            rule_types=sorted(RULE_TYPES),
+        )
         response = client.messages.create(
             model="claude-sonnet-4-5",
             max_tokens=1024,

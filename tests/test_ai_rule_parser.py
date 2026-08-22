@@ -62,3 +62,10 @@ def test_raises_when_client_call_fails():
 
     with pytest.raises(AIParseError, match="解析失败"):
         parse_row_ai("", "", "", "", client=BrokenClient())
+
+
+def test_raises_on_missing_api_key(monkeypatch):
+    """Regression test: missing ANTHROPIC_API_KEY should raise AIParseError, not KeyError."""
+    monkeypatch.delenv('ANTHROPIC_API_KEY', raising=False)
+    with pytest.raises(AIParseError, match="解析失败"):
+        parse_row_ai("", "", "", "")
