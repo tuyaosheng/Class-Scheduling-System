@@ -48,7 +48,14 @@ def minimal_conflict(dataset, cfg, rules, *, max_seconds=60) -> Conflict:
     return Conflict(status='INFEASIBLE', rules=descriptions)
 
 
+#: 未能判定可行性的状态 —— 说「模型可解」是错的，教务会等一份不存在的课表
+_UNDECIDED = ('UNKNOWN', 'MODEL_INVALID')
+
+
 def format_conflict(conflict: Conflict) -> str:
+    if conflict.status in _UNDECIDED:
+        return ('求解超时，未能判定是否可行（状态 %s）'
+                '—— 可增大 --max-seconds 重试。' % conflict.status)
     if conflict.status != 'INFEASIBLE':
         return '模型可解（状态 %s），无冲突集。' % conflict.status
     if not conflict.rules:

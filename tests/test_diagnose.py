@@ -101,3 +101,23 @@ def test_cli_solve_stops_at_precheck(tmp_path, monkeypatch, capsys):
     assert code == 2
     assert '规则自相矛盾' in out
     assert '化学' in out
+
+
+def test_format_conflict_does_not_call_a_timeout_solvable():
+    """求解超时走的是 UNKNOWN —— 说「模型可解」会让教务等一份不存在的课表。"""
+    from scheduler.core.diagnose import Conflict
+    text = format_conflict(Conflict(status='UNKNOWN'))
+    assert '模型可解' not in text
+    assert '超时' in text and '--max-seconds' in text
+
+
+def test_format_conflict_flags_model_invalid_as_undecided():
+    from scheduler.core.diagnose import Conflict
+    text = format_conflict(Conflict(status='MODEL_INVALID'))
+    assert '模型可解' not in text and '未能判定' in text
+
+
+def test_format_conflict_still_reports_a_real_solution():
+    """真正求出解的状态照旧说「模型可解」。"""
+    from scheduler.core.diagnose import Conflict
+    assert '模型可解' in format_conflict(Conflict(status='OPTIMAL'))
