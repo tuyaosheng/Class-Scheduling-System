@@ -21,8 +21,12 @@ def test_verifier_does_not_import_compiler():
     tree = ast.parse(src)
     imported = set()
     for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module:
-            imported.add(node.module)
+        if isinstance(node, ast.ImportFrom):
+            if node.module:
+                imported.add(node.module)
+            else:
+                # `from . import X` —— 模块名在 alias 里，module 为 None
+                imported.update(alias.name for alias in node.names)
         elif isinstance(node, ast.Import):
             imported.update(alias.name for alias in node.names)
     assert not any('compiler' in m for m in imported), \
