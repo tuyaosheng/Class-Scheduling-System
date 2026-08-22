@@ -3765,7 +3765,7 @@ tasks:
   course: 美术
   teacher: 梁艳红
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 290
   grade: 初三
   class_id: 3
@@ -3779,7 +3779,7 @@ tasks:
   course: 美术
   teacher: 梁艳红
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 292
   grade: 初三
   class_id: 5
@@ -3793,7 +3793,7 @@ tasks:
   course: 美术
   teacher: 梁艳红
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 294
   grade: 初三
   class_id: 7
@@ -3807,7 +3807,7 @@ tasks:
   course: 美术
   teacher: 梁艳红
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 296
   grade: 初三
   class_id: 9
@@ -3821,7 +3821,7 @@ tasks:
   course: 美术
   teacher: 梁艳红
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 298
   grade: 初三
   class_id: 11
@@ -3835,7 +3835,7 @@ tasks:
   course: 美术
   teacher: 梁艳红
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 300
   grade: 初三
   class_id: 13
@@ -3849,7 +3849,7 @@ tasks:
   course: 美术
   teacher: 梁艳红
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 302
   grade: 初三
   class_id: 15
@@ -3863,7 +3863,7 @@ tasks:
   course: 美术
   teacher: 梁艳红
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 304
   grade: 初三
   class_id: 17
@@ -3877,7 +3877,7 @@ tasks:
   course: 美术
   teacher: 胡美玲
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 306
   grade: 初三
   class_id: 19
@@ -3891,7 +3891,7 @@ tasks:
   course: 美术
   teacher: 胡美玲
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 308
   grade: 初三
   class_id: 21
@@ -3905,7 +3905,7 @@ tasks:
   course: 美术
   teacher: 胡美玲
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 310
   grade: 初三
   class_id: 23
@@ -3919,7 +3919,7 @@ tasks:
   course: 美术
   teacher: 胡美玲
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 312
   grade: 初三
   class_id: 25
@@ -3933,7 +3933,7 @@ tasks:
   course: 美术
   teacher: 胡美玲
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 314
   grade: 初三
   class_id: 27
@@ -3947,7 +3947,7 @@ tasks:
   course: 美术
   teacher: 胡美玲
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 316
   grade: 初三
   class_id: 29
@@ -3961,7 +3961,7 @@ tasks:
   course: 美术
   teacher: 胡美玲
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 318
   grade: 初三
   class_id: 31
@@ -3975,7 +3975,7 @@ tasks:
   course: 美术
   teacher: 胡美玲
   periods: 1
-  parity: 单周
+  parity: 双周
 - id: 320
   grade: 初三
   class_id: 1
@@ -3989,7 +3989,7 @@ tasks:
   course: 心理
   teacher: 郭泽琪
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 322
   grade: 初三
   class_id: 3
@@ -4003,7 +4003,7 @@ tasks:
   course: 心理
   teacher: 郭泽琪
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 324
   grade: 初三
   class_id: 5
@@ -4017,7 +4017,7 @@ tasks:
   course: 心理
   teacher: 郭泽琪
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 326
   grade: 初三
   class_id: 7
@@ -4031,7 +4031,7 @@ tasks:
   course: 心理
   teacher: 郭泽琪
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 328
   grade: 初三
   class_id: 9
@@ -4045,7 +4045,7 @@ tasks:
   course: 心理
   teacher: 郭泽琪
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 330
   grade: 初三
   class_id: 11
@@ -4059,7 +4059,7 @@ tasks:
   course: 心理
   teacher: 郭泽琪
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 332
   grade: 初三
   class_id: 13
@@ -4073,7 +4073,7 @@ tasks:
   course: 心理
   teacher: 郭泽琪
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 334
   grade: 初三
   class_id: 15
@@ -4087,7 +4087,7 @@ tasks:
   course: 心理
   teacher: 郭泽琪
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 336
   grade: 初三
   class_id: 17
@@ -4101,7 +4101,7 @@ tasks:
   course: 心理
   teacher: 胡义城
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 338
   grade: 初三
   class_id: 19
@@ -4115,7 +4115,7 @@ tasks:
   course: 心理
   teacher: 胡义城
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 340
   grade: 初三
   class_id: 21
@@ -4129,7 +4129,7 @@ tasks:
   course: 心理
   teacher: 胡义城
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 342
   grade: 初三
   class_id: 23
@@ -4143,7 +4143,7 @@ tasks:
   course: 心理
   teacher: 胡义城
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 344
   grade: 初三
   class_id: 25
@@ -4157,7 +4157,7 @@ tasks:
   course: 心理
   teacher: 胡义城
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 346
   grade: 初三
   class_id: 27
@@ -4171,7 +4171,7 @@ tasks:
   course: 心理
   teacher: 胡义城
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 348
   grade: 初三
   class_id: 29
@@ -4185,7 +4185,7 @@ tasks:
   course: 心理
   teacher: 胡义城
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 350
   grade: 初三
   class_id: 31
@@ -4199,7 +4199,7 @@ tasks:
   course: 心理
   teacher: 胡义城
   periods: 1
-  parity: 双周
+  parity: 单周
 - id: 352
   grade: 初三
   class_id: 1

@@ -76,10 +76,10 @@ def import_excel(path, cfg, grade='初三') -> ImportResult:
                 classes.add(class_id)
             continue
         hours = float(_cell(row, '周课时'))
-        parity = None
+        base_parity = None
         if hours == 0.5:
-            parity = cfg.courses[course].alternate
-            if not parity:
+            base_parity = cfg.courses[course].alternate
+            if not base_parity:
                 raise ValueError('%s 周课时 0.5 但课程目录未声明 alternate' % course)
             periods = 1
         else:
@@ -88,6 +88,11 @@ def import_excel(path, cfg, grade='初三') -> ImportResult:
             periods = int(hours)
         for class_id in _class_ids(_cell(row, '任教班')):
             classes.add(class_id)
+            parity = base_parity
+            if base_parity and class_id % 2 == 0:
+                # 按班号奇偶各半翻转单双周，否则该老师整学期只在单周（或双周）
+                # 有课，负荷忽高忽低；翻转后每周教的班数固定，见坑 3。
+                parity = '双周' if base_parity == '单周' else '单周'
             tasks.append(TeachingTask(id=len(tasks), grade=grade, class_id=class_id,
                                       course=course, teacher=name,
                                       periods=periods, parity=parity))

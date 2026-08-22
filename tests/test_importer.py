@@ -87,8 +87,44 @@ def test_half_period_becomes_one_period_with_parity(result):
     art = [t for t in result.dataset.tasks if t.course == '美术']
     psy = [t for t in result.dataset.tasks if t.course == '心理']
     assert len(art) == 32 and len(psy) == 32
-    assert all(t.periods == 1 and t.parity == '单周' for t in art)
-    assert all(t.periods == 1 and t.parity == '双周' for t in psy)
+    assert all(t.periods == 1 for t in art) and all(t.periods == 1 for t in psy)
+
+
+def test_art_psych_parity_is_split_by_class_id_to_even_out_teacher_load(result):
+    """单双周不能全年级统一——否则梁艳红单周教16个班、双周教0个班，负荷不均。
+
+    按班号奇偶各半：奇数班保持课程目录声明的默认单双周，偶数班翻转，
+    这样每位老师每周（不管单周双周）教的班数都一致。
+    """
+    art_by_class = {t.class_id: t.parity for t in result.dataset.tasks if t.course == '美术'}
+    psy_by_class = {t.class_id: t.parity for t in result.dataset.tasks if t.course == '心理'}
+
+    for class_id in range(1, 33):
+        assert art_by_class[class_id] != psy_by_class[class_id], (
+            '%d班 美术与心理不该同周' % class_id)
+        expected_art = '单周' if class_id % 2 == 1 else '双周'
+        assert art_by_class[class_id] == expected_art
+
+    from collections import Counter
+    art_split = Counter(art_by_class.values())
+    psy_split = Counter(psy_by_class.values())
+    assert art_split['单周'] == art_split['双周'] == 16
+    assert psy_split['单周'] == psy_split['双周'] == 16
+
+
+def test_art_psych_teacher_weekly_load_is_even(result):
+    """每位美术/心理老师，单周和双周各自要教的班数应该相等（负荷均匀）。"""
+    from collections import defaultdict
+
+    by_teacher_parity = defaultdict(lambda: defaultdict(int))
+    for t in result.dataset.tasks:
+        if t.course in ('美术', '心理'):
+            by_teacher_parity[t.teacher][t.parity] += 1
+
+    for teacher, counts in by_teacher_parity.items():
+        assert counts['单周'] == counts['双周'], (
+            '%s 单周教 %d 个班，双周教 %d 个班，负荷不均'
+            % (teacher, counts['单周'], counts['双周']))
 
 
 def test_art_and_psych_teachers_both_survive(result):
