@@ -7,7 +7,7 @@
 """
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import openpyxl
 import yaml
@@ -210,3 +210,28 @@ def write_rules_yaml(result: ImportResult, path) -> None:
     Path(path).write_text(
         yaml.safe_dump({'rules': result.rules}, allow_unicode=True, sort_keys=False),
         encoding='utf-8')
+
+
+TEACHING_TABLE_HEADER_ROW = 2
+TEACHING_TABLE_FIRST_DATA_ROW = 3
+
+
+def parse_teaching_table(path, cfg) -> Dict[Tuple[int, str], str]:
+    """解析『班别 × 学科』矩阵版式的任课表，返回 (班级,课程) -> 教师。"""
+    wb = openpyxl.load_workbook(path, data_only=True)
+    ws = wb[wb.sheetnames[0]]
+    header = [c.value for c in ws[TEACHING_TABLE_HEADER_ROW]]
+    courses = header[1:]
+    for course in courses:
+        if course and course not in cfg.courses:
+            raise ValueError("任课表中的学科 %r 不在课程目录里" % course)
+
+    pivot: Dict[Tuple[int, str], str] = {}
+    for row in ws.iter_rows(min_row=TEACHING_TABLE_FIRST_DATA_ROW, values_only=True):
+        if not row or row[0] is None:
+            continue
+        class_id = int(row[0])
+        for course, teacher in zip(courses, row[1:]):
+            if course and teacher:
+                pivot[(class_id, course)] = str(teacher).strip()
+    return pivot
