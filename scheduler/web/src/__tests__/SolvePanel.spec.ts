@@ -34,4 +34,31 @@ describe('SolvePanel', () => {
     const lastEmit = wrapper.emitted('candidates')!.at(-1)![0] as unknown[]
     expect(lastEmit).toHaveLength(1)
   })
+
+  it('shows the backend error message when the socket emits an error event', async () => {
+    vi.spyOn(api, 'startSolve').mockResolvedValue({ job_id: 'job-1' })
+
+    class FakeSocket {
+      onmessage: ((ev: MessageEvent) => void) | null = null
+      close() {}
+    }
+    const fakeSocket = new FakeSocket()
+    vi.spyOn(api, 'connectSolveSocket').mockImplementation((_jobId, onEvent) => {
+      fakeSocket.onmessage = (ev) => onEvent(JSON.parse(ev.data))
+      return fakeSocket as unknown as WebSocket
+    })
+
+    const wrapper = mount(SolvePanel)
+    await wrapper.find('[data-test="start-button"]').trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    fakeSocket.onmessage!({
+      data: JSON.stringify({
+        type: 'error', message: '求解任务异常终止（ValueError）：配置损坏',
+      }),
+    } as MessageEvent)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('求解出错：求解任务异常终止（ValueError）：配置损坏')
+  })
 })

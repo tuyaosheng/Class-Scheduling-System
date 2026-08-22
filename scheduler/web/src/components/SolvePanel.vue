@@ -39,7 +39,7 @@ async function start() {
     } else if (e.type === 'infeasible') {
       statusText.value = '无解：' + (e.conflict as string)
     } else if (e.type === 'error') {
-      statusText.value = '求解出错：' + (e.detail as string)
+      statusText.value = '求解出错：' + (e.message as string)
     } else if (e.type === 'done') {
       statusText.value = `完成，共 ${candidates.length} 个候选方案`
     }
