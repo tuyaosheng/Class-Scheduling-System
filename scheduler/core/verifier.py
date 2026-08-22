@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from . import calendar as cal
-from .rules import Rule, select_tasks
+from .rules import Rule, describe, select_tasks
 
 PARITIES = ('单周', '双周')
 
@@ -37,8 +37,15 @@ def verify(solution, dataset, cfg, rules) -> List[Violation]:
         if not rule.enabled or rule.mode != 'hard':
             continue
         checker = _RULE_CHECKS.get(rule.type)
-        if checker:
-            out += checker(placements, dataset, cfg, rule)
+        if checker is None:
+            # 静默放行会把「0 违规」变成空话。校验器的语义是收集问题，
+            # 所以这里出声而不抛错 —— 其余检查照常跑完。
+            out.append(Violation(
+                kind='规则未被校验', rule_type=rule.type, scope=rule.scope,
+                detail='硬规则 %s 尚无对应的校验实现，本次未被检查：%s'
+                       % (rule.type, describe(rule))))
+            continue
+        out += checker(placements, dataset, cfg, rule)
     return out
 
 
@@ -73,43 +80,72 @@ def _check_class_clash(placements):
     return _dedup(out)
 
 
+def _engagement(placement, cfg):
+    """这节课对「谁在忙」而言算作哪一件事。
+
+    合班课整门折叠成一件事（同一位教师面向多个班，本来就只是一节课）；
+    其余课程一节就是一件事。返回 (识别键, 人话标签)。
+    """
+    if cfg.courses[placement.course].multi_class:
+        return ('合班', placement.teacher, placement.course), '%s（合班）' % placement.course
+    return (('独立', placement.task_id),
+            '%d班%s' % (placement.class_id, placement.course))
+
+
 def _check_teacher_clash(placements, cfg):
+    """一位教师在某一格若有两件**不同的事**，就是分身。
+
+    合班课的多个班折叠后只剩一件事，所以合班本身不会触发；
+    但它与该教师的其他课仍然互斥 —— 合班不等于分身。
+    """
+    agenda = defaultdict(dict)           # (教师, 时间格, 周次) -> {识别键: 标签}
+    for p in placements:
+        for parity in PARITIES:
+            if _runs_in_parity(p, parity):
+                key, label = _engagement(p, cfg)
+                agenda[(p.teacher, p.slot, parity)][key] = label
+    out = []
+    for (teacher, slot, parity), items in agenda.items():
+        if len(items) > 1:
+            day, period = cal.slot_of(slot)
+            out.append(Violation(
+                kind='教师分身',
+                detail='%s %s第%d节（%s）同时在 %s'
+                       % (teacher, cal.DAYS[day], period, parity,
+                          '、'.join(sorted(items.values())))))
+    return _dedup(out)
+
+
+def _venue_load(placements, cfg, venue_name, parity):
+    """某场地在各时间格上的占位数。合班课整门只占 1 处，不按班数。"""
+    load = defaultdict(set)
+    for p in placements:
+        if cfg.courses[p.course].venue != venue_name:
+            continue
+        if not _runs_in_parity(p, parity):
+            continue
+        load[p.slot].add(_engagement(p, cfg)[0])
+    return {slot: len(keys) for slot, keys in load.items()}
+
+
+def _venue_overflow(placements, cfg, venue_name, capacity):
     out = []
     for parity in PARITIES:
-        seen = defaultdict(list)
-        for p in placements:
-            if cfg.courses[p.course].multi_class:
-                continue                     # 合班课：一位教师可同时面向多个班
-            if _runs_in_parity(p, parity):
-                seen[(p.teacher, p.slot)].append(p)
-        for (teacher, slot), group in seen.items():
-            if len(group) > 1:
+        for slot, count in sorted(_venue_load(placements, cfg, venue_name, parity).items()):
+            if count > capacity:
                 day, period = cal.slot_of(slot)
                 out.append(Violation(
-                    kind='教师分身',
-                    detail='%s %s第%d节（%s）同时在 %s'
-                           % (teacher, cal.DAYS[day], period, parity,
-                              '、'.join('%d班%s' % (p.class_id, p.course) for p in group))))
-    return _dedup(out)
+                    kind='场地超容',
+                    detail='%s %s第%d节（%s）%d 处占用（合班课整门计 1 处），容量 %d'
+                           % (venue_name, cal.DAYS[day], period, parity, count, capacity)))
+    return out
 
 
 def _check_venues(placements, cfg):
     out = []
     for venue in cfg.venues.values():
-        if venue.capacity is None:
-            continue
-        for parity in PARITIES:
-            counts = Counter(p.slot for p in placements
-                             if cfg.courses[p.course].venue == venue.name
-                             and _runs_in_parity(p, parity))
-            for slot, count in counts.items():
-                if count > venue.capacity:
-                    day, period = cal.slot_of(slot)
-                    out.append(Violation(
-                        kind='场地超容',
-                        detail='%s %s第%d节（%s）%d 个班占用，容量 %d'
-                               % (venue.name, cal.DAYS[day], period, parity,
-                                  count, venue.capacity)))
+        if venue.capacity is not None:
+            out += _venue_overflow(placements, cfg, venue.name, venue.capacity)
     return _dedup(out)
 
 
@@ -151,12 +187,26 @@ def _daily_counts(placements, dataset, cfg, rule):
     return counts, classes
 
 
+def _watched_days(rule):
+    """规则声明了 weekdays 就只判这几天，否则整周都判。
+
+    忽略它会对未被约束的日子报假违规 —— DSL 是教务直接编辑的界面，
+    校验器一旦被当成噪声，真问题就再没人看了。
+    """
+    names = rule.params.get('weekdays')
+    if not names:
+        return None                      # None = 不设限，整周都判
+    return {cal.day_index(name) for name in names}
+
+
 def _check_daily_min(placements, dataset, cfg, rule):
     n = int(rule.params['n'])
+    watched = _watched_days(rule)
     counts, classes = _daily_counts(placements, dataset, cfg, rule)
+    days = sorted(watched) if watched is not None else range(len(cal.DAYS))
     out = []
     for class_id in sorted(classes):
-        for day in range(len(cal.DAYS)):
+        for day in days:
             if counts[(class_id, day)] < n:
                 out.append(Violation(
                     kind='每日下限不足', rule_type=rule.type, scope=rule.scope,
@@ -168,9 +218,12 @@ def _check_daily_min(placements, dataset, cfg, rule):
 
 def _check_daily_max(placements, dataset, cfg, rule):
     n = int(rule.params['n'])
+    watched = _watched_days(rule)
     counts, classes = _daily_counts(placements, dataset, cfg, rule)
     out = []
     for (class_id, day), count in sorted(counts.items()):
+        if watched is not None and day not in watched:
+            continue
         if count > n:
             out.append(Violation(
                 kind='每日上限超出', rule_type=rule.type, scope=rule.scope,
@@ -241,6 +294,17 @@ def _check_alternate(placements, dataset, cfg, rule):
     return out
 
 
+def _check_venue_capacity(placements, dataset, cfg, rule):
+    """规则驱动的场地容量。与配置驱动的 _check_venues 是两条独立路径。"""
+    capacity = rule.params.get('capacity')
+    if capacity is None:
+        return []
+    out = _venue_overflow(placements, cfg, rule.params['venue'], int(capacity))
+    for v in out:
+        v.rule_type, v.scope = rule.type, rule.scope
+    return out
+
+
 _RULE_CHECKS = {
     'forbid_slots': _check_forbid,
     'pin_window': _check_pin,
@@ -249,6 +313,7 @@ _RULE_CHECKS = {
     'weekday_exact': _check_weekday_exact,
     'consecutive': _check_consecutive,
     'alternate_weeks': _check_alternate,
+    'venue_capacity': _check_venue_capacity,
 }
 
 
