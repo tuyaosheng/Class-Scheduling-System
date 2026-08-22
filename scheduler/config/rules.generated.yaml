@@ -313,6 +313,19 @@ rules:
 - type: forbid_slots
   scope:
     grade: 初三
+    teacher: 廖文峰
+  params:
+    slots:
+    - - 4
+      - 1
+    - - 4
+      - 2
+    - - 4
+      - 3
+  mode: hard
+- type: forbid_slots
+  scope:
+    grade: 初三
     teacher: 张婉盈
   params:
     slots:
@@ -1227,19 +1240,6 @@ rules:
       - 4
     - - 4
       - 5
-  mode: hard
-- type: forbid_slots
-  scope:
-    grade: 初三
-    teacher: 王楚轲
-  params:
-    slots:
-    - - 4
-      - 1
-    - - 4
-      - 2
-    - - 4
-      - 3
   mode: hard
 - type: forbid_slots
   scope:

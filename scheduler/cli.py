@@ -101,13 +101,24 @@ def cmd_import(args) -> int:
     return 0
 
 
+def _suffixed_path(out, index):
+    out = Path(out)
+    return str(out.with_name('%s_候选%d%s' % (out.stem, index, out.suffix)))
+
+
+def _template_suffixed_path(out, index, count):
+    out = Path(out)
+    suffix = '_候选%d_模板' % index if count > 1 else '_模板'
+    return str(out.with_name('%s%s%s' % (out.stem, suffix, out.suffix)))
+
+
 def cmd_solve(args) -> int:
     from .core.diagnose import format_conflict, minimal_conflict
-    from .core.exporter import export_excel
+    from .core.exporter import export_excel, export_to_template
     from .core.importer import import_excel
     from .core.precheck import format_issues, precheck
     from .core.rules import load_rules
-    from .core.solver import solve
+    from .core.solver import solve_many
     from .core.verifier import format_violations, verify
 
     config_dir = Path(args.config_dir)
@@ -122,19 +133,33 @@ def cmd_solve(args) -> int:
         print('\n预检未通过，不进入求解器。请先处理上述问题。')
         return 2
 
-    solution = solve(result.dataset, cfg, rules, max_seconds=args.max_seconds)
-    print('\n状态 %s，耗时 %.2f 秒，放置 %d 节课'
-          % (solution.status, solution.wall_time, len(solution.placements)))
+    solutions = solve_many(result.dataset, cfg, rules, count=args.count,
+                           min_diff=args.min_diff, max_seconds=args.max_seconds)
 
-    if not solution.feasible:
+    if not solutions:
         # L2：预检通过却无解，取最小冲突集
+        print('\n状态 INFEASIBLE')
         print('\n' + format_conflict(
             minimal_conflict(result.dataset, cfg, rules, max_seconds=args.max_seconds)))
         return 1
 
-    print('\n' + format_violations(verify(solution, result.dataset, cfg, rules)))
-    export_excel(solution, result.dataset, args.out, cfg=cfg)
-    print('已导出 %s' % args.out)
+    if len(solutions) < args.count:
+        print('\n只求出 %d 个彼此有差异（≥%d 处不同）的解，不足要求的 %d 个——'
+              '差异空间已经用尽，不是求解失败。' % (len(solutions), args.min_diff, args.count))
+
+    paths = [args.out] if args.count == 1 else [_suffixed_path(args.out, i + 1)
+                                                 for i in range(len(solutions))]
+    for i, (solution, path) in enumerate(zip(solutions, paths), start=1):
+        print('\n[方案 %d] 状态 %s，耗时 %.2f 秒，放置 %d 节课'
+              % (i, solution.status, solution.wall_time, len(solution.placements)))
+        print(format_violations(verify(solution, result.dataset, cfg, rules)))
+        export_excel(solution, result.dataset, path, cfg=cfg)
+        print('已导出 %s' % path)
+        if args.template:
+            template_path = _template_suffixed_path(args.out, i, len(solutions))
+            export_to_template(solution, result.dataset, args.template, template_path,
+                               sheet_name=args.template_sheet)
+            print('已按模板导出 %s' % template_path)
     return 0
 
 
@@ -158,6 +183,14 @@ def main(argv=None) -> int:
     p.add_argument('--config-dir', default=str(DEFAULT_CONFIG_DIR))
     p.add_argument('--out', default='output/课表.xlsx')
     p.add_argument('--max-seconds', type=int, default=60)
+    p.add_argument('--count', type=int, default=1,
+                   help='生成几个彼此有差异的候选方案（>1 时文件名自动加「_候选N」后缀）')
+    p.add_argument('--min-diff', type=int, default=8,
+                   help='候选方案之间至少相差几处排课（--count > 1 时才有意义）')
+    p.add_argument('--template', default=None,
+                   help='按此 Excel 模板版式额外导出一份（如 课程表模板.xlsx）')
+    p.add_argument('--template-sheet', default='下学期',
+                   help='模板里要写入的工作表名，默认「下学期」')
     p.set_defaults(func=cmd_solve)
 
     args = parser.parse_args(argv)

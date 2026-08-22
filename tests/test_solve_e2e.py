@@ -7,7 +7,7 @@ from scheduler.core import calendar as cal
 from scheduler.core.config import load_config
 from scheduler.core.importer import import_excel
 from scheduler.core.rules import load_rules
-from scheduler.core.solver import solve
+from scheduler.core.solver import solve, solve_many
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_DIR = ROOT / 'scheduler' / 'config'
@@ -115,3 +115,56 @@ def test_cli_solve(tmp_path, monkeypatch, capsys):
     assert out.exists()
     out_text = capsys.readouterr().out
     assert 'OPTIMAL' in out_text or 'FEASIBLE' in out_text
+
+
+# ---------------------------------------------------------------- 多解生成
+
+def test_solve_many_returns_distinct_feasible_solutions():
+    cfg = load_config(CONFIG_DIR)
+    result = import_excel(EXCEL, cfg, grade='初三')
+    rules = load_rules(CONFIG_DIR / 'rules.yaml', CONFIG_DIR / 'rules.generated.yaml')
+    solutions = solve_many(result.dataset, cfg, rules, count=3, min_diff=8, max_seconds=30)
+    assert len(solutions) == 3
+    for sol in solutions:
+        assert sol.feasible
+
+    def placed(sol):
+        return {(p.task_id, p.slot) for p in sol.placements}
+
+    for i in range(len(solutions)):
+        for j in range(i + 1, len(solutions)):
+            diff = placed(solutions[i]) ^ placed(solutions[j])
+            assert len(diff) >= 8, '第 %d 与第 %d 个解差异只有 %d 处' % (i, j, len(diff))
+
+
+def test_solve_many_each_solution_passes_verification():
+    from scheduler.core.verifier import verify
+    cfg = load_config(CONFIG_DIR)
+    result = import_excel(EXCEL, cfg, grade='初三')
+    rules = load_rules(CONFIG_DIR / 'rules.yaml', CONFIG_DIR / 'rules.generated.yaml')
+    solutions = solve_many(result.dataset, cfg, rules, count=2, min_diff=8, max_seconds=30)
+    for sol in solutions:
+        violations = verify(sol, result.dataset, cfg, rules)
+        assert violations == [], '\n'.join(v.detail for v in violations)
+
+
+def test_solve_many_stops_early_when_diversity_exhausted():
+    """可行解总数比要求的 count 少时，应少给几个而不是报错或死等。
+
+    用一个把域收窄到 3 格、放 2 节课的最小场景：C(3,2)=3 种放法是
+    这个问题的解空间上限，要 5 个必然只能拿到 3 个。
+    """
+    from scheduler.core.models import Dataset, Teacher, TeachingTask
+    from scheduler.core.rules import Rule
+
+    cfg = load_config(CONFIG_DIR)
+    task = TeachingTask(id=0, grade='初三', class_id=1, course='语文',
+                        teacher='张老师', periods=2)
+    dataset = Dataset(grade='初三', classes=[1],
+                      teachers={'张老师': Teacher(name='张老师')}, tasks=[task])
+    allowed = {cal.slot_index(0, 1), cal.slot_index(0, 2), cal.slot_index(0, 3)}
+    forbidden = [list(cal.slot_of(s)) for s in range(cal.N_SLOTS) if s not in allowed]
+    rules = [Rule(type='forbid_slots', scope={'course': '语文'}, params={'slots': forbidden})]
+
+    solutions = solve_many(dataset, cfg, rules, count=5, min_diff=1, max_seconds=5)
+    assert len(solutions) == 3

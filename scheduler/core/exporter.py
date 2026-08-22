@@ -58,3 +58,43 @@ def export_excel(solution, dataset, path, cfg=None) -> None:
 
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
+
+
+# ---------------------------------------------------------------- 按教务模板导出
+
+# 「课程表模板.xlsx」『下学期』工作表的版式：行是班级，列是星期×节次。
+# 初三1 在第 12 行，此后每班占一行；每天 9 列（节次 1-8 + 第二课堂=第9节），
+# 周一从第 2 列开始。这两个偏移量是模板本身的版式，不是系统的计算结果。
+_TEMPLATE_FIRST_CLASS_ROW = 12
+_TEMPLATE_FIRST_DAY_COL = 2
+
+
+def _template_cell(class_id, slot):
+    day, period = cal.slot_of(slot)
+    row = _TEMPLATE_FIRST_CLASS_ROW + (class_id - 1)
+    col = _TEMPLATE_FIRST_DAY_COL + day * cal.PERIODS_PER_DAY + (period - 1)
+    return row, col
+
+
+def export_to_template(solution, dataset, template_path, out_path, sheet_name='下学期') -> None:
+    """按教务提供的『课程表模板.xlsx』版式导出。
+
+    模板里教务固定占位的 8 格（班会/体比/校本1/综实2/体选）已经预填好内容，
+    这里只写系统求解出的格子，不碰模板已有的表头、预填内容与会议安排说明。
+    """
+    wb = openpyxl.load_workbook(template_path)
+    if sheet_name not in wb.sheetnames:
+        raise ValueError('模板 %s 里没有名为 %r 的工作表' % (template_path, sheet_name))
+    ws = wb[sheet_name]
+
+    by_cell = defaultdict(list)
+    for p in solution.placements:
+        by_cell[_template_cell(p.class_id, p.slot)].append(p)
+
+    for (row, col), placements in by_cell.items():
+        text = '/'.join('%s%s' % (p.course, '(%s)' % p.parity if p.parity else '')
+                        for p in placements)
+        ws.cell(row=row, column=col, value=text)
+
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    wb.save(out_path)

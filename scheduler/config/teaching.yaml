@@ -1017,7 +1017,7 @@ teachers:
     - 2
   - - 4
     - 3
-- name: 王楚轲
+- name: 廖文峰
   duties: []
   forbidden:
   - - 4
@@ -2662,72 +2662,72 @@ tasks:
   parity: null
 - id: 132
   grade: 初三
-  class_id: 5
+  class_id: 7
   course: 历史
   teacher: 陈俊彪
   periods: 3
   parity: null
 - id: 133
   grade: 初三
-  class_id: 6
+  class_id: 8
   course: 历史
   teacher: 陈俊彪
   periods: 3
   parity: null
 - id: 134
   grade: 初三
-  class_id: 7
+  class_id: 9
   course: 历史
   teacher: 陈俊彪
   periods: 3
   parity: null
 - id: 135
   grade: 初三
-  class_id: 8
+  class_id: 10
   course: 历史
   teacher: 陈俊彪
   periods: 3
   parity: null
 - id: 136
   grade: 初三
-  class_id: 9
+  class_id: 11
   course: 历史
   teacher: 莫洁萍
   periods: 3
   parity: null
 - id: 137
   grade: 初三
-  class_id: 10
+  class_id: 12
   course: 历史
   teacher: 莫洁萍
   periods: 3
   parity: null
 - id: 138
   grade: 初三
-  class_id: 11
+  class_id: 13
   course: 历史
   teacher: 莫洁萍
   periods: 3
   parity: null
 - id: 139
   grade: 初三
-  class_id: 12
+  class_id: 14
   course: 历史
   teacher: 莫洁萍
   periods: 3
   parity: null
 - id: 140
   grade: 初三
-  class_id: 13
+  class_id: 5
   course: 历史
-  teacher: 王楚轲
+  teacher: 廖文峰
   periods: 3
   parity: null
 - id: 141
   grade: 初三
-  class_id: 14
+  class_id: 6
   course: 历史
-  teacher: 王楚轲
+  teacher: 廖文峰
   periods: 3
   parity: null
 - id: 142
