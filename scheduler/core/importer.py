@@ -271,15 +271,13 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
     duties: Dict[str, set] = defaultdict(set)
     for row in rows:
         name = _cell(row, '姓名')
-        forbidden[name] |= parse_time_expr(_cell(row, '不能排课节次'))
         for duty in _cell(row, '职务').split(','):
             if duty.strip():
                 duties[name].add(duty.strip())
-    teachers = {
-        name: Teacher(name=name, duties=sorted(duties[name]),
-                      forbidden=sorted([d, p] for d, p in forbidden[name]))
-        for name in forbidden
-    }
+        if rule_engine != 'ai':
+            # AI 模式下禁排改由主循环里逐行解析结果累积（见下方 parsed.not_available），
+            # 不在这里用正则重复算一遍——否则 AI 对这一列的解析结果会被静默丢弃。
+            forbidden[name] |= parse_time_expr(_cell(row, '不能排课节次'))
 
     tasks: List[TeachingTask] = []
     classes = set()
@@ -308,6 +306,7 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
         if rule_engine == 'ai':
             from scheduler.ai.rule_parser import parse_row_ai
             parsed = parse_row_ai(not_avail_raw, fixed_raw, req_raw, remark_raw, client=ai_client)
+            forbidden[rules_teacher] |= {(d, p) for d, p in parsed.not_available}
             fixed_slots = {(d, p) for d, p in parsed.fixed_slots}
             fragments = parsed.requirement + parsed.remark
         else:
@@ -326,13 +325,13 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
             rule_echo['排课要求'].append({
                 'raw': req_raw,
                 'parsed': '; '.join('%s %s' % (f['type'], f['params']) for f in
-                                     (parse_requirement(req_raw) if rule_engine != 'ai' else fragments))})
+                                     (parse_requirement(req_raw) if rule_engine != 'ai' else parsed.requirement))})
         if remark_raw and remark_raw not in seen_raw['备注']:
             seen_raw['备注'].add(remark_raw)
             rule_echo['备注'].append({
                 'raw': remark_raw,
                 'parsed': '; '.join('%s %s' % (f['type'], f['params']) for f in
-                                     (parse_remark(remark_raw) if rule_engine != 'ai' else fragments))})
+                                     (parse_remark(remark_raw) if rule_engine != 'ai' else parsed.remark))})
 
         if not cfg.courses[course].external and fixed_slots:
             pins[course] |= fixed_slots
@@ -361,10 +360,10 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
             continue
 
         hours = float(_cell(row, '周课时'))
-        parity = None
+        base_parity = None
         if hours == 0.5:
-            parity = cfg.courses[course].alternate
-            if not parity:
+            base_parity = cfg.courses[course].alternate
+            if not base_parity:
                 raise ValueError('%s 周课时 0.5 但课程目录未声明 alternate' % course)
             periods = 1
         else:
@@ -387,6 +386,11 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
                                   'from_teaching_table': pivot_teacher,
                                   'from_rules_sheet': rules_teacher})
                 continue
+            parity = base_parity
+            if base_parity and class_id % 2 == 0:
+                # 按班号奇偶各半翻转单双周，否则该老师整学期只在单周（或双周）
+                # 有课，负荷忽高忽低；翻转后每周教的班数固定，见坑 3。
+                parity = '双周' if base_parity == '单周' else '单周'
             tasks.append(TeachingTask(id=len(tasks), grade=grade, class_id=class_id,
                                       course=course, teacher=pivot_teacher,
                                       periods=periods, parity=parity))
@@ -424,6 +428,14 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
         if rule['mode'] == 'soft':
             rule.setdefault('enabled', True)
             rule.setdefault('weight', 5)
+
+    # forbidden 在 AI 模式下要到主循环跑完才最终定型（逐行累积 parsed.not_available），
+    # 所以 teachers 字典必须放在主循环之后再建——放前面会在 AI 模式下读到半成品。
+    teachers = {
+        name: Teacher(name=name, duties=sorted(duties[name]),
+                      forbidden=sorted([d, p] for d, p in forbidden[name]))
+        for name in forbidden
+    }
 
     dataset = Dataset(grade=grade, classes=sorted(classes), teachers=teachers, tasks=tasks)
     warnings = _check_class_loads(dataset, cfg, grade)
