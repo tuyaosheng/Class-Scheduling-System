@@ -7,6 +7,7 @@ from scheduler.core import calendar as cal
 from scheduler.core.compiler import compile_model, active_in
 from scheduler.core.config import load_config
 from scheduler.core.models import Dataset, Teacher, TeachingTask
+from scheduler.core.rules import Rule
 
 CONFIG_DIR = Path(__file__).resolve().parents[1] / 'scheduler' / 'config'
 
@@ -140,3 +141,100 @@ def test_disabled_rules_are_ignored(cfg):
     off = Rule(type='daily_min', scope={'grade': '初三'}, params={'n': 9}, enabled=False)
     solver, status = solve(compile_model(ds, cfg, [off]))
     assert status in (cp_model.OPTIMAL, cp_model.FEASIBLE)
+
+
+def test_multi_class_session_still_blocks_the_teachers_other_class(cfg):
+    """C1 反例：合班课折叠成一节，但仍占用教师 —— 不能与其常规课同格。
+
+    王老师给 1 班上体育、给 2 班上体比，两者都钉在周一第 1 节 → 必须无解。
+    """
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='体育', teacher='王老师', periods=1),
+        TeachingTask(id=1, grade='初三', class_id=2, course='体比', teacher='王老师', periods=1),
+    ]
+    rules = [Rule(type='pin_window', scope={'grade': '初三'}, params={'slots': [[0, 1]]})]
+    solver, status = solve(compile_model(make_dataset(tasks), cfg, rules))
+    assert status == cp_model.INFEASIBLE
+
+
+def test_multi_class_session_blocks_without_weekday_exact_protection(cfg):
+    """防偶然屏蔽：不靠 weekday_exact 把体育挤出体比所在的天，冲突照样被检出。
+
+    体比（2、3 班合班）与体育（1 班 2 节）共享周二 T8/T9 两格；
+    合班课整门只占 1 格，剩 1 格放不下 2 节体育 → 无解。
+    """
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='体育', teacher='王老师', periods=2),
+        TeachingTask(id=1, grade='初三', class_id=2, course='体比', teacher='王老师', periods=1),
+        TeachingTask(id=2, grade='初三', class_id=3, course='体比', teacher='王老师', periods=1),
+    ]
+    rules = [Rule(type='pin_window', scope={'grade': '初三'},
+                  params={'slots': [[1, 8], [1, 9]]})]
+    solver, status = solve(compile_model(make_dataset(tasks), cfg, rules))
+    assert status == cp_model.INFEASIBLE
+
+
+def test_multi_class_session_and_solo_course_fit_in_separate_slots(cfg):
+    """同一场景下体育减到 1 节就有解 —— 合班功能没有被修没。"""
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='体育', teacher='王老师', periods=1),
+        TeachingTask(id=1, grade='初三', class_id=2, course='体比', teacher='王老师', periods=1),
+        TeachingTask(id=2, grade='初三', class_id=3, course='体比', teacher='王老师', periods=1),
+    ]
+    rules = [Rule(type='pin_window', scope={'grade': '初三'},
+                  params={'slots': [[1, 8], [1, 9]]})]
+    compiled = compile_model(make_dataset(tasks), cfg, rules)
+    solver, status = solve(compiled)
+    assert status in (cp_model.OPTIMAL, cp_model.FEASIBLE)
+    pe = set(placed_slots(solver, compiled, 0))
+    tibi = set(placed_slots(solver, compiled, 1)) | set(placed_slots(solver, compiled, 2))
+    assert not (pe & tibi), '体育与体比不该落在同一格'
+
+
+def test_two_different_multi_class_courses_of_one_teacher_still_clash(cfg):
+    """体比与体选是两个 session：同一位教师不能同时在两个操场合班上。"""
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='体比', teacher='王老师', periods=1),
+        TeachingTask(id=1, grade='初三', class_id=2, course='体选', teacher='王老师', periods=1),
+    ]
+    rules = [Rule(type='pin_window', scope={'grade': '初三'}, params={'slots': [[0, 1]]})]
+    solver, status = solve(compile_model(make_dataset(tasks), cfg, rules))
+    assert status == cp_model.INFEASIBLE
+
+
+def test_multi_class_session_may_spread_across_the_window(cfg):
+    """合班 session 不强制组内同格：3 个班的体比分落 T8/T9 是允许的。"""
+    tasks = [TeachingTask(id=i, grade='初三', class_id=i + 1, course='体比',
+                          teacher='王老师', periods=1) for i in range(3)]
+    rules = [
+        Rule(type='pin_window', scope={'course': '体比'}, params={'slots': [[1, 8], [1, 9]]}),
+        # 1 班另有一节钉死在周二 T8 的课，逼得该班的体比只能去 T9
+        Rule(type='forbid_slots', scope={'class': 1, 'course': '体比'},
+             params={'slots': [[1, 8]]}),
+    ]
+    compiled = compile_model(make_dataset(tasks), cfg, rules)
+    solver, status = solve(compiled)
+    assert status in (cp_model.OPTIMAL, cp_model.FEASIBLE)
+    assert placed_slots(solver, compiled, 0) == [cal.slot_index(1, 9)]
+
+
+def test_multi_class_venue_counts_one_session_not_one_per_class(cfg):
+    """场地按 session 计：8 个班的体比在操场上只是一节合班课，容量 1 也放得下。"""
+    tasks = [TeachingTask(id=i, grade='初三', class_id=i + 1, course='体比',
+                          teacher='王老师', periods=45) for i in range(8)]
+    rules = [Rule(type='venue_capacity', scope={},
+                  params={'venue': '操场', 'capacity': 1})]
+    solver, status = solve(compile_model(make_dataset(tasks), cfg, rules))
+    assert status in (cp_model.OPTIMAL, cp_model.FEASIBLE)
+
+
+def test_venue_capacity_still_counts_separate_sessions(cfg):
+    """反证：换成两位教师各带一门合班课，就是 2 处占用，容量 1 放不下。"""
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='体比', teacher='王老师', periods=45),
+        TeachingTask(id=1, grade='初三', class_id=2, course='体比', teacher='李老师', periods=45),
+    ]
+    rules = [Rule(type='venue_capacity', scope={},
+                  params={'venue': '操场', 'capacity': 1})]
+    solver, status = solve(compile_model(make_dataset(tasks), cfg, rules))
+    assert status == cp_model.INFEASIBLE

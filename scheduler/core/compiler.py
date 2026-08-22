@@ -27,6 +27,8 @@ class CompiledModel:
         self.cfg = cfg
         self.assumptions: Dict[int, Rule] = {}
         self.skipped_soft: List[Rule] = []
+        # 合班 session 的占用布尔量：(teacher, course, parity, slot) -> BoolVar
+        self.session_occ: Dict = {}
 
     def task_vars(self, task_id):
         return [self.x[(task_id, s)] for s in range(cal.N_SLOTS)]
@@ -71,19 +73,66 @@ def _add_class_no_clash(c: CompiledModel) -> None:
                 c.model.Add(sum(c.x[(t.id, slot)] for t in active) <= 1)
 
 
-def _add_teacher_no_clash(c: CompiledModel) -> None:
-    by_teacher = defaultdict(list)
-    for task in c.dataset.tasks:
+def _split_sessions(c: CompiledModel, tasks):
+    """把任务拆成「独立任务」与「合班 session」。
+
+    合班课按 (teacher, course) 折叠成一个 session：组内各班互不冲突（这就是合班），
+    但 session 整体仍占用教师与场地 —— 不折叠会让教师同时出现在两处。
+    """
+    solo, sessions = [], defaultdict(list)
+    for task in tasks:
         if c.cfg.courses[task.course].multi_class:
-            continue                      # 合班课豁免：一位教师可同时面向多个班
-        by_teacher[task.teacher].append(task)
-    for tasks in by_teacher.values():
+            sessions[(task.teacher, task.course)].append(task)
+        else:
+            solo.append(task)
+    return solo, sessions
+
+
+def _occ_var(c: CompiledModel, key, tasks, slot):
+    """(teacher, course, parity) 这个 session 在 slot 上的占用量。
+
+    半具体化：任一组内任务落在这一格 ⇒ 占用为真。反向不需要 ——
+    上层约束都是「占用之和 ≤ 上限」，占用只会被往下压。
+    """
+    teacher, course, parity = key
+    var = c.session_occ.get((teacher, course, parity, slot))
+    if var is None:
+        var = c.model.NewBoolVar('occ_%s_%s_%s_%d' % (teacher, course, parity, slot))
+        for task in tasks:
+            c.model.AddImplication(c.x[(task.id, slot)], var)
+        c.session_occ[(teacher, course, parity, slot)] = var
+    return var
+
+
+def _active_groups(sessions, parity):
+    """本周次仍在上课的 session，附带其组内任务。"""
+    out = []
+    for (teacher, course), tasks in sorted(sessions.items()):
+        active = [t for t in tasks if active_in(t, parity)]
+        if active:
+            out.append(((teacher, course, parity), active))
+    return out
+
+
+def _add_teacher_no_clash(c: CompiledModel) -> None:
+    solo, sessions = _split_sessions(c, c.dataset.tasks)
+    by_teacher_solo = defaultdict(list)
+    for task in solo:
+        by_teacher_solo[task.teacher].append(task)
+    by_teacher_sessions = defaultdict(dict)
+    for (teacher, course), tasks in sessions.items():
+        by_teacher_sessions[teacher][(teacher, course)] = tasks
+
+    for teacher in sorted(set(by_teacher_solo) | set(by_teacher_sessions)):
         for parity in PARITIES:
-            active = [t for t in tasks if active_in(t, parity)]
-            if len(active) < 2:
-                continue
+            singles = [t for t in by_teacher_solo.get(teacher, []) if active_in(t, parity)]
+            groups = _active_groups(by_teacher_sessions.get(teacher, {}), parity)
+            if len(singles) + len(groups) < 2:
+                continue          # 只有一件事可做，无从分身
             for slot in range(cal.N_SLOTS):
-                c.model.Add(sum(c.x[(t.id, slot)] for t in active) <= 1)
+                terms = [c.x[(t.id, slot)] for t in singles]
+                terms += [_occ_var(c, key, tasks, slot) for key, tasks in groups]
+                c.model.Add(sum(terms) <= 1)
 
 
 # 各规则类型的编译函数在 Task 9-11 逐个填入
@@ -206,26 +255,40 @@ def _compile_alternate_weeks(c: CompiledModel, rule: Rule, with_assumptions: boo
 
 @handler('consecutive')
 def _compile_consecutive(c: CompiledModel, rule: Rule, with_assumptions: bool) -> None:
+    """连堂是**班级视角**的属性：两节相邻的语文对学生就是连堂，
+
+    哪怕由两位教师分带。所以这里按班聚合命中任务的占用，不绑定单个 task。
+    """
     days_needed = int(rule.params.get('days', 1))
     length = int(rule.params.get('length', 2))
     pairs = adjacent_pairs()
     for class_id, tasks in _group_by_class(select_tasks(rule, c.dataset.tasks, c.cfg)).items():
         day_flags = []
         for day in range(len(cal.DAYS)):
+            hit = {}                     # 节次 -> 「该班这一格上的是本规则命中的课」
+
+            def hit_var(period, _day=day, _class_id=class_id, _tasks=tasks):
+                var = hit.get(period)
+                if var is None:
+                    var = c.model.NewBoolVar('cons_hit_%d_%d_%d' % (_class_id, _day, period))
+                    slot = cal.slot_index(_day, period)
+                    # 半具体化：var 为真则这一格至少有一节命中课；由哪个 task 提供不限
+                    c.model.Add(
+                        sum(c.x[(t.id, slot)] for t in _tasks) >= 1).OnlyEnforceIf(var)
+                    hit[period] = var
+                return var
+
             day_indicators = []          # 这一天的全部 y
-            for task in tasks:
-                for start, _ in pairs:
-                    run_periods = list(range(start, start + length))
-                    if run_periods[-1] > cal.PERIODS_PER_DAY:
-                        continue
-                    if any((p, p + 1) in NO_ADJACENT for p in run_periods[:-1]):
-                        continue
-                    y = c.model.NewBoolVar('cons_%d_%d_%d_%d' % (class_id, task.id, day, start))
-                    # 半具体化：y 为真则整段都是这门课；反向不需要
-                    c.model.AddBoolAnd(
-                        [c.x[(task.id, cal.slot_index(day, p))] for p in run_periods]
-                    ).OnlyEnforceIf(y)
-                    day_indicators.append(y)
+            for start, _ in pairs:
+                run_periods = list(range(start, start + length))
+                if run_periods[-1] > cal.PERIODS_PER_DAY:
+                    continue
+                if any((p, p + 1) in NO_ADJACENT for p in run_periods[:-1]):
+                    continue
+                y = c.model.NewBoolVar('cons_%d_%d_%d' % (class_id, day, start))
+                # 半具体化：y 为真则整段都被命中课占满；反向不需要
+                c.model.AddBoolAnd([hit_var(p) for p in run_periods]).OnlyEnforceIf(y)
+                day_indicators.append(y)
             if not day_indicators:
                 continue
             flag = c.model.NewBoolVar('cons_day_%d_%d' % (class_id, day))
@@ -249,15 +312,20 @@ def _compile_venue_capacity(c: CompiledModel, rule: Rule, with_assumptions: bool
 
 
 def _limit_venue(c: CompiledModel, venue: str, capacity: int) -> None:
+    """场地占用同样按 session 计：32 个班的体比物理上只是一节合班课。"""
     tasks = [t for t in c.dataset.tasks if c.cfg.courses[t.course].venue == venue]
     if not tasks:
         return
+    solo, sessions = _split_sessions(c, tasks)
     for parity in PARITIES:
-        active = [t for t in tasks if active_in(t, parity)]
-        if len(active) <= capacity:
+        singles = [t for t in solo if active_in(t, parity)]
+        groups = _active_groups(sessions, parity)
+        if len(singles) + len(groups) <= capacity:
             continue
         for slot in range(cal.N_SLOTS):
-            c.model.Add(sum(c.x[(t.id, slot)] for t in active) <= capacity)
+            terms = [c.x[(t.id, slot)] for t in singles]
+            terms += [_occ_var(c, key, group, slot) for key, group in groups]
+            c.model.Add(sum(terms) <= capacity)
 
 
 def add_venue_constraints(c: CompiledModel) -> None:

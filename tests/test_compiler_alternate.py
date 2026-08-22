@@ -143,3 +143,58 @@ def test_consecutive_does_not_count_across_lunch(cfg):
     ]
     _, status = run(compile_model(ds([task]), cfg, rules))
     assert status == cp_model.INFEASIBLE
+
+
+def test_consecutive_may_be_supplied_by_two_teachers(cfg):
+    """连堂是班级视角：1 班语文由 A、B 各带 1 节，相邻两格就算连堂。
+
+    编译器若要求连堂两节属于同一教学任务，这里会给出假无解。
+    """
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='语文', teacher='A', periods=1),
+        TeachingTask(id=1, grade='初三', class_id=1, course='语文', teacher='B', periods=1),
+    ]
+    rule = Rule(type='consecutive', scope={'course': '语文'},
+                params={'days': 1, 'length': 2})
+    compiled = compile_model(ds(tasks), cfg, [rule])
+    solver, status = run(compiled)
+    assert status in (cp_model.OPTIMAL, cp_model.FEASIBLE)
+    placed = sorted(slots_of(solver, compiled, 0) + slots_of(solver, compiled, 1))
+    a, b = placed
+    assert b - a == 1 and cal.slot_of(a)[0] == cal.slot_of(b)[0]
+    assert (cal.slot_of(a)[1], cal.slot_of(b)[1]) in adjacent_pairs()
+
+
+def test_cross_task_consecutive_still_needs_adjacency(cfg):
+    """反证：把 A、B 的两节语文钉在互不相邻的两格，仍然无解。"""
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='语文', teacher='A', periods=1),
+        TeachingTask(id=1, grade='初三', class_id=1, course='语文', teacher='B', periods=1),
+    ]
+    rules = [
+        Rule(type='pin_window', scope={'course': '语文'},
+             params={'slots': [[0, 1], [0, 3]]}),
+        Rule(type='consecutive', scope={'course': '语文'},
+             params={'days': 1, 'length': 2}),
+    ]
+    _, status = run(compile_model(ds(tasks), cfg, rules))
+    assert status == cp_model.INFEASIBLE
+
+
+def test_cross_task_consecutive_still_aggregates_by_day(cfg):
+    """Task 11 的按天聚合不能被改坏：同一天两处连堂只算一天。
+
+    4 节语文全钉在周一 1-4 节，要求 2 天连堂 → 无解。
+    """
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='语文', teacher='A', periods=2),
+        TeachingTask(id=1, grade='初三', class_id=1, course='语文', teacher='B', periods=2),
+    ]
+    rules = [
+        Rule(type='pin_window', scope={'course': '语文'},
+             params={'slots': [[0, 1], [0, 2], [0, 3], [0, 4]]}),
+        Rule(type='consecutive', scope={'course': '语文'},
+             params={'days': 2, 'length': 2}),
+    ]
+    _, status = run(compile_model(ds(tasks), cfg, rules))
+    assert status == cp_model.INFEASIBLE

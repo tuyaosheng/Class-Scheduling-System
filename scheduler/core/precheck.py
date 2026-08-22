@@ -132,13 +132,32 @@ def _check_pin_windows(dataset, cfg, rules) -> List[Issue]:
     return out
 
 
+def _venue_demand(dataset, cfg, venue_name) -> int:
+    """场地占位需求。合班课按 (教师, 课程) 折叠成一个 session。
+
+    session 的各班可分落不同格，占位数介于 max 与 sum 之间；这里取下界 max，
+    宁可漏报也不误报 —— 预检的价值在于「一报必准」。
+    """
+    total = 0
+    sessions = defaultdict(int)
+    for task in dataset.tasks:
+        course = cfg.courses[task.course]
+        if course.venue != venue_name:
+            continue
+        if course.multi_class:
+            key = (task.teacher, task.course)
+            sessions[key] = max(sessions[key], task.periods)
+        else:
+            total += task.periods
+    return total + sum(sessions.values())
+
+
 def _check_venue_capacity(dataset, cfg) -> List[Issue]:
     out = []
     for venue in cfg.venues.values():
         if venue.capacity is None:
             continue
-        demand = sum(t.periods for t in dataset.tasks
-                     if cfg.courses[t.course].venue == venue.name)
+        demand = _venue_demand(dataset, cfg, venue.name)
         supply = venue.capacity * cal.N_SLOTS
         if demand > supply:
             out.append(Issue(
