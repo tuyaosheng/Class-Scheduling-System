@@ -10,8 +10,8 @@ courses:
   - {name: 道法,  family: 道法}
   - {name: 历史,  family: 历史}
   - {name: 体育,  family: 体育, venue: 操场}
-  - {name: 体比,  family: 体育, venue: 操场, multi_class: true, external: true}  # 周二T8、9节，教务固定安排
-  - {name: 体选,  family: 体育, venue: 操场, multi_class: true, external: true}  # 周五第9节，教务固定安排
+  - {name: 体比,  family: 体育, venue: 操场, external: true}  # 周二T8、9节，教务固定安排
+  - {name: 体选,  family: 体育, venue: 操场, external: true}  # 周五第9节，教务固定安排
   - {name: 音乐,  family: 音乐}
   - {name: 美术,  family: 心美, alternate: 单周}
   - {name: 心理,  family: 心美, alternate: 双周}

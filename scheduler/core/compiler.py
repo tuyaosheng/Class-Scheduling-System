@@ -27,8 +27,6 @@ class CompiledModel:
         self.cfg = cfg
         self.assumptions: Dict[int, Rule] = {}
         self.skipped_soft: List[Rule] = []
-        # 合班 session 的占用布尔量：(teacher, course, parity, slot) -> BoolVar
-        self.session_occ: Dict = {}
         # 软约束惩罚项：[(惩罚布尔量, 权重), ...]，循环结束后聚合成目标
         self.soft_terms: List = []
         # 教师占用布尔量缓存：(teacher, parity, slot) -> BoolVar
@@ -84,66 +82,17 @@ def _add_class_no_clash(c: CompiledModel) -> None:
                 c.model.Add(sum(c.x[(t.id, slot)] for t in active) <= 1)
 
 
-def _split_sessions(c: CompiledModel, tasks):
-    """把任务拆成「独立任务」与「合班 session」。
-
-    合班课按 (teacher, course) 折叠成一个 session：组内各班互不冲突（这就是合班），
-    但 session 整体仍占用教师与场地 —— 不折叠会让教师同时出现在两处。
-    """
-    solo, sessions = [], defaultdict(list)
-    for task in tasks:
-        if c.cfg.courses[task.course].multi_class:
-            sessions[(task.teacher, task.course)].append(task)
-        else:
-            solo.append(task)
-    return solo, sessions
-
-
-def _occ_var(c: CompiledModel, key, tasks, slot):
-    """(teacher, course, parity) 这个 session 在 slot 上的占用量。
-
-    半具体化：任一组内任务落在这一格 ⇒ 占用为真。反向不需要 ——
-    上层约束都是「占用之和 ≤ 上限」，占用只会被往下压。
-    """
-    teacher, course, parity = key
-    var = c.session_occ.get((teacher, course, parity, slot))
-    if var is None:
-        var = c.model.NewBoolVar('occ_%s_%s_%s_%d' % (teacher, course, parity, slot))
-        for task in tasks:
-            c.model.AddImplication(c.x[(task.id, slot)], var)
-        c.session_occ[(teacher, course, parity, slot)] = var
-    return var
-
-
-def _active_groups(sessions, parity):
-    """本周次仍在上课的 session，附带其组内任务。"""
-    out = []
-    for (teacher, course), tasks in sorted(sessions.items()):
-        active = [t for t in tasks if active_in(t, parity)]
-        if active:
-            out.append(((teacher, course, parity), active))
-    return out
-
-
 def _add_teacher_no_clash(c: CompiledModel) -> None:
-    solo, sessions = _split_sessions(c, c.dataset.tasks)
-    by_teacher_solo = defaultdict(list)
-    for task in solo:
-        by_teacher_solo[task.teacher].append(task)
-    by_teacher_sessions = defaultdict(dict)
-    for (teacher, course), tasks in sessions.items():
-        by_teacher_sessions[teacher][(teacher, course)] = tasks
-
-    for teacher in sorted(set(by_teacher_solo) | set(by_teacher_sessions)):
+    by_teacher = defaultdict(list)
+    for task in c.dataset.tasks:
+        by_teacher[task.teacher].append(task)
+    for tasks in by_teacher.values():
         for parity in PARITIES:
-            singles = [t for t in by_teacher_solo.get(teacher, []) if active_in(t, parity)]
-            groups = _active_groups(by_teacher_sessions.get(teacher, {}), parity)
-            if len(singles) + len(groups) < 2:
-                continue          # 只有一件事可做，无从分身
+            active = [t for t in tasks if active_in(t, parity)]
+            if len(active) < 2:
+                continue
             for slot in range(cal.N_SLOTS):
-                terms = [c.x[(t.id, slot)] for t in singles]
-                terms += [_occ_var(c, key, tasks, slot) for key, tasks in groups]
-                c.model.Add(sum(terms) <= 1)
+                c.model.Add(sum(c.x[(t.id, slot)] for t in active) <= 1)
 
 
 # 各规则类型的编译函数在 Task 9-11 逐个填入
@@ -323,20 +272,15 @@ def _compile_venue_capacity(c: CompiledModel, rule: Rule, with_assumptions: bool
 
 
 def _limit_venue(c: CompiledModel, venue: str, capacity: int) -> None:
-    """场地占用同样按 session 计：32 个班的体比物理上只是一节合班课。"""
     tasks = [t for t in c.dataset.tasks if c.cfg.courses[t.course].venue == venue]
     if not tasks:
         return
-    solo, sessions = _split_sessions(c, tasks)
     for parity in PARITIES:
-        singles = [t for t in solo if active_in(t, parity)]
-        groups = _active_groups(sessions, parity)
-        if len(singles) + len(groups) <= capacity:
+        active = [t for t in tasks if active_in(t, parity)]
+        if len(active) <= capacity:
             continue
         for slot in range(cal.N_SLOTS):
-            terms = [c.x[(t.id, slot)] for t in singles]
-            terms += [_occ_var(c, key, group, slot) for key, group in groups]
-            c.model.Add(sum(terms) <= capacity)
+            c.model.Add(sum(c.x[(t.id, slot)] for t in active) <= capacity)
 
 
 def add_venue_constraints(c: CompiledModel) -> None:
@@ -371,10 +315,9 @@ def _halfday_run_starts(length=3):
     return starts
 
 
-def _teacher_occ_var(c: CompiledModel, teacher, parity, slot, singles, groups):
+def _teacher_occ_var(c: CompiledModel, teacher, parity, slot, tasks):
     """教师在指定周次的某一格是否在上课（布尔量）。
 
-    solo 任务直接取任务的 x；合班 session 复用 _occ_var（整门折叠成一件事）。
     与 _add_teacher_no_clash 同口径——同一教师同一格最多一件事。
     """
     key = (teacher, parity, slot)
@@ -382,8 +325,7 @@ def _teacher_occ_var(c: CompiledModel, teacher, parity, slot, singles, groups):
     if var is not None:
         return var
     var = c.model.NewBoolVar('tocc_%s_%s_%d' % (teacher, parity, slot))
-    terms = [c.x[(t.id, slot)] for t in singles]
-    terms += [_occ_var(c, gkey, gtasks, slot) for gkey, gtasks in groups]
+    terms = [c.x[(t.id, slot)] for t in tasks]
     c.model.Add(sum(terms) >= 1).OnlyEnforceIf(var)
     c.model.Add(sum(terms) == 0).OnlyEnforceIf(var.Not())
     c.teacher_occ[key] = var
@@ -403,21 +345,13 @@ def _compile_teacher_max_run(c: CompiledModel, rule: Rule) -> None:
     window_len = max_len + 1
     starts = _halfday_run_starts(window_len)
 
-    solo, sessions = _split_sessions(c, c.dataset.tasks)
-    by_solo = defaultdict(list)
-    for t in solo:
-        by_solo[t.teacher].append(t)
-    by_sessions = defaultdict(dict)
-    for (teacher, course), tasks in sessions.items():
-        by_sessions[teacher][(teacher, course)] = tasks
+    by_teacher = defaultdict(list)
+    for t in c.dataset.tasks:
+        by_teacher[t.teacher].append(t)
 
-    for teacher in sorted(set(by_solo) | set(by_sessions)):
-        singles_by_parity = {p: [t for t in by_solo.get(teacher, [])
-                                 if active_in(t, p)] for p in PARITIES}
-        groups_by_parity = {p: _active_groups(by_sessions.get(teacher, {}), p)
-                            for p in PARITIES}
-        active_periods = {p: sum(t.periods for t in singles_by_parity[p])
-                          for p in PARITIES}
+    for teacher, tasks in sorted(by_teacher.items()):
+        by_parity = {p: [t for t in tasks if active_in(t, p)] for p in PARITIES}
+        active_periods = {p: sum(t.periods for t in by_parity[p]) for p in PARITIES}
         if all(active_periods[p] < window_len for p in PARITIES):
             continue                      # 两个周次都凑不出 window_len 连堂
         for day in range(len(cal.DAYS)):
@@ -427,8 +361,7 @@ def _compile_teacher_max_run(c: CompiledModel, rule: Rule) -> None:
                 for p in PARITIES:
                     if active_periods[p] < window_len:
                         continue
-                    occs = [_teacher_occ_var(c, teacher, p, cal.slot_index(day, pp),
-                                             singles_by_parity[p], groups_by_parity[p])
+                    occs = [_teacher_occ_var(c, teacher, p, cal.slot_index(day, pp), by_parity[p])
                             for pp in ps]
                     rv = c.model.NewBoolVar(
                         'trun_%s_%s_%d_%d' % (teacher, p, day, start))

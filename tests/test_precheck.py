@@ -53,18 +53,6 @@ def test_teacher_overload_reports_exact_gap(cfg):
     assert '梁艳红' in detail and '48' in detail and '42' in detail and '6' in detail
 
 
-def test_multi_class_course_counted_once_per_course(cfg):
-    """体比一位教师同格带 30 个班，不该判成需要 60 节。
-
-    periods=2 × 30 班：按任务累加是 60 节 > 45 格（会误报超载），
-    按课程计一次是 2 节 ≤ 45 格（正确，不报）。
-    这个取值让本测试真正能区分去重与不去重两种实现。
-    """
-    tasks = [TeachingTask(id=i, grade='初三', class_id=i + 1, course='体比',
-                          teacher='周志宁', periods=2) for i in range(30)]
-    assert '教师超载' not in kinds(precheck(ds(tasks), cfg, []))
-
-
 def test_class_capacity_accounts_for_reserved_slots(cfg):
     """37 节课占满系统可用格位（45-8），38 节就该报超载，而不是拿 45 当上限。"""
     tasks = [TeachingTask(id=0, grade='初三', class_id=1, course='语文',

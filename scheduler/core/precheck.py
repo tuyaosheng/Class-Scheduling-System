@@ -27,22 +27,15 @@ def precheck(dataset, cfg, rules) -> List[Issue]:
     return issues
 
 
-def _teacher_demand(dataset, cfg):
-    """合班课按课程计一次，其余按任务累加。"""
+def _teacher_demand(dataset):
     demand = defaultdict(int)
-    multi_seen = set()
     for task in dataset.tasks:
-        if cfg.courses[task.course].multi_class:
-            key = (task.teacher, task.course)
-            if key in multi_seen:
-                continue
-            multi_seen.add(key)
         demand[task.teacher] += task.periods
     return demand
 
 
 def _check_teacher_capacity(dataset, cfg) -> List[Issue]:
-    demand = _teacher_demand(dataset, cfg)
+    demand = _teacher_demand(dataset)
     reserved = cfg.reserved_slot_indices(dataset.grade)
     out = []
     for name, needed in sorted(demand.items()):
@@ -136,23 +129,13 @@ def _check_pin_windows(dataset, cfg, rules) -> List[Issue]:
 
 
 def _venue_demand(dataset, cfg, venue_name) -> int:
-    """场地占位需求。合班课按 (教师, 课程) 折叠成一个 session。
-
-    session 的各班可分落不同格，占位数介于 max 与 sum 之间；这里取下界 max，
-    宁可漏报也不误报 —— 预检的价值在于「一报必准」。
-    """
+    """场地占位需求：按任务累加占用节数。"""
     total = 0
-    sessions = defaultdict(int)
     for task in dataset.tasks:
-        course = cfg.courses[task.course]
-        if course.venue != venue_name:
+        if cfg.courses[task.course].venue != venue_name:
             continue
-        if course.multi_class:
-            key = (task.teacher, task.course)
-            sessions[key] = max(sessions[key], task.periods)
-        else:
-            total += task.periods
-    return total + sum(sessions.values())
+        total += task.periods
+    return total
 
 
 def _check_venue_capacity(dataset, cfg) -> List[Issue]:

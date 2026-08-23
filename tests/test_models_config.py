@@ -33,13 +33,6 @@ def test_physics_family_has_five_periods(cfg):
     assert total == 5
 
 
-def test_multi_class_courses(cfg):
-    assert cfg.courses['体比'].multi_class is True
-    assert cfg.courses['体选'].multi_class is True
-    assert cfg.courses['体育'].multi_class is False
-    assert cfg.courses['语文'].multi_class is False
-
-
 def test_alternate_pair(cfg):
     assert cfg.courses['美术'].alternate == '单周'
     assert cfg.courses['心理'].alternate == '双周'

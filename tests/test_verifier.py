@@ -139,95 +139,6 @@ def test_detects_venue_overflow():
     assert '场地超容' in kinds(verify(solution, dataset, cfg, []))
 
 
-# ---------------------------------------------------------------- C1：合班 session
-
-def test_multi_class_session_still_clashes_with_the_teachers_other_class():
-    """合班课折叠成一节，但仍占用教师 —— 与其常规课同格就是分身。"""
-    from scheduler.core.models import Dataset, Teacher, TeachingTask
-    cfg = load_config(CONFIG_DIR)
-    tasks = [
-        TeachingTask(id=0, grade='初三', class_id=1, course='体育', teacher='王老师', periods=1),
-        TeachingTask(id=1, grade='初三', class_id=2, course='体比', teacher='王老师', periods=1),
-    ]
-    dataset = Dataset(grade='初三', classes=[1, 2],
-                      teachers={'王老师': Teacher(name='王老师')}, tasks=tasks)
-    solution = Solution(status='FEASIBLE', wall_time=0.0, placements=[
-        Placement(task_id=0, class_id=1, course='体育', teacher='王老师', slot=0),
-        Placement(task_id=1, class_id=2, course='体比', teacher='王老师', slot=0),
-    ])
-    violations = verify(solution, dataset, cfg, [])
-    assert '教师分身' in kinds(violations)
-    assert any('体比' in v.detail and '体育' in v.detail for v in violations)
-
-
-def test_multi_class_session_spread_over_two_slots_is_not_a_clash():
-    """合班 session 不强制同格：3 个班的体比分落 T8/T9 仍然合法。"""
-    from scheduler.core.models import Dataset, Teacher, TeachingTask
-    cfg = load_config(CONFIG_DIR)
-    tasks = [TeachingTask(id=i, grade='初三', class_id=i + 1, course='体比',
-                          teacher='王老师', periods=1) for i in range(3)]
-    dataset = Dataset(grade='初三', classes=[1, 2, 3],
-                      teachers={'王老师': Teacher(name='王老师')}, tasks=tasks)
-    slots = [cal.slot_index(1, 8), cal.slot_index(1, 8), cal.slot_index(1, 9)]
-    solution = Solution(status='FEASIBLE', wall_time=0.0, placements=[
-        Placement(task_id=t.id, class_id=t.class_id, course='体比',
-                  teacher='王老师', slot=s) for t, s in zip(tasks, slots)])
-    assert verify(solution, dataset, cfg, []) == []
-
-
-def test_two_different_multi_class_courses_are_two_sessions():
-    """体比与体选是两个 session，同格即分身。"""
-    from scheduler.core.models import Dataset, Teacher, TeachingTask
-    cfg = load_config(CONFIG_DIR)
-    tasks = [
-        TeachingTask(id=0, grade='初三', class_id=1, course='体比', teacher='王老师', periods=1),
-        TeachingTask(id=1, grade='初三', class_id=2, course='体选', teacher='王老师', periods=1),
-    ]
-    dataset = Dataset(grade='初三', classes=[1, 2],
-                      teachers={'王老师': Teacher(name='王老师')}, tasks=tasks)
-    solution = Solution(status='FEASIBLE', wall_time=0.0, placements=[
-        Placement(task_id=0, class_id=1, course='体比', teacher='王老师', slot=0),
-        Placement(task_id=1, class_id=2, course='体选', teacher='王老师', slot=0),
-    ])
-    assert '教师分身' in kinds(verify(solution, dataset, cfg, []))
-
-
-def test_venue_counts_multi_class_session_once():
-    """8 个班的体比在操场上只是 1 处占用，容量 1 不该报超容。"""
-    from scheduler.core.models import Dataset, Teacher, TeachingTask
-    from scheduler.core.rules import Rule
-    cfg = load_config(CONFIG_DIR)
-    tasks = [TeachingTask(id=i, grade='初三', class_id=i + 1, course='体比',
-                          teacher='王老师', periods=1) for i in range(8)]
-    dataset = Dataset(grade='初三', classes=[t.class_id for t in tasks],
-                      teachers={'王老师': Teacher(name='王老师')}, tasks=tasks)
-    solution = Solution(status='FEASIBLE', wall_time=0.0, placements=[
-        Placement(task_id=t.id, class_id=t.class_id, course='体比',
-                  teacher='王老师', slot=0) for t in tasks])
-    rule = Rule(type='venue_capacity', scope={},
-                params={'venue': '操场', 'capacity': 1})
-    assert verify(solution, dataset, cfg, [rule]) == []
-
-
-def test_venue_capacity_rule_detects_two_sessions_over_capacity():
-    """反证：两位教师各带一门操场合班课，同格就是 2 处占用，容量 1 报超容。"""
-    from scheduler.core.models import Dataset, Teacher, TeachingTask
-    from scheduler.core.rules import Rule
-    cfg = load_config(CONFIG_DIR)
-    tasks = [
-        TeachingTask(id=0, grade='初三', class_id=1, course='体比', teacher='王老师', periods=1),
-        TeachingTask(id=1, grade='初三', class_id=2, course='体比', teacher='李老师', periods=1),
-    ]
-    dataset = Dataset(grade='初三', classes=[1, 2],
-                      teachers={n: Teacher(name=n) for n in ('王老师', '李老师')}, tasks=tasks)
-    solution = Solution(status='FEASIBLE', wall_time=0.0, placements=[
-        Placement(task_id=t.id, class_id=t.class_id, course='体比',
-                  teacher=t.teacher, slot=0) for t in tasks])
-    rule = Rule(type='venue_capacity', scope={},
-                params={'venue': '操场', 'capacity': 1})
-    assert '场地超容' in kinds(verify(solution, dataset, cfg, [rule]))
-
-
 # ---------------------------------------------------------------- I1：weekdays 限定
 
 def test_daily_max_only_judges_the_listed_weekdays():
@@ -301,7 +212,7 @@ def test_detects_teacher_double_booking(real):
     cfg, dataset, rules, solution = real
     by_teacher = defaultdict(list)
     for p in solution.placements:
-        if p.parity is None and not cfg.courses[p.course].multi_class:
+        if p.parity is None:
             by_teacher[p.teacher].append(p)
     victim = other = None
     for group in by_teacher.values():

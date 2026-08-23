@@ -57,11 +57,10 @@ def test_no_class_double_booked(solved):
 
 
 def test_no_teacher_double_booked(solved):
-    cfg, _, solution = solved
+    _, _, solution = solved
     for parity in ('单周', '双周'):
         seen = Counter((p.teacher, p.slot) for p in solution.placements
-                       if p.parity in (None, parity)
-                       and not cfg.courses[p.course].multi_class)
+                       if p.parity in (None, parity))
         assert max(seen.values()) == 1
 
 

@@ -31,7 +31,7 @@ def verify(solution, dataset, cfg, rules) -> List[Violation]:
     placements = solution.placements
     out += _check_period_counts(placements, dataset)
     out += _check_class_clash(placements)
-    out += _check_teacher_clash(placements, cfg)
+    out += _check_teacher_clash(placements)
     out += _check_venues(placements, cfg)
     for rule in rules:
         if not rule.enabled or rule.mode != 'hard':
@@ -97,30 +97,14 @@ def _check_class_clash(placements):
     return _dedup(out)
 
 
-def _engagement(placement, cfg):
-    """这节课对「谁在忙」而言算作哪一件事。
-
-    合班课整门折叠成一件事（同一位教师面向多个班，本来就只是一节课）；
-    其余课程一节就是一件事。返回 (识别键, 人话标签)。
-    """
-    if cfg.courses[placement.course].multi_class:
-        return ('合班', placement.teacher, placement.course), '%s（合班）' % placement.course
-    return (('独立', placement.task_id),
-            '%d班%s' % (placement.class_id, placement.course))
-
-
-def _check_teacher_clash(placements, cfg):
-    """一位教师在某一格若有两件**不同的事**，就是分身。
-
-    合班课的多个班折叠后只剩一件事，所以合班本身不会触发；
-    但它与该教师的其他课仍然互斥 —— 合班不等于分身。
-    """
-    agenda = defaultdict(dict)           # (教师, 时间格, 周次) -> {识别键: 标签}
+def _check_teacher_clash(placements):
+    """一位教师在某一格若有两节**不同的课**，就是分身。"""
+    agenda = defaultdict(dict)           # (教师, 时间格, 周次) -> {task_id: 标签}
     for p in placements:
         for parity in PARITIES:
             if _runs_in_parity(p, parity):
-                key, label = _engagement(p, cfg)
-                agenda[(p.teacher, p.slot, parity)][key] = label
+                label = '%d班%s' % (p.class_id, p.course)
+                agenda[(p.teacher, p.slot, parity)][p.task_id] = label
     out = []
     for (teacher, slot, parity), items in agenda.items():
         if len(items) > 1:
@@ -134,14 +118,14 @@ def _check_teacher_clash(placements, cfg):
 
 
 def _venue_load(placements, cfg, venue_name, parity):
-    """某场地在各时间格上的占位数。合班课整门只占 1 处，不按班数。"""
+    """某场地在各时间格上的占位数。"""
     load = defaultdict(set)
     for p in placements:
         if cfg.courses[p.course].venue != venue_name:
             continue
         if not _runs_in_parity(p, parity):
             continue
-        load[p.slot].add(_engagement(p, cfg)[0])
+        load[p.slot].add(p.task_id)
     return {slot: len(keys) for slot, keys in load.items()}
 
 
@@ -153,7 +137,7 @@ def _venue_overflow(placements, cfg, venue_name, capacity):
                 day, period = cal.slot_of(slot)
                 out.append(Violation(
                     kind='场地超容',
-                    detail='%s %s第%d节（%s）%d 处占用（合班课整门计 1 处），容量 %d'
+                    detail='%s %s第%d节（%s）%d 处占用，容量 %d'
                            % (venue_name, cal.DAYS[day], period, parity, count, capacity)))
     return out
 
@@ -326,8 +310,7 @@ def _check_teacher_max_run(placements, dataset, cfg, rule):
     """独立计数：每位教师×每个半天，有没有「≥max_len+1 节」的连堂段。
 
     与 compiler 的 _compile_teacher_max_run 完全独立 —— 这里只数已落定的
-    placement，不碰任何变量。单双周按周次分开看；合班课的多个班在同一格
-    只算教师占一次（同一 slot 进同一集合即去重）。
+    placement，不碰任何变量。单双周按周次分开看。
 
     同一物理连堂段（周课在单双两周都上课）只报一次，标注「每周」；
     只在某一周次出现的标注该周次。
