@@ -78,11 +78,11 @@ def test_unknown_rule_type_rejected():
         Rule(type='fly_to_moon').validate_type()
 
 
-def test_all_12_types_declared():
+def test_all_13_types_declared():
     assert RULE_TYPES == frozenset({
         'forbid_slots', 'pin_window', 'daily_min', 'daily_max', 'weekday_exact',
         'consecutive', 'spacing', 'alternate_weeks', 'venue_capacity',
-        'preferred_periods', 'avoid_after', 'teacher_balance',
+        'preferred_periods', 'avoid_after', 'teacher_balance', 'teacher_max_run',
     })
 
 

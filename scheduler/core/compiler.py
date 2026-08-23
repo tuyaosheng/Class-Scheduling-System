@@ -29,6 +29,10 @@ class CompiledModel:
         self.skipped_soft: List[Rule] = []
         # 合班 session 的占用布尔量：(teacher, course, parity, slot) -> BoolVar
         self.session_occ: Dict = {}
+        # 软约束惩罚项：[(惩罚布尔量, 权重), ...]，循环结束后聚合成目标
+        self.soft_terms: List = []
+        # 教师占用布尔量缓存：(teacher, parity, slot) -> BoolVar
+        self.teacher_occ: Dict = {}
 
     def task_vars(self, task_id):
         return [self.x[(task_id, s)] for s in range(cal.N_SLOTS)]
@@ -47,11 +51,18 @@ def compile_model(dataset, cfg, rules, *, with_assumptions=False) -> CompiledMod
     for rule in rules:
         if not rule.enabled:
             continue
-        if rule.mode != 'hard':
-            compiled.skipped_soft.append(rule)   # 软约束是 M4 的事
-            continue
-        _RULE_HANDLERS[rule.type](compiled, rule, with_assumptions)
+        if rule.mode == 'hard':
+            _RULE_HANDLERS[rule.type](compiled, rule, with_assumptions)
+        else:
+            # 软约束：有专门处理器就编译进目标，没有则记录为跳过
+            soft_handler = _SOFT_HANDLERS.get(rule.type)
+            if soft_handler is None:
+                compiled.skipped_soft.append(rule)
+            else:
+                soft_handler(compiled, rule)
     add_venue_constraints(compiled)
+    if compiled.soft_terms:
+        compiled.model.Minimize(sum(w * v for v, w in compiled.soft_terms))
     return compiled
 
 
@@ -333,3 +344,101 @@ def add_venue_constraints(c: CompiledModel) -> None:
     for venue in c.cfg.venues.values():
         if venue.capacity is not None:
             _limit_venue(c, venue.name, venue.capacity)
+
+
+# ---------------------------------------------------------------- 软约束
+
+_SOFT_HANDLERS = {}
+
+
+def soft_handler(rule_type):
+    def register(fn):
+        _SOFT_HANDLERS[rule_type] = fn
+        return fn
+    return register
+
+
+def _halfday_run_starts(length=3):
+    """每个半天内、长度为 length 的连续窗口的起始节次。
+
+    半天边界（5|6）天然隔断——午休那对不算相邻，所以「连续 length 节」
+    不可能跨半天，这里按 cal.MORNING/AFTERNOON 各自枚举。
+    """
+    starts = []
+    for half in (cal.MORNING, cal.AFTERNOON):
+        for i in range(len(half) - length + 1):
+            starts.append(half[i])
+    return starts
+
+
+def _teacher_occ_var(c: CompiledModel, teacher, parity, slot, singles, groups):
+    """教师在指定周次的某一格是否在上课（布尔量）。
+
+    solo 任务直接取任务的 x；合班 session 复用 _occ_var（整门折叠成一件事）。
+    与 _add_teacher_no_clash 同口径——同一教师同一格最多一件事。
+    """
+    key = (teacher, parity, slot)
+    var = c.teacher_occ.get(key)
+    if var is not None:
+        return var
+    var = c.model.NewBoolVar('tocc_%s_%s_%d' % (teacher, parity, slot))
+    terms = [c.x[(t.id, slot)] for t in singles]
+    terms += [_occ_var(c, gkey, gtasks, slot) for gkey, gtasks in groups]
+    c.model.Add(sum(terms) >= 1).OnlyEnforceIf(var)
+    c.model.Add(sum(terms) == 0).OnlyEnforceIf(var.Not())
+    c.teacher_occ[key] = var
+    return var
+
+
+@soft_handler('teacher_max_run')
+def _compile_teacher_max_run(c: CompiledModel, rule: Rule) -> None:
+    """教师半天连堂不超过 max_len 节（软约束，最小化违规数）。
+
+    对每位教师×每个半天，枚举长度为 max_len+1 的连续窗口；窗口三节全占
+    即记一次违规。单双周按周次各算占用，但同一物理连堂（周课两周都上课）
+    只计一次——用 OR(run_单, run_双) 折叠，避免周课被罚两遍。
+    """
+    max_len = int(rule.params.get('max_len', 2))
+    weight = int(rule.weight) or 1
+    window_len = max_len + 1
+    starts = _halfday_run_starts(window_len)
+
+    solo, sessions = _split_sessions(c, c.dataset.tasks)
+    by_solo = defaultdict(list)
+    for t in solo:
+        by_solo[t.teacher].append(t)
+    by_sessions = defaultdict(dict)
+    for (teacher, course), tasks in sessions.items():
+        by_sessions[teacher][(teacher, course)] = tasks
+
+    for teacher in sorted(set(by_solo) | set(by_sessions)):
+        singles_by_parity = {p: [t for t in by_solo.get(teacher, [])
+                                 if active_in(t, p)] for p in PARITIES}
+        groups_by_parity = {p: _active_groups(by_sessions.get(teacher, {}), p)
+                            for p in PARITIES}
+        active_periods = {p: sum(t.periods for t in singles_by_parity[p])
+                          for p in PARITIES}
+        if all(active_periods[p] < window_len for p in PARITIES):
+            continue                      # 两个周次都凑不出 window_len 连堂
+        for day in range(len(cal.DAYS)):
+            for start in starts:
+                ps = list(range(start, start + window_len))
+                run_by_parity = []
+                for p in PARITIES:
+                    if active_periods[p] < window_len:
+                        continue
+                    occs = [_teacher_occ_var(c, teacher, p, cal.slot_index(day, pp),
+                                             singles_by_parity[p], groups_by_parity[p])
+                            for pp in ps]
+                    rv = c.model.NewBoolVar(
+                        'trun_%s_%s_%d_%d' % (teacher, p, day, start))
+                    c.model.AddBoolAnd(occs).OnlyEnforceIf(rv)
+                    c.model.AddBoolOr([v.Not() for v in occs]).OnlyEnforceIf(rv.Not())
+                    run_by_parity.append(rv)
+                if not run_by_parity:
+                    continue
+                # 任一周次出现连堂即记一次（周课两周都算，但 OR 折叠不重复计）
+                run = c.model.NewBoolVar('trun_%s_%d_%d' % (teacher, day, start))
+                c.model.AddBoolOr(run_by_parity).OnlyEnforceIf(run)
+                c.model.AddBoolAnd([v.Not() for v in run_by_parity]).OnlyEnforceIf(run.Not())
+                c.soft_terms.append((run, weight))

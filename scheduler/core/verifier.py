@@ -49,6 +49,23 @@ def verify(solution, dataset, cfg, rules) -> List[Violation]:
     return out
 
 
+def verify_soft(solution, dataset, cfg, rules) -> List[Violation]:
+    """只跑软规则，独立于硬校验 —— 不污染「0 处违规」的硬保证。
+
+    软约束的语义是「尽量满足」，这里把未满足处作为提示列出，供教务权衡。
+    """
+    out: List[Violation] = []
+    placements = solution.placements
+    for rule in rules:
+        if not rule.enabled or rule.mode != 'soft':
+            continue
+        checker = _SOFT_CHECKS.get(rule.type)
+        if checker is None:
+            continue
+        out += checker(placements, dataset, cfg, rule)
+    return out
+
+
 def _check_period_counts(placements, dataset):
     actual = Counter(p.task_id for p in placements)
     out = []
@@ -305,6 +322,60 @@ def _check_venue_capacity(placements, dataset, cfg, rule):
     return out
 
 
+def _check_teacher_max_run(placements, dataset, cfg, rule):
+    """独立计数：每位教师×每个半天，有没有「≥max_len+1 节」的连堂段。
+
+    与 compiler 的 _compile_teacher_max_run 完全独立 —— 这里只数已落定的
+    placement，不碰任何变量。单双周按周次分开看；合班课的多个班在同一格
+    只算教师占一次（同一 slot 进同一集合即去重）。
+
+    同一物理连堂段（周课在单双两周都上课）只报一次，标注「每周」；
+    只在某一周次出现的标注该周次。
+    """
+    max_len = int(rule.params.get('max_len', 2))
+    threshold = max_len + 1
+
+    # (teacher, parity, day) -> 该天该周次被占的节次集合
+    occ = defaultdict(set)
+    for p in placements:
+        for parity in PARITIES:
+            if _runs_in_parity(p, parity):
+                day, period = cal.slot_of(p.slot)
+                occ[(p.teacher, parity, day)].add(period)
+
+    # 按 (teacher, day, 半天, 起点, 长度) 聚合，跨周次去重
+    found = {}                # key -> 出现的周次列表
+    for (teacher, parity, day), periods in occ.items():
+        for half, half_label in ((cal.MORNING, '上午'), (cal.AFTERNOON, '下午')):
+            present = sorted(p for p in half if p in periods)
+            if len(present) < threshold:
+                continue
+            i = 0
+            while i < len(present):
+                j = i
+                while j + 1 < len(present) and present[j + 1] == present[j] + 1:
+                    j += 1
+                start_p, length = present[i], j - i + 1
+                i = j + 1
+                if length < threshold:
+                    continue
+                key = (teacher, day, half_label, start_p, length)
+                found.setdefault(key, []).append(parity)
+
+    out = []
+    for (teacher, day, half_label, start_p, length), parities in sorted(found.items()):
+        parities = sorted(parities)
+        pw = '每周' if len(parities) == 2 else parities[0]
+        end_p = start_p + length - 1
+        out.append(Violation(
+            kind='教师半天连堂过长', rule_type=rule.type, scope=rule.scope,
+            detail='%s %s（%s）%s 第%d-%d节 连续 %d 节'
+                   '（要求半天不超过 %d 节）'
+                   % (teacher, cal.DAYS[day], pw, half_label,
+                      start_p, end_p, length, max_len)))
+    return out
+
+
 _RULE_CHECKS = {
     'forbid_slots': _check_forbid,
     'pin_window': _check_pin,
@@ -314,6 +385,10 @@ _RULE_CHECKS = {
     'consecutive': _check_consecutive,
     'alternate_weeks': _check_alternate,
     'venue_capacity': _check_venue_capacity,
+}
+
+_SOFT_CHECKS = {
+    'teacher_max_run': _check_teacher_max_run,
 }
 
 

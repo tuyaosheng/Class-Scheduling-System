@@ -1,3 +1,8 @@
 # 手写规则。Excel 解析出的规则在 rules.generated.yaml，两份合并后编译。
 # M4 的软约束（preferred_periods / avoid_after / teacher_balance）加在这里。
-rules: []
+rules:
+  - type: teacher_max_run
+    scope: {grade: 初三}
+    params: {max_len: 2}      # 教师半天连堂不超过 2 节（3 节及以上尽量避免）
+    mode: soft
+    weight: 10

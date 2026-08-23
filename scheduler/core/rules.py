@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 RULE_TYPES = frozenset({
     'forbid_slots', 'pin_window', 'daily_min', 'daily_max', 'weekday_exact',
     'consecutive', 'spacing', 'alternate_weeks', 'venue_capacity',
-    'preferred_periods', 'avoid_after', 'teacher_balance',
+    'preferred_periods', 'avoid_after', 'teacher_balance', 'teacher_max_run',
 })
 
 # 可放松 = L2 无解诊断时值得挂 assumption 的规则
@@ -105,6 +105,7 @@ _TYPE_TEMPLATE = {
     'spacing': '同教师两班之间至少隔 {min_gap} 节',
     'alternate_weeks': '{pair} 单双周轮换共用同一格',
     'venue_capacity': '场地 {venue} 同时最多 {capacity} 个班',
+    'teacher_max_run': '教师半天连堂不超过 {max_len} 节',
 }
 
 

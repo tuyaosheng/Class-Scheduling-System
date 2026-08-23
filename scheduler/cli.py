@@ -119,7 +119,7 @@ def cmd_solve(args) -> int:
     from .core.precheck import format_issues, precheck
     from .core.rules import load_rules
     from .core.solver import solve_many
-    from .core.verifier import format_violations, verify
+    from .core.verifier import format_violations, verify, verify_soft
 
     config_dir = Path(args.config_dir)
     cfg = load_config(config_dir)
@@ -153,6 +153,11 @@ def cmd_solve(args) -> int:
         print('\n[方案 %d] 状态 %s，耗时 %.2f 秒，放置 %d 节课'
               % (i, solution.status, solution.wall_time, len(solution.placements)))
         print(format_violations(verify(solution, result.dataset, cfg, rules)))
+        soft = verify_soft(solution, result.dataset, cfg, rules)
+        if soft:
+            print('  （软偏好：%d 处未完全满足，见上「教师半天连堂过长」）' % len(soft))
+        elif any(r.mode == 'soft' and r.enabled for r in rules):
+            print('  （软偏好全部满足）')
         export_excel(solution, result.dataset, path, cfg=cfg)
         print('已导出 %s' % path)
         if args.template:
