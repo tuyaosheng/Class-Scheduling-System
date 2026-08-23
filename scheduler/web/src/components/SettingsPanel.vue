@@ -10,8 +10,13 @@ const error = ref('')
 const saving = ref(false)
 
 onMounted(async () => {
-  const resp = await getPlan(props.grade)
-  plan.value = resp.plan
+  error.value = ''
+  try {
+    const resp = await getPlan(props.grade)
+    plan.value = resp.plan
+  } catch (err) {
+    error.value = (err as Error).message
+  }
 })
 
 async function save() {

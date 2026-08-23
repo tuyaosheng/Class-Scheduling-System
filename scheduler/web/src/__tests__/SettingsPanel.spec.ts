@@ -47,4 +47,12 @@ describe('SettingsPanel', () => {
 
     expect(wrapper.text()).toContain('超出可用 37 格')
   })
+
+  it('shows the backend error message when loading plan fails', async () => {
+    vi.spyOn(api, 'getPlan').mockRejectedValue(new Error('后端暂时不可用'))
+    const wrapper = mount(SettingsPanel, { props: { grade: '初三' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(wrapper.text()).toContain('后端暂时不可用')
+  })
 })
