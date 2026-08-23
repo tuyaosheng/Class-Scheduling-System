@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   confirmImport, connectSolveSocket, exportUrl, getAiSettings, getConfigStatus,
-  getPlan, importFiles, putAiSettings, putPlan, startSolve, testAiSettings,
+  getCourses, getPlan, importFiles, putAiSettings, putCourses, putPlan, startSolve, testAiSettings,
 } from '../api'
 
 afterEach(() => {
@@ -98,6 +98,25 @@ describe('ai settings', () => {
     const result = await testAiSettings()
     expect(result.ok).toBe(true)
     expect(fetchMock.mock.calls[0][1].method).toBe('POST')
+  })
+})
+
+describe('courses', () => {
+  it('getCourses performs a GET and returns the catalog', async () => {
+    mockFetchOnce({ courses: [{ name: '语文', family: '语文', venue: null, alternate: null, external: false }] })
+    const { courses } = await getCourses()
+    expect(courses[0].name).toBe('语文')
+  })
+
+  it('putCourses posts the full course list', async () => {
+    const fetchMock = mockFetchOnce({ courses: [] })
+    await putCourses([{ name: '班会', family: '班会', venue: null, alternate: null, external: true }])
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toContain('/api/config/courses')
+    expect(options.method).toBe('PUT')
+    expect(JSON.parse(options.body)).toEqual({
+      courses: [{ name: '班会', family: '班会', venue: null, alternate: null, external: true }],
+    })
   })
 })
 

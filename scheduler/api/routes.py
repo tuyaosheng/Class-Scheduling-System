@@ -11,11 +11,13 @@ from scheduler.core.config import ConfigError, load_config
 from scheduler.core.importer import (
     merge_teaching_and_rules, write_rules_yaml, write_teaching_yaml,
 )
+from scheduler.core.models import Course, Venue
 
 from . import sessions
 from .schemas import (
     AiSettingsGetResponse, AiSettingsPutRequest,
-    ConfigStatus, ImportConfirmRequest, ImportConfirmResponse, ImportPreview,
+    ConfigStatus, CourseItem, CoursesGetResponse, CoursesPutRequest,
+    ImportConfirmRequest, ImportConfirmResponse, ImportPreview,
     PlanGetResponse, PlanPutRequest,
 )
 
@@ -199,6 +201,53 @@ def put_plan(body: PlanPutRequest):
                           encoding='utf-8')
     return PlanGetResponse(grade=body.grade, plan=body.plan,
                            reserved_slots=cfg.reserved_slots.get(body.grade, []))
+
+
+@router.get('/config/courses', response_model=CoursesGetResponse)
+def get_courses():
+    cfg = _load_config_or_400()
+    return CoursesGetResponse(courses=[
+        CourseItem(**c.model_dump()) for c in cfg.courses.values()
+    ])
+
+
+@router.put('/config/courses', response_model=CoursesGetResponse)
+def put_courses(body: CoursesPutRequest):
+    cfg = _load_config_or_400()
+
+    names = [item.name for item in body.courses]
+    if len(names) != len(set(names)):
+        dup = next(n for n in names if names.count(n) > 1)
+        raise HTTPException(status_code=400, detail='课程名 %r 重复' % dup)
+
+    candidate = cfg.model_copy(deep=True)
+    candidate.courses = {item.name: Course(**item.model_dump()) for item in body.courses}
+
+    new_venues = {item.venue for item in body.courses
+                  if item.venue and item.venue not in candidate.venues}
+    for venue_name in new_venues:
+        candidate.venues[venue_name] = Venue(name=venue_name)
+
+    for grade in candidate.plans:
+        try:
+            candidate.validate_plan(grade)
+        except ConfigError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    courses_path = DEFAULT_CONFIG_DIR / 'courses.yaml'
+    courses_path.write_text(
+        yaml.safe_dump({'courses': [item.model_dump(exclude_defaults=True) for item in body.courses]},
+                       allow_unicode=True, sort_keys=False),
+        encoding='utf-8')
+    if new_venues:
+        venues_raw = _load_yaml_dict_or_400(DEFAULT_CONFIG_DIR / 'venues.yaml', 'venues.yaml')
+        venues_raw.setdefault('venues', []).extend(
+            {'name': v} for v in sorted(new_venues))
+        (DEFAULT_CONFIG_DIR / 'venues.yaml').write_text(
+            yaml.safe_dump(venues_raw, allow_unicode=True, sort_keys=False),
+            encoding='utf-8')
+
+    return CoursesGetResponse(courses=body.courses)
 
 
 from fastapi.responses import FileResponse

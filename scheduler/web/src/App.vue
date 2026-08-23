@@ -2,13 +2,14 @@
 import { onMounted, ref } from 'vue'
 import { getConfigStatus } from './api'
 import AiSettings from './components/AiSettings.vue'
+import CourseSettings from './components/CourseSettings.vue'
 import ImportPanel from './components/ImportPanel.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import SolvePanel from './components/SolvePanel.vue'
 import CandidateTabs from './components/CandidateTabs.vue'
 
 type Stage = 'idle' | 'needs_import' | 'configuring' | 'ready'
-type Tab = 'scheduler' | 'settings'
+type Tab = 'course' | 'scheduler' | 'settings'
 
 interface Candidate {
   index: number
@@ -73,6 +74,8 @@ function onJobId(id: string) {
     <header class="app-header">
       <h1>排课系统</h1>
       <nav class="tab-nav">
+        <button data-test="tab-course" class="tab-nav__item" :class="{ active: tab === 'course' }"
+                @click="tab = 'course'">课程</button>
         <button data-test="tab-scheduler" class="tab-nav__item" :class="{ active: tab === 'scheduler' }"
                 @click="tab = 'scheduler'">排课</button>
         <button data-test="tab-settings" class="tab-nav__item" :class="{ active: tab === 'settings' }"
@@ -82,6 +85,10 @@ function onJobId(id: string) {
 
     <main class="app-content">
       <p v-if="error" data-test="error" class="alert alert-critical">{{ error }}</p>
+
+      <template v-if="tab === 'course'">
+        <CourseSettings />
+      </template>
 
       <template v-if="tab === 'settings'">
         <AiSettings />

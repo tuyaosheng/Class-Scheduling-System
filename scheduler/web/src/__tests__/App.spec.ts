@@ -62,4 +62,17 @@ describe('App state machine', () => {
     expect(wrapper.findComponent({ name: 'AiSettings' }).exists()).toBe(false)
     expect(wrapper.findComponent({ name: 'ImportPanel' }).exists()).toBe(true)
   })
+
+  it('switches to the course tab', async () => {
+    vi.spyOn(api, 'getConfigStatus').mockResolvedValue({
+      ready: false, grade: null, classes: 0, tasks: 0,
+    })
+    vi.spyOn(api, 'getCourses').mockResolvedValue({ courses: [] })
+    const wrapper = mount(App)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    await wrapper.find('[data-test="tab-course"]').trigger('click')
+    expect(wrapper.findComponent({ name: 'CourseSettings' }).exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'ImportPanel' }).exists()).toBe(false)
+  })
 })

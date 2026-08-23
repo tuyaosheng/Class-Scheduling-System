@@ -46,6 +46,14 @@ export interface AiSettingsResponse {
   masked_key: string | null
 }
 
+export interface CourseItem {
+  name: string
+  family: string
+  venue: string | null
+  alternate: string | null
+  external: boolean
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const resp = await fetch(url, options)
   const body = await resp.json()
@@ -127,4 +135,16 @@ export async function testAiSettings() {
 
 export function exportUrl(jobId: string, candidateIndex: number, template: boolean): string {
   return `/api/export/${jobId}/${candidateIndex}?template=${template ? 1 : 0}`
+}
+
+export async function getCourses() {
+  return request<{ courses: CourseItem[] }>('/api/config/courses')
+}
+
+export async function putCourses(courses: CourseItem[]) {
+  return request<{ courses: CourseItem[] }>('/api/config/courses', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ courses }),
+  })
 }

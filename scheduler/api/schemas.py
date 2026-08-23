@@ -68,3 +68,19 @@ class AiSettingsGetResponse(BaseModel):
 
 class AiSettingsPutRequest(BaseModel):
     api_key: str
+
+
+class CourseItem(BaseModel):
+    name: str
+    family: str
+    venue: Optional[str] = None
+    alternate: Optional[str] = None   # '单周' | '双周' | None
+    external: bool = False            # 占位符 / 教务固定安排
+
+
+class CoursesGetResponse(BaseModel):
+    courses: List[CourseItem]
+
+
+class CoursesPutRequest(BaseModel):
+    courses: List[CourseItem]
