@@ -1,0 +1,225 @@
+:root {
+  /* 中性色（dataviz 验证色板：图表铬件与墨色） */
+  --page-bg: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-raised: #ffffff;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --border: #e1e0d9;
+  --border-strong: rgba(11, 11, 11, 0.1);
+
+  /* 主操作色（分类色板 slot-1 蓝） */
+  --accent: #2a78d6;
+  --accent-hover: #1c5cab;
+  --accent-wash: rgba(42, 120, 214, 0.1);
+  --accent-ink: #ffffff;
+
+  /* 状态色（dataviz status palette，固定不随主题变化） */
+  --status-good: #0ca30c;
+  --status-good-wash: rgba(12, 163, 12, 0.1);
+  --status-warning: #fab219;
+  --status-warning-wash: rgba(250, 178, 25, 0.14);
+  --status-serious: #ec835a;
+  --status-serious-wash: rgba(236, 131, 90, 0.14);
+  --status-critical: #d03b3b;
+  --status-critical-wash: rgba(208, 59, 59, 0.1);
+
+  /* 学科系分类色板（8 色，固定顺序；语文/数学/英语/物理/化学/道法/历史/体育） */
+  --family-1: #2a78d6; /* 语文：蓝 */
+  --family-2: #eb6834; /* 数学：橙 */
+  --family-3: #1baf7a; /* 英语：青绿 */
+  --family-4: #eda100; /* 物理：黄 */
+  --family-5: #e87ba4; /* 化学：品红 */
+  --family-6: #008300; /* 道法：绿 */
+  --family-7: #4a3aa7; /* 历史：紫 */
+  --family-8: #e34948; /* 体育：红 */
+  --family-other: #e1e0d9; /* 音乐/心美等低频学科：中性灰 */
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-card: 0 1px 2px rgba(11, 11, 11, 0.04), 0 4px 16px rgba(11, 11, 11, 0.06);
+  --shadow-raised: 0 2px 8px rgba(11, 11, 11, 0.08), 0 8px 24px rgba(11, 11, 11, 0.08);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--page-bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+input,
+select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ---- 共享基础类：卡片 / 按钮 / 徽标 / 警示条 ---- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.field input[type='text'],
+.field input[type='password'],
+.field input[type='number'],
+.field input[type='file'],
+.field select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.field input:focus,
+.field select:focus {
+  outline: 2px solid var(--accent-wash);
+  border-color: var(--accent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.btn-secondary:not(:disabled):hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* <a class="btn …"> 需要单独覆盖，浏览器默认 a:link/a:visited 的优先级
+   比 .btn-primary/.btn-secondary 这类单一类选择器更高，否则蓝色下划线会漏出来。 */
+a.btn,
+a.btn:link,
+a.btn:visited {
+  text-decoration: none;
+}
+
+a.btn-primary:link,
+a.btn-primary:visited {
+  color: var(--accent-ink);
+}
+
+a.btn-secondary:link,
+a.btn-secondary:visited {
+  color: var(--text-primary);
+}
+
+a.btn-secondary:hover {
+  color: var(--accent);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-neutral {
+  background: rgba(11, 11, 11, 0.06);
+  color: var(--text-secondary);
+}
+
+.badge-good {
+  background: var(--status-good-wash);
+  color: var(--status-good);
+}
+
+.badge-warning {
+  background: var(--status-warning-wash);
+  color: #8a5c00;
+}
+
+.badge-critical {
+  background: var(--status-critical-wash);
+  color: var(--status-critical);
+}
+
+.alert {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.alert-critical {
+  background: var(--status-critical-wash);
+  color: #8a2323;
+}
+
+.alert-warning {
+  background: var(--status-warning-wash);
+  color: #6b4700;
+}

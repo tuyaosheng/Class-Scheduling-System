@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { connectSolveSocket, startSolve } from '../api'
 
 interface Candidate {
@@ -92,14 +92,54 @@ async function start() {
   ws.onerror = onDisconnect
   ws.onclose = onDisconnect
 }
+
+const statusKind = computed<'good' | 'warning' | 'critical' | 'neutral'>(() => {
+  const t = statusText.value
+  if (!t) return 'neutral'
+  if (t.startsWith('完成')) return 'good'
+  if (t.includes('无解') || t.includes('出错') || t.includes('失败') || t.includes('断开')) return 'critical'
+  if (t.includes('超时') || t.includes('预检未通过')) return 'warning'
+  return 'neutral'
+})
 </script>
 
 <template>
-  <section>
+  <section class="card">
     <h2>排课</h2>
-    <label>候选数量 <input type="number" min="1" v-model.number="count" /></label>
-    <label>最小差异度 <input type="number" min="1" v-model.number="minDiff" /></label>
-    <button data-test="start-button" :disabled="running" @click="start">开始排课</button>
-    <p>{{ statusText }}</p>
+    <div class="solve-form">
+      <label class="field">
+        候选数量
+        <input type="number" min="1" v-model.number="count" />
+      </label>
+      <label class="field">
+        最小差异度
+        <input type="number" min="1" v-model.number="minDiff" />
+      </label>
+      <button data-test="start-button" class="btn btn-primary" :disabled="running" @click="start">
+        {{ running ? '排课中…' : '开始排课' }}
+      </button>
+    </div>
+    <p v-if="statusText" class="badge" :class="`badge-${statusKind}`">
+      {{ statusText }}
+    </p>
   </section>
 </template>
+
+<style scoped>
+.solve-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+  margin: 16px 0 18px;
+}
+
+.solve-form .field input {
+  width: 100px;
+  font-variant-numeric: tabular-nums;
+}
+
+.solve-form .btn {
+  align-self: flex-end;
+}
+</style>

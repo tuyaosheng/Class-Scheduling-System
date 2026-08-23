@@ -50,46 +50,142 @@ defineExpose({ runImport })
 </script>
 
 <template>
-  <section>
+  <section class="card">
     <h2>导入任课表与排课说明</h2>
-    <label>任课表 <input data-test="teaching-file" type="file" @change="onTeachingFileChange" /></label>
-    <label>排课说明 <input data-test="rules-file" type="file" @change="onRulesFileChange" /></label>
-    <label>
-      规则解析引擎
-      <select v-model="ruleEngine">
-        <option value="regex">正则（默认）</option>
-        <option value="ai">AI</option>
-      </select>
-    </label>
-    <button data-test="run-import-button" @click="runImport">解析</button>
 
-    <p v-if="error" data-test="error">{{ error }}</p>
+    <div class="import-form">
+      <label class="field">
+        任课表
+        <input data-test="teaching-file" type="file" @change="onTeachingFileChange" />
+      </label>
+      <label class="field">
+        排课说明
+        <input data-test="rules-file" type="file" @change="onRulesFileChange" />
+      </label>
+      <label class="field">
+        规则解析引擎
+        <select v-model="ruleEngine">
+          <option value="regex">正则（默认）</option>
+          <option value="ai">AI</option>
+        </select>
+      </label>
+      <button data-test="run-import-button" class="btn btn-primary" @click="runImport">解析</button>
+    </div>
 
-    <div v-if="preview">
-      <p>教师 {{ preview.teachers }} 人 · 班级 {{ preview.classes }} 个 · 任务 {{ preview.tasks }} 个</p>
+    <p v-if="error" data-test="error" class="alert alert-critical">{{ error }}</p>
 
-      <ul v-if="preview.conflicts.length" data-test="conflicts">
-        <li v-for="(c, i) in preview.conflicts" :key="i">
+    <div v-if="preview" class="preview">
+      <p class="preview-summary">
+        教师 <strong>{{ preview.teachers }}</strong> 人 · 班级 <strong>{{ preview.classes }}</strong> 个 ·
+        任务 <strong>{{ preview.tasks }}</strong> 个
+      </p>
+
+      <ul v-if="preview.conflicts.length" data-test="conflicts" class="conflict-list">
+        <li v-for="(c, i) in preview.conflicts" :key="i" class="alert alert-critical">
           {{ c.class_id }}班 {{ c.course }}：任课表说是「{{ c.from_teaching_table ?? '（无）' }}」，
           排课说明说是「{{ c.from_rules_sheet ?? '（无）' }}」，请先核实源文件
         </li>
       </ul>
 
-      <div v-for="(items, column) in preview.rule_echo" :key="column">
+      <div v-for="(items, column) in preview.rule_echo" :key="column" class="rule-echo-group">
         <h3>{{ column }}</h3>
-        <ul>
-          <li v-for="(item, i) in items" :key="i">{{ item.raw }} → {{ item.parsed }}</li>
+        <ul class="rule-echo-list">
+          <li v-for="(item, i) in items" :key="i">
+            <span class="rule-raw">{{ item.raw }}</span>
+            <span class="rule-arrow">→</span>
+            <span class="rule-parsed">{{ item.parsed }}</span>
+          </li>
         </ul>
       </div>
 
-      <ul v-if="preview.warnings.length">
-        <li v-for="(w, i) in preview.warnings" :key="i">{{ w }}</li>
+      <ul v-if="preview.warnings.length" class="warning-list">
+        <li v-for="(w, i) in preview.warnings" :key="i" class="alert alert-warning">{{ w }}</li>
       </ul>
 
-      <button data-test="confirm-button" :disabled="preview.conflicts.length > 0 || confirming"
+      <button data-test="confirm-button" class="btn btn-primary confirm-btn"
+              :disabled="preview.conflicts.length > 0 || confirming"
               @click="runConfirm">
         确认导入
       </button>
     </div>
   </section>
 </template>
+
+<style scoped>
+.import-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.import-form .btn {
+  align-self: flex-end;
+}
+
+.preview {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.confirm-btn {
+  align-self: flex-start;
+}
+
+.preview-summary {
+  color: var(--text-secondary);
+}
+
+.preview-summary strong {
+  color: var(--text-primary);
+}
+
+.conflict-list,
+.warning-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rule-echo-group h3 {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.rule-echo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rule-echo-list li {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--page-bg);
+  font-size: 13px;
+}
+
+.rule-raw {
+  color: var(--text-secondary);
+}
+
+.rule-arrow {
+  margin: 0 6px;
+  color: var(--text-muted);
+}
+
+.rule-parsed {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+</style>

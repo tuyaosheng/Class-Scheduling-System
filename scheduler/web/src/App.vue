@@ -69,34 +69,100 @@ function onJobId(id: string) {
 </script>
 
 <template>
-  <main>
-    <h1>排课系统</h1>
+  <div class="app-shell">
+    <header class="app-header">
+      <h1>排课系统</h1>
+      <nav class="tab-nav">
+        <button data-test="tab-scheduler" class="tab-nav__item" :class="{ active: tab === 'scheduler' }"
+                @click="tab = 'scheduler'">排课</button>
+        <button data-test="tab-settings" class="tab-nav__item" :class="{ active: tab === 'settings' }"
+                @click="tab = 'settings'">设置</button>
+      </nav>
+    </header>
 
-    <nav>
-      <button data-test="tab-scheduler" :class="{ active: tab === 'scheduler' }"
-              @click="tab = 'scheduler'">排课</button>
-      <button data-test="tab-settings" :class="{ active: tab === 'settings' }"
-              @click="tab = 'settings'">设置</button>
-    </nav>
+    <main class="app-content">
+      <p v-if="error" data-test="error" class="alert alert-critical">{{ error }}</p>
 
-    <p v-if="error" data-test="error">{{ error }}</p>
-
-    <template v-if="tab === 'settings'">
-      <AiSettings />
-    </template>
-
-    <template v-if="tab === 'scheduler'">
-      <ImportPanel v-if="stage === 'needs_import'" @confirmed="onImportConfirmed" />
-
-      <template v-if="stage === 'configuring'">
-        <SettingsPanel :grade="grade" />
-        <button data-test="proceed-to-solve" @click="proceedToSolve">前往排课</button>
+      <template v-if="tab === 'settings'">
+        <AiSettings />
       </template>
 
-      <template v-if="stage === 'ready'">
-        <SolvePanel @job-id="onJobId" @candidates="onCandidates" />
-        <CandidateTabs :candidates="candidates" :job-id="jobId" :classes="classes" />
+      <template v-if="tab === 'scheduler'">
+        <ImportPanel v-if="stage === 'needs_import'" @confirmed="onImportConfirmed" />
+
+        <template v-if="stage === 'configuring'">
+          <SettingsPanel :grade="grade" />
+          <button data-test="proceed-to-solve" class="btn btn-primary proceed-btn" @click="proceedToSolve">前往排课</button>
+        </template>
+
+        <template v-if="stage === 'ready'">
+          <SolvePanel @job-id="onJobId" @candidates="onCandidates" />
+          <CandidateTabs :candidates="candidates" :job-id="jobId" :classes="classes" />
+        </template>
       </template>
-    </template>
-  </main>
+    </main>
+  </div>
 </template>
+
+<style scoped>
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px 32px;
+  background: var(--surface-raised);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-header h1 {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.tab-nav {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--page-bg);
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.tab-nav__item {
+  padding: 7px 18px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tab-nav__item:hover {
+  color: var(--text-primary);
+}
+
+.tab-nav__item.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.app-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 32px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.proceed-btn {
+  align-self: flex-start;
+}
+</style>
