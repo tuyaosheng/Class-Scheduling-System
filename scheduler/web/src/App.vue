@@ -21,13 +21,23 @@ const grade = ref('初三')
 const classes = ref<number[]>([])
 const candidates = ref<Candidate[]>([])
 const jobId = ref<string | null>(null)
+const error = ref('')
 
 onMounted(async () => {
-  const status = await getConfigStatus()
-  if (status.ready) {
-    grade.value = status.grade ?? '初三'
-    stage.value = 'configuring'
-  } else {
+  error.value = ''
+  try {
+    const status = await getConfigStatus()
+    if (status.ready) {
+      grade.value = status.grade ?? '初三'
+      stage.value = 'configuring'
+    } else {
+      stage.value = 'needs_import'
+    }
+  } catch (err) {
+    // 后端起不来 / 网络错误：不能让 await 无人接住，否则页面永远停在只有
+    // <h1> 的空白状态。退回 needs_import 让用户至少看到导入面板和错误原因，
+    // 而不是猜不出到底发生了什么（见 finding I1，与 SettingsPanel 同一模式）。
+    error.value = (err as Error).message
     stage.value = 'needs_import'
   }
 })
@@ -58,6 +68,8 @@ function onJobId(id: string) {
 <template>
   <main>
     <h1>排课系统</h1>
+
+    <p v-if="error" data-test="error">{{ error }}</p>
 
     <ImportPanel v-if="stage === 'needs_import'" @confirmed="onImportConfirmed" />
 

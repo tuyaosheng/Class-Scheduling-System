@@ -34,9 +34,17 @@ ws_router = APIRouter(prefix='/api')
 
 
 def _solve_streaming(dataset, cfg, rules, *, count, min_diff, max_seconds, on_candidate):
+    """返回 (produced, last_status)。
+
+    last_status 是最后一次 solver.Solve() 看到的 CP-SAT 状态名（如 'INFEASIBLE'
+    'UNKNOWN' 'OPTIMAL'）——调用方需要它来区分『真正被证明无解』与『求解超时、
+    没跑出结论』，这两者不是一回事，不能都当无解处理（见 CLAUDE.md「L1/L2/L3」
+    与本轮 finding I5）。循环一次都没跑（count<=0）时 last_status 为 None。
+    """
     compiled = compile_model(dataset, cfg, rules)
     by_id = {t.id: t for t in dataset.tasks}
     produced = 0
+    last_status = None
     for _ in range(count):
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = float(max_seconds)
@@ -44,6 +52,7 @@ def _solve_streaming(dataset, cfg, rules, *, count, min_diff, max_seconds, on_ca
         started = time.time()
         status = solver.Solve(compiled.model)
         elapsed = time.time() - started
+        last_status = _STATUS_NAME.get(status, str(status))
         if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             break
         chosen_vars = []
@@ -56,12 +65,12 @@ def _solve_streaming(dataset, cfg, rules, *, count, min_diff, max_seconds, on_ca
                     task_id=task_id, class_id=task.class_id, course=task.course,
                     teacher=task.teacher, slot=slot, parity=task.parity))
         placements.sort(key=lambda p: (p.class_id, p.slot))
-        solution = Solution(status=_STATUS_NAME.get(status, str(status)),
+        solution = Solution(status=last_status,
                             wall_time=elapsed, placements=placements)
         on_candidate(solution)
         produced += 1
         compiled.model.Add(sum(chosen_vars) <= len(chosen_vars) - min_diff)
-    return produced
+    return produced, last_status
 
 
 def _run_job(job_id, grade, count, min_diff, max_seconds, loop, queue):
@@ -126,10 +135,20 @@ def _run_job(job_id, grade, count, min_diff, max_seconds, loop, queue):
                 'placements': [p.model_dump() for p in solution.placements],
             })
 
-        produced = _solve_streaming(dataset, cfg, rules, count=count, min_diff=min_diff,
-                                    max_seconds=max_seconds, on_candidate=on_candidate)
+        produced, last_status = _solve_streaming(
+            dataset, cfg, rules, count=count, min_diff=min_diff,
+            max_seconds=max_seconds, on_candidate=on_candidate)
 
-        if produced == 0:
+        if produced == 0 and last_status == 'UNKNOWN':
+            # 求解超时，CP-SAT 没能判定可行性——不是无解，是没跑完。
+            # 这种情况下 minimal_conflict 本身还要再烧一次最多 max_seconds，
+            # 而且对『仅仅是慢』的问题算出来的『最小冲突集』毫无意义，直接跳过。
+            job.status = 'timeout'
+            message = ('求解超时（%d 秒内未判定是否可行），这不代表无解，只是没跑完——'
+                      '可以提高最大求解时长后重试' % max_seconds)
+            job.conflict = message
+            emit({'type': 'timeout', 'message': message})
+        elif produced == 0:
             job.status = 'infeasible'
             conflict = minimal_conflict(dataset, cfg, rules, max_seconds=max_seconds)
             job.conflict = format_conflict(conflict)

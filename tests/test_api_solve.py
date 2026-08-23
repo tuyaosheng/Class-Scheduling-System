@@ -171,6 +171,31 @@ def test_export_returns_xlsx_file(client, tiny_config):
         'application/vnd.openxmlformats')
 
 
+def test_export_with_template_returns_404_when_template_file_missing(
+        client, tiny_config, monkeypatch):
+    """Finding I3：`课程表模板.xlsx` 在新克隆的仓库里本来就不存在（未纳入 git）。
+
+    点『导出 Excel（教务模板版）』时，缺文件不该产生裸 500 + 堆栈，而应该是
+    一个说明白原因的 404。用 monkeypatch 模拟『文件缺失』，不碰仓库根目录下
+    真实存在的那份模板文件（这份文件是否提交由用户另外决定，与本测试无关）。
+    """
+    import scheduler.api.routes as routes_module
+    monkeypatch.setattr(routes_module, 'TEMPLATE_PATH', tiny_config / '不存在的模板.xlsx')
+
+    resp = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
+                                           'max_seconds': 10})
+    job_id = resp.json()['job_id']
+    with client.websocket_connect('/api/ws/solve/%s' % job_id) as ws:
+        while True:
+            msg = ws.receive_json()
+            if msg['type'] in ('done', 'infeasible', 'precheck_failed'):
+                break
+
+    export_resp = client.get('/api/export/%s/1' % job_id, params={'template': 1})
+    assert export_resp.status_code == 404
+    assert '课程表模板.xlsx' in export_resp.json()['detail']
+
+
 def test_run_job_exception_still_reaches_websocket_as_terminal_event(
         client, config_missing_courses):
     """Finding 1 回归测试：_run_job 里任何异常都必须变成一个终结事件。
@@ -219,11 +244,12 @@ def test_solve_streaming_produces_distinct_candidates_via_callback():
     rules = load_rules(CONFIG_DIR / 'rules.yaml', CONFIG_DIR / 'rules.generated.yaml')
 
     received = []
-    produced = _solve_streaming(result.dataset, cfg, rules, count=3, min_diff=8,
-                                max_seconds=30, on_candidate=received.append)
+    produced, last_status = _solve_streaming(result.dataset, cfg, rules, count=3, min_diff=8,
+                                             max_seconds=30, on_candidate=received.append)
 
     assert produced == len(received), 'on_candidate 的调用次数必须与返回的 produced 数一致'
     assert produced >= 1
+    assert last_status in ('OPTIMAL', 'FEASIBLE')
     for sol in received:
         assert sol.feasible
 
@@ -234,3 +260,63 @@ def test_solve_streaming_produces_distinct_candidates_via_callback():
         for j in range(i + 1, len(received)):
             diff = placed(received[i]) ^ placed(received[j])
             assert len(diff) >= 8, '第 %d 与第 %d 个候选差异只有 %d 处' % (i, j, len(diff))
+
+
+def test_solve_streaming_returns_last_status_unknown_on_timeout(monkeypatch):
+    """Finding I5：_solve_streaming 必须把 CP-SAT 的 UNKNOWN（没跑完，不是无解）
+    如实报给调用方，调用方靠这个字段区分『真无解』与『超时未判定』。"""
+    from ortools.sat.python import cp_model as cp_model_mod
+
+    from scheduler.api.ws import _solve_streaming
+
+    cfg = load_config(CONFIG_DIR)
+    dataset = _tiny_feasible_dataset()
+    rules = load_rules(CONFIG_DIR / 'rules.yaml', CONFIG_DIR / 'rules.generated.yaml')
+
+    monkeypatch.setattr(cp_model_mod.CpSolver, 'Solve', lambda self, model: cp_model_mod.UNKNOWN)
+
+    produced, last_status = _solve_streaming(dataset, cfg, rules, count=1, min_diff=1,
+                                             max_seconds=1, on_candidate=lambda s: None)
+    assert produced == 0
+    assert last_status == 'UNKNOWN'
+
+
+def test_run_job_reports_timeout_not_infeasible_and_skips_minimal_conflict(
+        client, tiny_config, monkeypatch):
+    """Finding I5 回归测试：求解超时（CP-SAT 返回 UNKNOWN）不能被当成无解处理——
+
+    不能报 'infeasible'（那是已证明无解），也不能烧时间去跑 minimal_conflict
+    （对『只是慢、没跑完』的问题算出来的『最小冲突集』没有意义，见 finding 描述）。
+    """
+    import scheduler.api.ws as ws_module
+
+    def fake_solve_streaming(*args, **kwargs):
+        return 0, 'UNKNOWN'
+
+    monkeypatch.setattr(ws_module, '_solve_streaming', fake_solve_streaming)
+
+    conflict_calls = []
+
+    def fake_minimal_conflict(*args, **kwargs):
+        conflict_calls.append(1)
+        return None
+
+    monkeypatch.setattr(ws_module, 'minimal_conflict', fake_minimal_conflict)
+
+    resp = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
+                                           'max_seconds': 10})
+    assert resp.status_code == 200
+    job_id = resp.json()['job_id']
+
+    events = _collect_ws_events_with_timeout(client, job_id, timeout=15)
+
+    types = [e['type'] for e in events]
+    assert 'timeout' in types, '求解超时必须有专门的事件类型，与无解区分开'
+    assert 'infeasible' not in types, '超时不能被当成无解上报'
+    assert types[-1] == 'done'
+    assert conflict_calls == [], 'minimal_conflict 不应该在纯超时场景下被调用'
+
+    status_resp = client.get('/api/solve/%s' % job_id)
+    assert status_resp.status_code == 200
+    assert status_resp.json()['status'] == 'timeout'
+    assert status_resp.json()['status'] != 'infeasible'

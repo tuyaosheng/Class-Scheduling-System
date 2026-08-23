@@ -255,3 +255,40 @@ def test_merge_ai_engine_uses_ai_not_available_for_forbidden_slots(tmp_path, cfg
                                       rule_engine="ai", ai_client=FakeClient())
     forbidden = result.dataset.teachers["李琼"].forbidden_slots()
     assert forbidden == {(4, 9)}
+
+
+def test_merge_ai_engine_rule_echo_shows_ai_not_available_not_regex(tmp_path, cfg):
+    """不能排课节次的回显必须和实际写盘的规则一致（AI 模式下来自 AI 的答案），
+    否则教务确认的是正则解释，系统实际生效的却是 AI 解释——违反必须回显确认的铁律。
+
+    "周三上午不排课" 正则会解析成周三（day=2）上午 5 节的并集；构造一个刻意不同的
+    假 AI 答案（周五第9节，即 day=4, period=9），断言 rule_echo 显示的是 AI 的答案。
+    """
+    import json
+    from types import SimpleNamespace
+
+    class FakeMessages:
+        def create(self, **kwargs):
+            payload = {
+                "not_available": [[4, 9]],
+                "fixed_slots": [], "requirement": [], "remark": [],
+            }
+            return SimpleNamespace(content=[SimpleNamespace(text=json.dumps(payload))])
+
+    class FakeClient:
+        messages = FakeMessages()
+
+    teaching_path = tmp_path / "任课表.xlsx"
+    _write_teaching_table(teaching_path)
+    rules_path = tmp_path / "排课说明.xlsx"
+    _write_rules_sheet(rules_path, [
+        ["李琼", "初三", "语文", "1", 6, None, None, "周三上午不排课", None, None],
+        ["徐仪涵", "初三", "数学", "1,2", 5, None, None, None, None, None],
+    ])
+    result = merge_teaching_and_rules(teaching_path, rules_path, cfg, grade="初三",
+                                      rule_engine="ai", ai_client=FakeClient())
+    echo = result.rule_echo["不能排课节次"][0]["parsed"]
+    # AI 答案是周五第9节；正则会把"周三上午"解析成周三1-5节，两者互斥，
+    # 用来验证回显没有悄悄退化成正则的输出。
+    assert "周五" in echo and "9" in echo
+    assert "周三" not in echo

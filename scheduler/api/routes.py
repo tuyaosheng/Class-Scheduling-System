@@ -2,6 +2,7 @@
 import tempfile
 from pathlib import Path
 
+import yaml
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import ValidationError
 
@@ -23,11 +24,16 @@ router = APIRouter(prefix='/api')
 
 def _load_config_or_400():
     """`load_config` 在配置缺失/不自洽时抛 `ConfigError`——统一转成 400，
-    不能让它裸传播成未格式化的 500。"""
+    不能让它裸传播成未格式化的 500。同时兜住 `yaml.YAMLError`：
+    courses.yaml/venues.yaml/plans.yaml 任何一份语法损坏时，`load_config`
+    内部对 YAML 的读取本身没有守卫（`core/config.py` 不在本轮改动范围内），
+    这里统一收口，不让损坏的静态配置文件产生裸 500（见 finding I4）。"""
     try:
         return load_config(DEFAULT_CONFIG_DIR)
     except ConfigError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+    except yaml.YAMLError as exc:
+        raise HTTPException(status_code=400, detail='配置文件不是合法的 YAML：%s' % exc)
 
 
 @router.post('/import', response_model=ImportPreview)
@@ -88,13 +94,32 @@ def confirm_import(body: ImportConfirmRequest):
                                  rules_path=str(rules_path))
 
 
+def _load_yaml_dict_or_400(path: Path, what: str) -> dict:
+    """读一份配置 YAML 并要求顶层是个 dict——解析失败或结构不对时转成干净的 400，
+
+    不能让 yaml.YAMLError 或 dict 方法调用在非 dict 上炸出来的 AttributeError
+    裸传播成没有诊断信息的 500（见 finding I4：这类文件损坏往往发生在
+    /api/config/status，是前端加载页面的第一个请求，叠加 I1 会变成一片空白）。
+    """
+    try:
+        data = yaml.safe_load(path.read_text(encoding='utf-8'))
+    except yaml.YAMLError as exc:
+        raise HTTPException(status_code=400, detail='%s 内容不是合法的 YAML：%s' % (what, exc))
+    if data is None:
+        return {}
+    if not isinstance(data, dict):
+        raise HTTPException(status_code=400,
+                           detail='%s 内容格式不对，顶层应为键值映射，实际是 %s'
+                                  % (what, type(data).__name__))
+    return data
+
+
 @router.get('/config/status', response_model=ConfigStatus)
 def config_status():
     teaching_path = DEFAULT_CONFIG_DIR / 'teaching.yaml'
     if not teaching_path.exists():
         return ConfigStatus(ready=False)
-    import yaml
-    data = yaml.safe_load(teaching_path.read_text(encoding='utf-8')) or {}
+    data = _load_yaml_dict_or_400(teaching_path, 'teaching.yaml')
     return ConfigStatus(ready=True, grade=data.get('grade'),
                         classes=len(data.get('classes', [])),
                         tasks=len(data.get('tasks', [])))
@@ -109,8 +134,6 @@ def get_plan(grade: str = '初三'):
 
 @router.put('/config/plan', response_model=PlanGetResponse)
 def put_plan(body: PlanPutRequest):
-    import yaml
-
     cfg = _load_config_or_400()
     candidate = cfg.model_copy(deep=True)
     candidate.plans[body.grade] = body.plan
@@ -120,7 +143,7 @@ def put_plan(body: PlanPutRequest):
         raise HTTPException(status_code=400, detail=str(exc))
 
     plans_path = DEFAULT_CONFIG_DIR / 'plans.yaml'
-    raw = yaml.safe_load(plans_path.read_text(encoding='utf-8')) or {}
+    raw = _load_yaml_dict_or_400(plans_path, 'plans.yaml')
     raw.setdefault('plans', {})[body.grade] = body.plan
     plans_path.write_text(yaml.safe_dump(raw, allow_unicode=True, sort_keys=False),
                           encoding='utf-8')
@@ -129,6 +152,10 @@ def put_plan(body: PlanPutRequest):
 
 
 from fastapi.responses import FileResponse
+
+# 模块级常量，方便测试用 monkeypatch 模拟『模板文件缺失』而不必真的动仓库根目录下
+# 那份未纳入 git 管理的 课程表模板.xlsx（见 finding I3）。
+TEMPLATE_PATH = Path(__file__).resolve().parents[2] / '课程表模板.xlsx'
 
 
 @router.get('/export/{job_id}/{candidate_index}')
@@ -146,8 +173,10 @@ def export_candidate(job_id: str, candidate_index: int, template: int = 0):
     solution = job.solutions[candidate_index - 1]
     out_path = Path(tempfile.mkdtemp()) / ('候选%d.xlsx' % candidate_index)
     if template:
-        template_path = Path(__file__).resolve().parents[2] / '课程表模板.xlsx'
-        export_to_template(solution, job.dataset, template_path, out_path)
+        if not TEMPLATE_PATH.exists():
+            raise HTTPException(status_code=404,
+                               detail='未找到课程表模板.xlsx，请把模板文件放在项目根目录')
+        export_to_template(solution, job.dataset, TEMPLATE_PATH, out_path)
     else:
         export_excel(solution, job.dataset, out_path, cfg=job.cfg)
     return FileResponse(

@@ -147,6 +147,48 @@ def test_config_status_reflects_written_config(client, tmp_path, monkeypatch):
     assert resp.json()['ready'] is False
 
 
+def test_config_status_returns_400_on_corrupted_teaching_yaml(client, tmp_path, monkeypatch):
+    """Finding I4：teaching.yaml 语法损坏时，/api/config/status 必须给出干净的
+    400，不能让 yaml.YAMLError 裸传播成 500——这是前端加载页面的第一个请求，
+    叠加 App.vue 缺 try/catch（finding I1）会变成一片空白、毫无诊断信息。"""
+    import scheduler.api.routes as routes_module
+    monkeypatch.setattr(routes_module, 'DEFAULT_CONFIG_DIR', tmp_path)
+    (tmp_path / 'teaching.yaml').write_text('grade: [初三\n  broken: yaml: : :', encoding='utf-8')
+
+    resp = client.get('/api/config/status')
+    assert resp.status_code == 400
+    assert resp.json()['detail']
+
+
+def test_config_status_returns_400_when_teaching_yaml_is_not_a_dict(client, tmp_path, monkeypatch):
+    """teaching.yaml 顶层解析成 list（比如整份文件被误存成一个纯列表）时，
+    `.get('grade')` 会抛 AttributeError——必须提前拦成 400。"""
+    import scheduler.api.routes as routes_module
+    monkeypatch.setattr(routes_module, 'DEFAULT_CONFIG_DIR', tmp_path)
+    (tmp_path / 'teaching.yaml').write_text('- a\n- b\n', encoding='utf-8')
+
+    resp = client.get('/api/config/status')
+    assert resp.status_code == 400
+    assert resp.json()['detail']
+
+
+def test_put_plan_returns_400_on_corrupted_plans_yaml(client, tmp_path, monkeypatch):
+    """Finding I4：plans.yaml 语法损坏时，PUT /api/config/plan 必须给出干净的
+    400，不能让 yaml.YAMLError 裸传播成 500。"""
+    import shutil
+
+    import scheduler.api.routes as routes_module
+    shutil.copytree(CONFIG_DIR, tmp_path, dirs_exist_ok=True)
+    monkeypatch.setattr(routes_module, 'DEFAULT_CONFIG_DIR', tmp_path)
+
+    plan = {'语文': 6}
+    (tmp_path / 'plans.yaml').write_text('plans: {初三: [broken: : :', encoding='utf-8')
+
+    resp = client.put('/api/config/plan', json={'grade': '初三', 'plan': plan})
+    assert resp.status_code == 400
+    assert resp.json()['detail']
+
+
 def test_import_confines_uploaded_files_despite_path_traversal_filename(client, tmp_path, monkeypatch):
     """`teaching_file.filename`/`rules_file.filename` 是客户端可控字符串。
     把 `tempfile.TemporaryDirectory()` 钉死到一个可检查的目录上，验证恶意

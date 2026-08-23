@@ -315,8 +315,10 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
 
         if not_avail_raw and not_avail_raw not in seen_raw['不能排课节次']:
             seen_raw['不能排课节次'].add(not_avail_raw)
+            not_avail_display_slots = ({(d, p) for d, p in parsed.not_available} if rule_engine == 'ai'
+                                       else parse_time_expr(not_avail_raw))
             rule_echo['不能排课节次'].append(
-                {'raw': not_avail_raw, 'parsed': _fmt_slots_display(parse_time_expr(not_avail_raw))})
+                {'raw': not_avail_raw, 'parsed': _fmt_slots_display(not_avail_display_slots)})
         if fixed_raw and fixed_raw not in seen_raw['固定节次']:
             seen_raw['固定节次'].add(fixed_raw)
             rule_echo['固定节次'].append({'raw': fixed_raw, 'parsed': _fmt_slots_display(fixed_slots)})
