@@ -114,6 +114,10 @@ def describe(rule: Rule) -> str:
         '%s=%s' % (_SCOPE_LABEL.get(d, d), v) for d, v in rule.scope.items()) or '全局'
     params = dict(rule.params)
     params['slots_n'] = len(params.get('slots', []))
+    if 'weekdays' in params:
+        params['weekdays'] = '、'.join(params['weekdays'])
+    if 'pair' in params:
+        params['pair'] = '、'.join(params['pair'])
     template = _TYPE_TEMPLATE.get(rule.type, rule.type + ' {}')
     try:
         body = template.format(**params)

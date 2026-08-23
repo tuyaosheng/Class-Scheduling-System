@@ -76,11 +76,36 @@ def _template_cell(class_id, slot):
     return row, col
 
 
-def export_to_template(solution, dataset, template_path, out_path, sheet_name='下学期') -> None:
+_PARITY_ORDER = {'单周': 0, '双周': 1}
+_TEMPLATE_NOTE_HEADER_ROW = 11   # 与「节  次」表头同一行
+
+
+def _cell_text(placements, cfg):
+    """单双周家族（心美）整格折叠成家族名；其余按原样拼课程名。"""
+    if cfg is not None and placements:
+        families = {cfg.courses[p.course].family for p in placements
+                    if cfg.courses[p.course].alternate}
+        if len(families) == 1 and all(cfg.courses[p.course].alternate for p in placements):
+            return next(iter(families))
+    return '/'.join('%s%s' % (p.course, '(%s)' % p.parity if p.parity else '')
+                    for p in placements)
+
+
+def _alternate_note(placements_for_class_family):
+    ordered = sorted(placements_for_class_family,
+                     key=lambda p: _PARITY_ORDER.get(p.parity, 99))
+    return '/'.join('%s(%s)' % (p.course, p.parity) for p in ordered)
+
+
+def export_to_template(solution, dataset, template_path, out_path, sheet_name='下学期',
+                       cfg=None) -> None:
     """按教务提供的『课程表模板.xlsx』版式导出。
 
     模板里教务固定占位的 8 格（班会/体比/校本1/综实2/体选）已经预填好内容，
     这里只写系统求解出的格子，不碰模板已有的表头、预填内容与会议安排说明。
+
+    传入 cfg 时，单双周家族（心美）在格子里只显示家族名，具体单双周安排改写到
+    最后一列（每个家族一列），避免格子里塞下两门课的名字挤占版面。
     """
     wb = openpyxl.load_workbook(template_path)
     if sheet_name not in wb.sheetnames:
@@ -92,9 +117,22 @@ def export_to_template(solution, dataset, template_path, out_path, sheet_name='�
         by_cell[_template_cell(p.class_id, p.slot)].append(p)
 
     for (row, col), placements in by_cell.items():
-        text = '/'.join('%s%s' % (p.course, '(%s)' % p.parity if p.parity else '')
-                        for p in placements)
-        ws.cell(row=row, column=col, value=text)
+        ws.cell(row=row, column=col, value=_cell_text(placements, cfg))
+
+    if cfg is not None:
+        by_class_family = defaultdict(list)
+        for p in solution.placements:
+            course = cfg.courses[p.course]
+            if course.alternate:
+                by_class_family[(p.class_id, course.family)].append(p)
+        families = sorted({family for _, family in by_class_family})
+        note_col_of = {family: _TEMPLATE_FIRST_DAY_COL + len(cal.DAYS) * cal.PERIODS_PER_DAY + i
+                      for i, family in enumerate(families)}
+        for family, col in note_col_of.items():
+            ws.cell(row=_TEMPLATE_NOTE_HEADER_ROW, column=col, value='%s单双周安排' % family)
+        for (class_id, family), placements in by_class_family.items():
+            row = _TEMPLATE_FIRST_CLASS_ROW + (class_id - 1)
+            ws.cell(row=row, column=note_col_of[family], value=_alternate_note(placements))
 
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     wb.save(out_path)

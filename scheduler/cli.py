@@ -163,7 +163,7 @@ def cmd_solve(args) -> int:
         if args.template:
             template_path = _template_suffixed_path(args.out, i, len(solutions))
             export_to_template(solution, result.dataset, args.template, template_path,
-                               sheet_name=args.template_sheet)
+                               sheet_name=args.template_sheet, cfg=cfg)
             print('已按模板导出 %s' % template_path)
     return 0
 

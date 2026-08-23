@@ -4,8 +4,9 @@ import openpyxl
 import pytest
 
 from scheduler.core import calendar as cal
+from scheduler.core.config import SchedulerConfig
 from scheduler.core.exporter import export_to_template
-from scheduler.core.models import Dataset, Teacher
+from scheduler.core.models import Course, Dataset, Teacher
 from scheduler.core.solver import Placement, Solution
 
 
@@ -61,6 +62,39 @@ def test_leaves_reserved_prefilled_cells_untouched(tmp_path):
     ws = wb['下学期']
     assert ws.cell(row=12, column=10).value == '班'   # 周一第二课堂（班会）原样保留
     assert ws.cell(row=13, column=10).value == '班'
+
+
+def test_alternate_week_family_collapses_to_family_name_with_note_column(tmp_path):
+    """心美（美术单周/心理双周）在格子里只显示「心美」，具体安排挪到最后一列。"""
+    template = tmp_path / '模板.xlsx'
+    _blank_template(template)
+
+    cfg = SchedulerConfig(
+        courses={
+            '美术': Course(name='美术', family='心美', alternate='单周'),
+            '心理': Course(name='心理', family='心美', alternate='双周'),
+        },
+        plans={}, venues={})
+
+    dataset = Dataset(grade='初三', classes=[1],
+                      teachers={'王老师': Teacher(name='王老师'), '陈老师': Teacher(name='陈老师')},
+                      tasks=[])
+    slot = cal.slot_index(0, 8)   # 初三1 周一第8节 -> 模板列 9
+    solution = Solution(status='OPTIMAL', wall_time=0.1, placements=[
+        Placement(task_id=0, class_id=1, course='美术', teacher='王老师',
+                  slot=slot, parity='单周'),
+        Placement(task_id=1, class_id=1, course='心理', teacher='陈老师',
+                  slot=slot, parity='双周'),
+    ])
+
+    out = tmp_path / '结果.xlsx'
+    export_to_template(solution, dataset, template, out, cfg=cfg)
+
+    wb = openpyxl.load_workbook(out)
+    ws = wb['下学期']
+    assert ws.cell(row=12, column=9).value == '心美'
+    assert ws.cell(row=11, column=47).value == '心美单双周安排'
+    assert ws.cell(row=12, column=47).value == '美术(单周)/心理(双周)'
 
 
 def test_unknown_sheet_name_raises(tmp_path):
