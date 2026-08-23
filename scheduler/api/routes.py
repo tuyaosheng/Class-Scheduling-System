@@ -1,4 +1,5 @@
 """导入 / 配置相关的 REST 端点。"""
+import os
 import tempfile
 from pathlib import Path
 
@@ -13,6 +14,7 @@ from scheduler.core.importer import (
 
 from . import sessions
 from .schemas import (
+    AiSettingsGetResponse, AiSettingsPutRequest,
     ConfigStatus, ImportConfirmRequest, ImportConfirmResponse, ImportPreview,
     PlanGetResponse, PlanPutRequest,
 )
@@ -20,6 +22,54 @@ from .schemas import (
 DEFAULT_CONFIG_DIR = Path(__file__).resolve().parents[1] / 'config'
 
 router = APIRouter(prefix='/api')
+
+
+def _mask_key(key: str) -> str:
+    """sk-…最后 4 位,前端用来确认「已配置」而非回显明文。"""
+    return '%s…%s' % (key[:4], key[-4:]) if len(key) > 8 else '%s…' % key[:4]
+
+
+@router.get('/settings/ai', response_model=AiSettingsGetResponse)
+def get_ai_settings():
+    from scheduler.core import settings_store
+    local = settings_store.get_setting('ai.api_key')
+    env = os.environ.get('ANTHROPIC_API_KEY')
+    if local:
+        return AiSettingsGetResponse(configured=True, source='local',
+                                     masked_key=_mask_key(local))
+    if env:
+        return AiSettingsGetResponse(configured=True, source='env')
+    return AiSettingsGetResponse(configured=False, source='none')
+
+
+@router.put('/settings/ai', response_model=dict)
+def put_ai_settings(body: AiSettingsPutRequest):
+    from scheduler.core import settings_store
+    key = body.api_key.strip()
+    if not key:
+        raise HTTPException(status_code=400, detail='API key 不能为空')
+    settings_store.set_setting('ai.api_key', key)
+    return {'ok': True}
+
+
+@router.post('/settings/ai/test', response_model=dict)
+def test_ai_settings():
+    from scheduler.core.settings_store import get_ai_api_key
+    api_key = get_ai_api_key()
+    if not api_key:
+        raise HTTPException(status_code=400,
+                           detail='未配置 API key：请先在「设置 → AI 设置」里填写')
+    import anthropic
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        client.messages.create(
+            model='claude-sonnet-4-5', max_tokens=1,
+            messages=[{'role': 'user', 'content': 'ping'}],
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=400,
+                           detail='AI 连接失败：%s' % exc)
+    return {'ok': True}
 
 
 def _load_config_or_400():

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { getConfigStatus } from './api'
+import AiSettings from './components/AiSettings.vue'
 import ImportPanel from './components/ImportPanel.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import SolvePanel from './components/SolvePanel.vue'
 import CandidateTabs from './components/CandidateTabs.vue'
 
 type Stage = 'idle' | 'needs_import' | 'configuring' | 'ready'
+type Tab = 'scheduler' | 'settings'
 
 interface Candidate {
   index: number
@@ -17,6 +19,7 @@ interface Candidate {
 }
 
 const stage = ref<Stage>('idle')
+const tab = ref<Tab>('scheduler')
 const grade = ref('初三')
 const classes = ref<number[]>([])
 const candidates = ref<Candidate[]>([])
@@ -69,18 +72,31 @@ function onJobId(id: string) {
   <main>
     <h1>排课系统</h1>
 
+    <nav>
+      <button data-test="tab-scheduler" :class="{ active: tab === 'scheduler' }"
+              @click="tab = 'scheduler'">排课</button>
+      <button data-test="tab-settings" :class="{ active: tab === 'settings' }"
+              @click="tab = 'settings'">设置</button>
+    </nav>
+
     <p v-if="error" data-test="error">{{ error }}</p>
 
-    <ImportPanel v-if="stage === 'needs_import'" @confirmed="onImportConfirmed" />
-
-    <template v-if="stage === 'configuring'">
-      <SettingsPanel :grade="grade" />
-      <button data-test="proceed-to-solve" @click="proceedToSolve">前往排课</button>
+    <template v-if="tab === 'settings'">
+      <AiSettings />
     </template>
 
-    <template v-if="stage === 'ready'">
-      <SolvePanel @job-id="onJobId" @candidates="onCandidates" />
-      <CandidateTabs :candidates="candidates" :job-id="jobId" :classes="classes" />
+    <template v-if="tab === 'scheduler'">
+      <ImportPanel v-if="stage === 'needs_import'" @confirmed="onImportConfirmed" />
+
+      <template v-if="stage === 'configuring'">
+        <SettingsPanel :grade="grade" />
+        <button data-test="proceed-to-solve" @click="proceedToSolve">前往排课</button>
+      </template>
+
+      <template v-if="stage === 'ready'">
+        <SolvePanel @job-id="onJobId" @candidates="onCandidates" />
+        <CandidateTabs :candidates="candidates" :job-id="jobId" :classes="classes" />
+      </template>
     </template>
   </main>
 </template>

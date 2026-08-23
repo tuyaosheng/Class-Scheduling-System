@@ -40,6 +40,12 @@ export interface SolveRequest {
   max_seconds: number
 }
 
+export interface AiSettingsResponse {
+  configured: boolean
+  source: string
+  masked_key: string | null
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const resp = await fetch(url, options)
   const body = await resp.json()
@@ -99,6 +105,24 @@ export function connectSolveSocket(jobId: string, onEvent: (event: unknown) => v
   const socket = new WebSocket(`${proto}://${window.location.host}/api/ws/solve/${jobId}`)
   socket.onmessage = (ev) => onEvent(JSON.parse(ev.data))
   return socket
+}
+
+export async function getAiSettings() {
+  return request<AiSettingsResponse>('/api/settings/ai')
+}
+
+export async function putAiSettings(apiKey: string) {
+  return request<{ ok: boolean }>('/api/settings/ai', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey }),
+  })
+}
+
+export async function testAiSettings() {
+  return request<{ ok: boolean }>('/api/settings/ai/test', {
+    method: 'POST',
+  })
 }
 
 export function exportUrl(jobId: string, candidateIndex: number, template: boolean): string {

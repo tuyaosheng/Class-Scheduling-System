@@ -58,3 +58,13 @@ class SolveRequest(BaseModel):
 
 class SolveJobCreated(BaseModel):
     job_id: str
+
+
+class AiSettingsGetResponse(BaseModel):
+    configured: bool
+    source: str
+    masked_key: Optional[str] = None
+
+
+class AiSettingsPutRequest(BaseModel):
+    api_key: str

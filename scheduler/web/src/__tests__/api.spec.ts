@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  confirmImport, connectSolveSocket, exportUrl, getConfigStatus, getPlan,
-  importFiles, putPlan, startSolve,
+  confirmImport, connectSolveSocket, exportUrl, getAiSettings, getConfigStatus,
+  getPlan, importFiles, putAiSettings, putPlan, startSolve, testAiSettings,
 } from '../api'
 
 afterEach(() => {
@@ -73,6 +73,31 @@ describe('confirmImport / getConfigStatus / getPlan / putPlan / startSolve', () 
     mockFetchOnce({ job_id: 'job-1' })
     const { job_id } = await startSolve({ grade: '初三', count: 3, min_diff: 8, max_seconds: 60 })
     expect(job_id).toBe('job-1')
+  })
+})
+
+describe('ai settings', () => {
+  it('getAiSettings performs a GET and returns source', async () => {
+    mockFetchOnce({ configured: true, source: 'local', masked_key: 'sk-s…cdef' })
+    const settings = await getAiSettings()
+    expect(settings.configured).toBe(true)
+    expect(settings.source).toBe('local')
+  })
+
+  it('putAiSettings posts the key', async () => {
+    const fetchMock = mockFetchOnce({ ok: true })
+    await putAiSettings('sk-abc')
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toContain('/api/settings/ai')
+    expect(options.method).toBe('PUT')
+    expect(JSON.parse(options.body)).toEqual({ api_key: 'sk-abc' })
+  })
+
+  it('testAiSettings posts and returns ok', async () => {
+    const fetchMock = mockFetchOnce({ ok: true })
+    const result = await testAiSettings()
+    expect(result.ok).toBe(true)
+    expect(fetchMock.mock.calls[0][1].method).toBe('POST')
   })
 })
 

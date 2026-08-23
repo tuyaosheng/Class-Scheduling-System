@@ -5,7 +5,6 @@
 AI 只负责「这句话是什么规则」的翻译，不做任何硬性判定（CLAUDE.md 铁律 5）。
 """
 import json
-import os
 from typing import Dict, List
 
 from pydantic import BaseModel, Field, ValidationError
@@ -47,7 +46,12 @@ class AIParseError(RuntimeError):
 
 def _default_client():
     import anthropic
-    return anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    from scheduler.core.settings_store import get_ai_api_key
+    api_key = get_ai_api_key()
+    if not api_key:
+        raise AIParseError("未配置 Anthropic API key：请在系统「设置 → AI 设置」里填写,"
+                           "或设置环境变量 ANTHROPIC_API_KEY")
+    return anthropic.Anthropic(api_key=api_key)
 
 
 def parse_row_ai(not_available_text, fixed_slots_text, requirement_text, remark_text,

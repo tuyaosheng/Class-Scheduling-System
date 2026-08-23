@@ -42,4 +42,24 @@ describe('App state machine', () => {
     await wrapper.find('[data-test="proceed-to-solve"]').trigger('click')
     expect(wrapper.findComponent({ name: 'SolvePanel' }).exists()).toBe(true)
   })
+
+  it('switches to the settings tab and back to the scheduler tab', async () => {
+    vi.spyOn(api, 'getConfigStatus').mockResolvedValue({
+      ready: false, grade: null, classes: 0, tasks: 0,
+    })
+    vi.spyOn(api, 'getAiSettings').mockResolvedValue({
+      configured: false, source: 'none', masked_key: null,
+    })
+    const wrapper = mount(App)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    await wrapper.find('[data-test="tab-settings"]').trigger('click')
+    expect(wrapper.findComponent({ name: 'AiSettings' }).exists()).toBe(true)
+    // 排课页签内容此时隐藏
+    expect(wrapper.findComponent({ name: 'ImportPanel' }).exists()).toBe(false)
+
+    await wrapper.find('[data-test="tab-scheduler"]').trigger('click')
+    expect(wrapper.findComponent({ name: 'AiSettings' }).exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'ImportPanel' }).exists()).toBe(true)
+  })
 })

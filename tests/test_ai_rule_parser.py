@@ -65,7 +65,13 @@ def test_raises_when_client_call_fails():
 
 
 def test_raises_on_missing_api_key(monkeypatch):
-    """Regression test: missing ANTHROPIC_API_KEY should raise AIParseError, not KeyError."""
+    """缺 key 应抛 AIParseError 而非 KeyError——本地设置与环境变量都为空时。
+
+    不能只删环境变量:get_ai_api_key 会回退到本机 SQLite,测试必须把两路都
+    隔离掉,否则会受真实开发机配置影响。
+    """
+    import scheduler.core.settings_store as store
     monkeypatch.delenv('ANTHROPIC_API_KEY', raising=False)
-    with pytest.raises(AIParseError, match="解析失败"):
+    monkeypatch.setattr(store, 'get_setting', lambda key: None)
+    with pytest.raises(AIParseError, match="API key"):
         parse_row_ai("", "", "", "")
