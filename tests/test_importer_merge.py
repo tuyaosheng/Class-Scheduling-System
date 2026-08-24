@@ -79,6 +79,20 @@ def test_merge_builds_tasks_when_both_sources_agree(tmp_path, cfg):
     assert by_key[(2, "数学")] == "徐仪涵"
 
 
+def test_merged_dataset_has_grade_calendar(tmp_path, cfg):
+    teaching_path = tmp_path / "任课表.xlsx"
+    _write_teaching_table(teaching_path)
+    rules_path = tmp_path / "排课说明.xlsx"
+    _write_rules_sheet(rules_path, [
+        ["李琼", "初三", "语文", "1", 6, None, None, None, "保证每天有1节", None],
+        ["郑艳秀", "初三", "语文", "2", 6, None, None, None, "保证每天有1节", None],
+        ["徐仪涵", "初三", "数学", "1,2", 5, None, None, None, None, None],
+    ])
+    result = merge_teaching_and_rules(teaching_path, rules_path, cfg, grade="初三")
+    assert result.dataset.calendar.periods_per_day == 9
+    assert result.dataset.calendar is cfg.calendar_of("初三")
+
+
 def test_merge_flags_teacher_mismatch_as_conflict(tmp_path, cfg):
     teaching_path = tmp_path / "任课表.xlsx"
     _write_teaching_table(teaching_path)   # 1班语文=李琼

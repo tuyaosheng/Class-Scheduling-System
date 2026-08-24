@@ -46,6 +46,7 @@ def _class_ids(text):
 
 
 def import_excel(path, cfg, grade='初三') -> ImportResult:
+    calendar = cfg.calendar_of(grade)
     wb = openpyxl.load_workbook(path, data_only=True)
     rows = [r for r in wb[wb.sheetnames[0]].iter_rows(min_row=FIRST_DATA_ROW, values_only=True)
             if r and r[COLUMNS['姓名']]]
@@ -55,7 +56,7 @@ def import_excel(path, cfg, grade='初三') -> ImportResult:
     duties = defaultdict(set)
     for row in rows:
         name = _cell(row, '姓名')
-        forbidden[name] |= parse_time_expr(_cell(row, '不能排课节次'))
+        forbidden[name] |= parse_time_expr(_cell(row, '不能排课节次'), calendar)
         for duty in _cell(row, '职务').split(','):
             if duty.strip():
                 duties[name].add(duty.strip())
@@ -101,13 +102,13 @@ def import_excel(path, cfg, grade='初三') -> ImportResult:
                                       periods=periods, parity=parity))
 
     dataset = Dataset(grade=grade, classes=sorted(classes),
-                      teachers=teachers, tasks=tasks)
-    rules = _build_rules(rows, cfg, grade, forbidden)
+                      teachers=teachers, tasks=tasks, calendar=calendar)
+    rules = _build_rules(rows, cfg, grade, forbidden, calendar)
     warnings = _check_class_loads(dataset, cfg, grade)
     return ImportResult(dataset=dataset, rules=rules, warnings=warnings)
 
 
-def _build_rules(rows, cfg, grade, forbidden) -> List[dict]:
+def _build_rules(rows, cfg, grade, forbidden, calendar) -> List[dict]:
     """forbidden 由调用方（import_excel 的第一遍）算好传入 ——
 
     教师禁排并集只应算一次；这里不再重新遍历 rows 推导它，
@@ -133,7 +134,7 @@ def _build_rules(rows, cfg, grade, forbidden) -> List[dict]:
         course = _cell(row, '学科')
         if cfg.courses[course].external:
             continue
-        slots = parse_fixed_slots(_cell(row, '固定节次'))
+        slots = parse_fixed_slots(_cell(row, '固定节次'), calendar)
         if slots:
             pins[course] |= slots
     for course in sorted(pins):
@@ -264,6 +265,7 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
     """
     from .ruletext import parse_fixed_slots, parse_remark, parse_requirement, parse_time_expr
 
+    calendar = cfg.calendar_of(grade)
     teaching_pivot = parse_teaching_table(teaching_path, cfg)
     rows = _read_rule_rows(rules_path)
 
@@ -277,7 +279,7 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
         if rule_engine != 'ai':
             # AI 模式下禁排改由主循环里逐行解析结果累积（见下方 parsed.not_available），
             # 不在这里用正则重复算一遍——否则 AI 对这一列的解析结果会被静默丢弃。
-            forbidden[name] |= parse_time_expr(_cell(row, '不能排课节次'))
+            forbidden[name] |= parse_time_expr(_cell(row, '不能排课节次'), calendar)
 
     tasks: List[TeachingTask] = []
     classes = set()
@@ -310,13 +312,13 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
             fixed_slots = {(d, p) for d, p in parsed.fixed_slots}
             fragments = parsed.requirement + parsed.remark
         else:
-            fixed_slots = parse_fixed_slots(fixed_raw)
+            fixed_slots = parse_fixed_slots(fixed_raw, calendar)
             fragments = parse_requirement(req_raw) + parse_remark(remark_raw)
 
         if not_avail_raw and not_avail_raw not in seen_raw['不能排课节次']:
             seen_raw['不能排课节次'].add(not_avail_raw)
             not_avail_display_slots = ({(d, p) for d, p in parsed.not_available} if rule_engine == 'ai'
-                                       else parse_time_expr(not_avail_raw))
+                                       else parse_time_expr(not_avail_raw, calendar))
             rule_echo['不能排课节次'].append(
                 {'raw': not_avail_raw, 'parsed': _fmt_slots_display(not_avail_display_slots)})
         if fixed_raw and fixed_raw not in seen_raw['固定节次']:
@@ -439,7 +441,8 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
         for name in forbidden
     }
 
-    dataset = Dataset(grade=grade, classes=sorted(classes), teachers=teachers, tasks=tasks)
+    dataset = Dataset(grade=grade, classes=sorted(classes), teachers=teachers,
+                      tasks=tasks, calendar=calendar)
     warnings = _check_class_loads(dataset, cfg, grade)
     return ImportResult(dataset=dataset, rules=rules, warnings=warnings,
                         conflicts=conflicts, rule_echo=rule_echo)

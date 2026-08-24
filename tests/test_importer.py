@@ -53,6 +53,13 @@ def test_no_warnings_on_real_data(result):
     assert result.warnings == []
 
 
+def test_imported_dataset_has_grade_calendar():
+    cfg = load_config(CONFIG_DIR)
+    result = import_excel(EXCEL, cfg, grade='初三')
+    assert result.dataset.calendar.periods_per_day == 9
+    assert result.dataset.calendar is cfg.calendar_of('初三')
+
+
 # ---- 教师级禁排合并：本计划的核心正确性点 ----
 
 def test_forbidden_is_unioned_across_a_teachers_rows(result):
