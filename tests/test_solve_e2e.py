@@ -167,3 +167,33 @@ def test_solve_many_stops_early_when_diversity_exhausted():
 
     solutions = solve_many(dataset, cfg, rules, count=5, min_diff=1, max_seconds=5)
     assert len(solutions) == 3
+
+
+# ---------------------------------------------------------------- 年级日历参数化
+
+def test_solve_respects_a_different_periods_per_day():
+    """七年级 8 节课，不是全局默认的 9 节——验证参数化真的在起作用，
+    不是巧合让默认值继续蒙混过关。"""
+    from scheduler.core.config import load_config
+    from scheduler.core.models import Dataset, Teacher, TeachingTask
+    from scheduler.core.solver import solve
+    from pathlib import Path
+
+    CONFIG_DIR = Path(__file__).resolve().parents[1] / 'scheduler' / 'config'
+    cfg = load_config(CONFIG_DIR)
+    calendar = cfg.calendar_of('七年级')
+    assert calendar.periods_per_day == 8
+
+    tasks = [TeachingTask(id=0, grade='七年级', class_id=1, course='语文',
+                          teacher='张老师', periods=8)]
+    dataset = Dataset(grade='七年级', classes=[1],
+                      teachers={'张老师': Teacher(name='张老师')},
+                      tasks=tasks, calendar=calendar)
+    solution = solve(dataset, cfg, [], max_seconds=10)
+    assert solution.feasible
+    # 8 节全排满一个班的语文，只有 8 节/天 × 5 天 = 40 格可用，8 节远小于上限，
+    # 但关键断言是：所有落点的 period 必须 <= 8，如果参数化没生效、
+    # 编译器还在用全局 9 节，可能会把任务排到第 9 节（这个年级根本没有）。
+    for p in solution.placements:
+        _, period = calendar.slot_of(p.slot)
+        assert period <= 8
