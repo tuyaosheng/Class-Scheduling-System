@@ -189,6 +189,17 @@ def test_solve_respects_a_different_periods_per_day():
     dataset = Dataset(grade='七年级', classes=[1],
                       teachers={'张老师': Teacher(name='张老师')},
                       tasks=tasks, calendar=calendar)
+
+    # 直接检查编译器建的变量域，不依赖求解器的搜索顺序：CP-SAT 默认搜索会先
+    # 填低编号的格（slot 0-7），这些格在 8 节/天和 9 节/天两种域下都落在
+    # 第 0 天第 1-8 节，靠 solve() 的落点断言测不出编译器是否真的用了
+    # 七年级日历而不是全局 9 节默认值——只有直接看变量域的最大 slot 编号
+    # 才能分辨「40 格域」（对）和「45 格域」（编译器悄悄退回全局默认值，错）。
+    from scheduler.core.compiler import compile_model
+    compiled = compile_model(dataset, cfg, [])
+    assert calendar.n_slots == 40                       # 8 节/天 × 5 天
+    assert max(s for _, s in compiled.x) == calendar.n_slots - 1 == 39
+
     solution = solve(dataset, cfg, [], max_seconds=10)
     assert solution.feasible
     # 8 节全排满一个班的语文，只有 8 节/天 × 5 天 = 40 格可用，8 节远小于上限，
