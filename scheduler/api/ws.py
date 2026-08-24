@@ -16,6 +16,7 @@ from ortools.sat.python import cp_model
 
 import yaml
 
+from scheduler.core import adjust
 from scheduler.core.compiler import compile_model
 from scheduler.core.config import load_config
 from scheduler.core.diagnose import format_conflict, minimal_conflict
@@ -27,8 +28,8 @@ from scheduler.core.verifier import verify
 
 from . import sessions
 from .schemas import (
-    CandidateItem, SolveJobCreated, SolveJobDetail, SolveJobSummary,
-    SolveJobsListResponse, SolveRequest,
+    AdjustRequest, AdjustResponse, CandidateItem, RevertedMoveItem,
+    SolveJobCreated, SolveJobDetail, SolveJobSummary, SolveJobsListResponse, SolveRequest,
 )
 
 DEFAULT_CONFIG_DIR = Path(__file__).resolve().parents[1] / 'config'
@@ -229,6 +230,41 @@ def delete_solve_job(job_id: str):
         raise HTTPException(status_code=404, detail='任务不存在')
     sessions.delete_job(job_id)
     return {'ok': True}
+
+
+@ws_router.post('/solve/{job_id}/candidates/{index}/adjust', response_model=AdjustResponse)
+def adjust_candidate(job_id: str, index: int, body: AdjustRequest):
+    job = sessions.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail='任务不存在')
+    if not 1 <= index <= len(job.solutions):
+        raise HTTPException(status_code=404, detail='候选方案不存在')
+
+    solution = job.solutions[index - 1]
+    by_task_id = {p.task_id: p for p in solution.placements}
+    for move in body.moves:
+        task = by_task_id.get(move.task_id)
+        if task is None:
+            raise HTTPException(status_code=400, detail='任务 %d 不存在于这个候选方案' % move.task_id)
+        if task.class_id != body.class_id:
+            raise HTTPException(status_code=400,
+                               detail='任务 %d 属于 %d 班，不是请求里的 %d 班'
+                                      % (move.task_id, task.class_id, body.class_id))
+
+    moves = {m.task_id: m.to_slot for m in body.moves}
+    result = adjust.apply_and_prune(solution.placements, moves, job.dataset, job.cfg, job.rules)
+
+    solution.placements = result.placements
+    violations = verify(solution, job.dataset, job.cfg, job.rules)
+    job.violations[index - 1] = violations
+    sessions.save_job(job)
+
+    class_placements = [p.model_dump() for p in result.placements if p.class_id == body.class_id]
+    return AdjustResponse(
+        applied=result.applied,
+        reverted=[RevertedMoveItem(task_id=r.task_id, reason=r.reason) for r in result.reverted],
+        placements=class_placements,
+    )
 
 
 @ws_router.websocket('/ws/solve/{job_id}')

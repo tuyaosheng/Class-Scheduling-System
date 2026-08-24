@@ -225,6 +225,81 @@ def test_clear_solve_jobs_removes_all(client, tiny_config):
     assert client.get('/api/solve/jobs').json()['jobs'] == []
 
 
+# ---------------------------------------------------------------- 拖拽调整
+
+def _solved_job_id(client):
+    resp = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
+                                           'max_seconds': 10})
+    job_id = resp.json()['job_id']
+    with client.websocket_connect('/api/ws/solve/%s' % job_id) as ws:
+        while True:
+            msg = ws.receive_json()
+            if msg['type'] in ('done', 'infeasible', 'precheck_failed'):
+                break
+    return job_id
+
+
+def test_adjust_applies_a_clean_move(client, tiny_config):
+    job_id = _solved_job_id(client)
+    detail = client.get('/api/solve/%s' % job_id).json()
+    placement = detail['candidates'][0]['placements'][0]
+    occupied = {p['slot'] for p in detail['candidates'][0]['placements']}
+    free_slot = next(s for s in range(45) if s not in occupied)
+
+    resp = client.post('/api/solve/%s/candidates/1/adjust' % job_id, json={
+        'class_id': placement['class_id'],
+        'moves': [{'task_id': placement['task_id'], 'to_slot': free_slot}],
+    })
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body['applied'] == [placement['task_id']]
+    assert body['reverted'] == []
+    moved = next(p for p in body['placements'] if p['task_id'] == placement['task_id'])
+    assert moved['slot'] == free_slot
+
+
+def test_adjust_reverts_a_move_that_double_books_the_class(client, tiny_config):
+    job_id = _solved_job_id(client)
+    detail = client.get('/api/solve/%s' % job_id).json()
+    placements = detail['candidates'][0]['placements']
+    moving, target = placements[0], placements[1]
+
+    resp = client.post('/api/solve/%s/candidates/1/adjust' % job_id, json={
+        'class_id': moving['class_id'],
+        'moves': [{'task_id': moving['task_id'], 'to_slot': target['slot']}],
+    })
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body['applied'] == []
+    assert len(body['reverted']) == 1
+    assert body['reverted'][0]['task_id'] == moving['task_id']
+
+
+def test_adjust_404_for_unknown_job():
+    resp = TestClient(app).post('/api/solve/不存在的job/candidates/1/adjust',
+                                json={'class_id': 1, 'moves': []})
+    assert resp.status_code == 404
+
+
+def test_adjust_404_for_out_of_range_candidate_index(client, tiny_config):
+    job_id = _solved_job_id(client)
+    resp = client.post('/api/solve/%s/candidates/99/adjust' % job_id,
+                       json={'class_id': 1, 'moves': []})
+    assert resp.status_code == 404
+
+
+def test_adjust_400_when_task_does_not_belong_to_declared_class(client, tiny_config):
+    job_id = _solved_job_id(client)
+    detail = client.get('/api/solve/%s' % job_id).json()
+    task_id = detail['candidates'][0]['placements'][0]['task_id']
+
+    resp = client.post('/api/solve/%s/candidates/1/adjust' % job_id, json={
+        'class_id': 9999,
+        'moves': [{'task_id': task_id, 'to_slot': 0}],
+    })
+    assert resp.status_code == 400
+
+
 def test_export_returns_xlsx_file(client, tiny_config):
     resp = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
                                            'max_seconds': 10})

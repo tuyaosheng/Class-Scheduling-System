@@ -99,6 +99,27 @@ class SolveJobDetail(BaseModel):
     conflict: Optional[str] = None
 
 
+class MoveItem(BaseModel):
+    task_id: int
+    to_slot: int
+
+
+class AdjustRequest(BaseModel):
+    class_id: int
+    moves: List[MoveItem]
+
+
+class RevertedMoveItem(BaseModel):
+    task_id: int
+    reason: str
+
+
+class AdjustResponse(BaseModel):
+    applied: List[int]
+    reverted: List[RevertedMoveItem]
+    placements: List[dict]
+
+
 class AiSettingsGetResponse(BaseModel):
     configured: bool
     source: str
