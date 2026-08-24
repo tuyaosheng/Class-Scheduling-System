@@ -8,7 +8,6 @@ from typing import List
 
 from pydantic import BaseModel
 
-from . import calendar as cal
 from .rules import select_tasks
 
 
@@ -37,18 +36,19 @@ def _teacher_demand(dataset):
 def _check_teacher_capacity(dataset, cfg) -> List[Issue]:
     demand = _teacher_demand(dataset)
     reserved = cfg.reserved_slot_indices(dataset.grade)
+    n_slots = dataset.calendar.n_slots
     out = []
     for name, needed in sorted(demand.items()):
         teacher = dataset.teachers.get(name)
-        personal = {cal.slot_index(d, p) for d, p in teacher.forbidden} if teacher else set()
+        personal = {dataset.calendar.slot_index(d, p) for d, p in teacher.forbidden} if teacher else set()
         blocked = len(personal | reserved)
-        available = cal.N_SLOTS - blocked
+        available = n_slots - blocked
         if needed > available:
             out.append(Issue(
                 kind='教师超载',
                 detail='%s 需要 %d 节，但可用时段只有 %d 格'
                        '（全周 %d 格，被禁排/教务固定占位共占用 %d 格）→ 缺 %d 格'
-                       % (name, needed, available, cal.N_SLOTS, blocked, needed - available)))
+                       % (name, needed, available, n_slots, blocked, needed - available)))
     return out
 
 
@@ -57,10 +57,11 @@ def _check_class_capacity(dataset, cfg) -> List[Issue]:
     for task in dataset.tasks:
         if task.consumes_slot:
             used[task.class_id] += task.periods
-    available = cal.N_SLOTS - len(cfg.reserved_slot_indices(dataset.grade))
+    n_slots = dataset.calendar.n_slots
+    available = n_slots - len(cfg.reserved_slot_indices(dataset.grade))
     return [Issue(kind='班级超载',
                   detail='%d班 需占 %d 格，每周可用 %d 格（教务固定占位 %d 格）→ 超 %d 格'
-                         % (class_id, total, available, cal.N_SLOTS - available, total - available))
+                         % (class_id, total, available, n_slots - available, total - available))
             for class_id, total in sorted(used.items()) if total > available]
 
 
@@ -78,7 +79,7 @@ def _scope_label(rule):
 
 def _check_rule_contradictions(dataset, cfg, rules) -> List[Issue]:
     out = []
-    n_days = len(cal.DAYS)
+    n_days = len(dataset.calendar.days)
     for rule in rules:
         if not rule.enabled or rule.mode != 'hard':
             continue
@@ -140,16 +141,17 @@ def _venue_demand(dataset, cfg, venue_name) -> int:
 
 def _check_venue_capacity(dataset, cfg) -> List[Issue]:
     out = []
+    n_slots = dataset.calendar.n_slots
     for venue in cfg.venues.values():
         if venue.capacity is None:
             continue
         demand = _venue_demand(dataset, cfg, venue.name)
-        supply = venue.capacity * cal.N_SLOTS
+        supply = venue.capacity * n_slots
         if demand > supply:
             out.append(Issue(
                 kind='场地容量不足',
                 detail='%s 总需求 %d 节，容量 %d 间 × %d 格 = %d → 缺 %d'
-                       % (venue.name, demand, venue.capacity, cal.N_SLOTS,
+                       % (venue.name, demand, venue.capacity, n_slots,
                           supply, demand - supply)))
     return out
 
