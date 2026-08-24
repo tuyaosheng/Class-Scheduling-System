@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  clearImports, clearSolveJobs, confirmImport, connectSolveSocket, deleteImport, deleteSolveJob,
-  exportUrl, getAiSettings, getConfigStatus, getCourses, getImportDetail, getPlan,
+  adjustCandidate, clearImports, clearSolveJobs, confirmImport, connectSolveSocket, deleteImport,
+  deleteSolveJob, exportUrl, getAiSettings, getConfigStatus, getCourses, getImportDetail, getPlan,
   getSolveJobDetail, importFiles, listImports, listSolveJobs, putAiSettings, putCourses, putPlan,
   startSolve, testAiSettings,
 } from '../api'
@@ -205,5 +205,18 @@ describe('solve job history', () => {
     const [url, options] = fetchMock.mock.calls[0]
     expect(url).toBe('/api/solve/jobs')
     expect(options.method).toBe('DELETE')
+  })
+})
+
+describe('adjustCandidate', () => {
+  it('POSTs class_id and moves (each carrying from_slot) to the adjust endpoint', async () => {
+    const fetchMock = mockFetchOnce({ applied: [], reverted: [], placements: [] })
+    await adjustCandidate('job-1', 2, 5, [{ task_id: 0, from_slot: 3, to_slot: 7 }])
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/solve/job-1/candidates/2/adjust')
+    expect(options.method).toBe('POST')
+    expect(JSON.parse(options.body)).toEqual({
+      class_id: 5, moves: [{ task_id: 0, from_slot: 3, to_slot: 7 }],
+    })
   })
 })

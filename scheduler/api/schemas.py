@@ -101,6 +101,7 @@ class SolveJobDetail(BaseModel):
 
 class MoveItem(BaseModel):
     task_id: int
+    from_slot: int
     to_slot: int
 
 
@@ -111,11 +112,12 @@ class AdjustRequest(BaseModel):
 
 class RevertedMoveItem(BaseModel):
     task_id: int
+    from_slot: int
     reason: str
 
 
 class AdjustResponse(BaseModel):
-    applied: List[int]
+    applied: List[MoveItem]
     reverted: List[RevertedMoveItem]
     placements: List[dict]
 

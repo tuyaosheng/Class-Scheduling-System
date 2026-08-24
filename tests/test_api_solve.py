@@ -51,6 +51,34 @@ def tiny_config(tmp_path, monkeypatch):
     return tmp_path
 
 
+def _multi_period_dataset():
+    """1 班语文周课时 2（同一个 task_id 会有两条 placement）——专门用来测
+    "拖动多节课里的一节，另一节不能被一起拖走"这个曾经真实发生过的 bug。"""
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='语文', teacher='张老师', periods=2),
+        TeachingTask(id=1, grade='初三', class_id=1, course='数学', teacher='李老师', periods=1),
+    ]
+    return Dataset(grade='初三', classes=[1],
+                   teachers={t.teacher: Teacher(name=t.teacher) for t in tasks}, tasks=tasks)
+
+
+@pytest.fixture()
+def multi_period_config(tmp_path, monkeypatch):
+    import scheduler.api.routes as routes_module
+    import scheduler.api.ws as ws_module
+    monkeypatch.setattr(routes_module, 'DEFAULT_CONFIG_DIR', tmp_path)
+    monkeypatch.setattr(ws_module, 'DEFAULT_CONFIG_DIR', tmp_path)
+    dataset = _multi_period_dataset()
+    result = ImportResult(dataset=dataset, rules=[], warnings=[])
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    write_teaching_yaml(result, tmp_path / 'teaching.yaml')
+    write_rules_yaml(result, tmp_path / 'rules.generated.yaml')
+    for name in ('courses.yaml', 'plans.yaml', 'venues.yaml', 'calendars.yaml'):
+        (tmp_path / name).write_text((CONFIG_DIR / name).read_text(encoding='utf-8'),
+                                     encoding='utf-8')
+    return tmp_path
+
+
 @pytest.fixture()
 def config_missing_courses(tmp_path, monkeypatch):
     """故意只写 teaching.yaml，不复制 courses.yaml/plans.yaml/venues.yaml——
@@ -248,11 +276,13 @@ def test_adjust_applies_a_clean_move(client, tiny_config):
 
     resp = client.post('/api/solve/%s/candidates/1/adjust' % job_id, json={
         'class_id': placement['class_id'],
-        'moves': [{'task_id': placement['task_id'], 'to_slot': free_slot}],
+        'moves': [{'task_id': placement['task_id'], 'from_slot': placement['slot'],
+                   'to_slot': free_slot}],
     })
     assert resp.status_code == 200
     body = resp.json()
-    assert body['applied'] == [placement['task_id']]
+    assert body['applied'] == [{'task_id': placement['task_id'], 'from_slot': placement['slot'],
+                                'to_slot': free_slot}]
     assert body['reverted'] == []
     moved = next(p for p in body['placements'] if p['task_id'] == placement['task_id'])
     assert moved['slot'] == free_slot
@@ -266,13 +296,40 @@ def test_adjust_reverts_a_move_that_double_books_the_class(client, tiny_config):
 
     resp = client.post('/api/solve/%s/candidates/1/adjust' % job_id, json={
         'class_id': moving['class_id'],
-        'moves': [{'task_id': moving['task_id'], 'to_slot': target['slot']}],
+        'moves': [{'task_id': moving['task_id'], 'from_slot': moving['slot'],
+                   'to_slot': target['slot']}],
     })
     assert resp.status_code == 200
     body = resp.json()
     assert body['applied'] == []
     assert len(body['reverted']) == 1
     assert body['reverted'][0]['task_id'] == moving['task_id']
+    assert body['reverted'][0]['from_slot'] == moving['slot']
+
+
+def test_adjust_moving_one_occurrence_of_a_multi_period_task_leaves_the_other(
+        client, multi_period_config):
+    """端到端回归：曾经真实出现过的 bug——只用 task_id 当 key 会把周课时 > 1
+    的任务的全部节次一起拖走。这里用真实经过 /adjust 接口的路径验证不会
+    再发生。"""
+    job_id = _solved_job_id(client)
+    detail = client.get('/api/solve/%s' % job_id).json()
+    placements = detail['candidates'][0]['placements']
+    chinese = [p for p in placements if p['task_id'] == 0]
+    assert len(chinese) == 2   # 语文周课时 2，两条 placement 共用 task_id=0
+    moving = chinese[0]
+    other_slot = chinese[1]['slot']
+    occupied = {p['slot'] for p in placements}
+    free_slot = next(s for s in range(45) if s not in occupied)
+
+    resp = client.post('/api/solve/%s/candidates/1/adjust' % job_id, json={
+        'class_id': moving['class_id'],
+        'moves': [{'task_id': 0, 'from_slot': moving['slot'], 'to_slot': free_slot}],
+    })
+    assert resp.status_code == 200
+    body = resp.json()
+    moved_task0 = sorted(p['slot'] for p in body['placements'] if p['task_id'] == 0)
+    assert moved_task0 == sorted([free_slot, other_slot])   # 另一节原地不动，没被一起拖走
 
 
 def test_adjust_404_for_unknown_job():
@@ -291,11 +348,23 @@ def test_adjust_404_for_out_of_range_candidate_index(client, tiny_config):
 def test_adjust_400_when_task_does_not_belong_to_declared_class(client, tiny_config):
     job_id = _solved_job_id(client)
     detail = client.get('/api/solve/%s' % job_id).json()
-    task_id = detail['candidates'][0]['placements'][0]['task_id']
+    placement = detail['candidates'][0]['placements'][0]
 
     resp = client.post('/api/solve/%s/candidates/1/adjust' % job_id, json={
         'class_id': 9999,
-        'moves': [{'task_id': task_id, 'to_slot': 0}],
+        'moves': [{'task_id': placement['task_id'], 'from_slot': placement['slot'], 'to_slot': 0}],
+    })
+    assert resp.status_code == 400
+
+
+def test_adjust_400_when_from_slot_does_not_match_a_real_placement(client, tiny_config):
+    job_id = _solved_job_id(client)
+    detail = client.get('/api/solve/%s' % job_id).json()
+    placement = detail['candidates'][0]['placements'][0]
+
+    resp = client.post('/api/solve/%s/candidates/1/adjust' % job_id, json={
+        'class_id': placement['class_id'],
+        'moves': [{'task_id': placement['task_id'], 'from_slot': 999, 'to_slot': 0}],
     })
     assert resp.status_code == 400
 

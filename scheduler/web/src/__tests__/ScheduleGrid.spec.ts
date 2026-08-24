@@ -133,7 +133,7 @@ describe('ScheduleGrid', () => {
 
   it('confirm calls adjustCandidate with the staged moves and redraws from the response', async () => {
     vi.spyOn(api, 'adjustCandidate').mockResolvedValue({
-      applied: [0],
+      applied: [{ task_id: 0, from_slot: 0, to_slot: 3 }],
       reverted: [],
       placements: [{ task_id: 0, class_id: 1, course: '语文', slot: 3, parity: null }],
     })
@@ -153,14 +153,38 @@ describe('ScheduleGrid', () => {
     await wrapper.find('[data-test="confirm-button"]').trigger('click')
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(api.adjustCandidate).toHaveBeenCalledWith('job-1', 1, 1, [{ task_id: 0, to_slot: 3 }])
+    expect(api.adjustCandidate).toHaveBeenCalledWith(
+      'job-1', 1, 1, [{ task_id: 0, from_slot: 0, to_slot: 3 }],
+    )
     expect(wrapper.find('[data-test="confirm-button"]').exists()).toBe(false)
+  })
+
+  it('dragging one occurrence of a multi-period task leaves the other alone', async () => {
+    // 回归测试：曾经真实发生过的 bug——语文周课时 2，两条 placement 共用
+    // task_id=0。只拖第一节（slot 0），第二节（slot 5）不能被一起拖走。
+    const wrapper = mount(ScheduleGrid, {
+      props: {
+        classes: [1],
+        placements: [
+          { task_id: 0, class_id: 1, course: '语文', slot: 0, parity: null },
+          { task_id: 0, class_id: 1, course: '语文', slot: 5, parity: null },
+        ],
+      },
+    })
+    const cells = wrapper.findAll('[data-test="grid-row"] .cell')
+    await cells[0].trigger('dragstart', { dataTransfer: { setData: () => {} } })
+    await cells[3].trigger('dragover')
+    await cells[3].trigger('drop')
+
+    expect(cells[0].text()).toBe('')
+    expect(cells[3].text()).toBe('语文')
+    expect(cells[5].text()).toBe('语文')   // 另一节纹丝不动，没被一起拖走
   })
 
   it('reverted moves bounce back and show the reason', async () => {
     vi.spyOn(api, 'adjustCandidate').mockResolvedValue({
       applied: [],
-      reverted: [{ task_id: 0, reason: '教师分身：李老师同一时间在 3 班' }],
+      reverted: [{ task_id: 0, from_slot: 0, reason: '教师分身：李老师同一时间在 3 班' }],
       placements: [{ task_id: 0, class_id: 1, course: '语文', slot: 0, parity: null }],
     })
     const wrapper = mount(ScheduleGrid, {

@@ -56,10 +56,27 @@ const rows = computed(() =>
 // 靠 confirm 时打后端。props.placements 变了（比如切换候选方案、或者
 // confirm 成功后父组件重新拉了一次）就整体重置本地状态。
 const basePlacements = ref<Placement[]>([])
-const pendingMoves = reactive(new Map<number, number>())
+
+// 周课时 > 1 的任务在 placements 里有多条记录共用同一个 task_id，只有
+// (task_id, 原始 slot) 这一对才能唯一定位到具体某一节课——用它做
+// pendingMoves 的 key，而不是单用 task_id（否则拖一节课会把该任务的
+// 全部节次一起拖走）。这个 key 只依赖 basePlacements 里各条记录固有的
+// task_id/slot，不依赖数组下标，所以哪怕数组因为别的班级 confirm 而被
+// 整体替换、下标发生变化，也不会指错对象。
+function baseKey(p: Placement): string {
+  return `${p.task_id}:${p.slot}`
+}
+
+interface DisplayedPlacement extends Placement {
+  _key: string
+}
+
+const pendingMoves = reactive(new Map<string, number>())   // baseKey -> 目标 slot
 const revertMessages = reactive(new Map<number, string[]>())
 const dirtyClasses = reactive(new Set<number>())
-const draggingTaskId = ref<number | null>(null)
+const draggingKey = ref<string | null>(null)
+const draggingClassId = ref<number | null>(null)
+const draggingFromSlot = ref<number | null>(null)
 const confirming = reactive(new Set<number>())
 
 watch(
@@ -73,17 +90,15 @@ watch(
   { immediate: true },
 )
 
-function effectiveSlot(p: Placement): number {
-  return pendingMoves.get(p.task_id) ?? p.slot
+function displayedPlacements(): DisplayedPlacement[] {
+  return basePlacements.value.map((p) => {
+    const key = baseKey(p)
+    const target = pendingMoves.get(key)
+    return { ...p, slot: target ?? p.slot, _key: key }
+  })
 }
 
-function displayedPlacements(): Placement[] {
-  return basePlacements.value.map((p) =>
-    pendingMoves.has(p.task_id) ? { ...p, slot: pendingMoves.get(p.task_id)! } : p,
-  )
-}
-
-function cellPlacements(classId: number, slot: number): Placement[] {
+function cellPlacements(classId: number, slot: number): DisplayedPlacement[] {
   return displayedPlacements().filter((p) => p.class_id === classId && p.slot === slot)
 }
 
@@ -111,25 +126,23 @@ function isCellDraggable(classId: number, slot: number): boolean {
   return here.length === 1 && isDraggable(here[0])
 }
 
-function onDragStart(event: DragEvent, taskId: number) {
-  draggingTaskId.value = taskId
-  event.dataTransfer?.setData('text/plain', String(taskId))
+function onDragStart(event: DragEvent, placement: DisplayedPlacement) {
+  draggingKey.value = placement._key
+  draggingClassId.value = placement.class_id
+  draggingFromSlot.value = placement.slot
+  event.dataTransfer?.setData('text/plain', placement._key)
 }
 
 function onDragEnd() {
-  draggingTaskId.value = null
-}
-
-function draggedTaskClassId(): number | null {
-  if (draggingTaskId.value === null) return null
-  const task = basePlacements.value.find((p) => p.task_id === draggingTaskId.value)
-  return task ? task.class_id : null
+  draggingKey.value = null
+  draggingClassId.value = null
+  draggingFromSlot.value = null
 }
 
 function onDragOver(event: DragEvent, classId: number, slot: number) {
   // 只允许拖到同一个班级列内、且目标格不是锁定格（单双周配对格）——
   // 不 preventDefault 就等于告诉浏览器这里不是合法落点，drop 事件不会触发。
-  if (draggedTaskClassId() !== classId) return
+  if (draggingClassId.value !== classId) return
   const here = cellPlacements(classId, slot)
   if (here.length > 1) return
   if (here.length === 1 && !isDraggable(here[0])) return
@@ -138,21 +151,19 @@ function onDragOver(event: DragEvent, classId: number, slot: number) {
 
 function onDrop(event: DragEvent, classId: number, slot: number) {
   event.preventDefault()
-  const taskId = draggingTaskId.value
-  if (taskId === null) return
-  const dragged = displayedPlacements().find((p) => p.task_id === taskId)
-  if (!dragged || dragged.class_id !== classId) return
+  if (draggingKey.value === null || draggingClassId.value !== classId) return
 
-  const target = cellPlacements(classId, slot).filter((p) => p.task_id !== taskId)
+  const target = cellPlacements(classId, slot).filter((p) => p._key !== draggingKey.value)
   if (target.length > 1 || (target.length === 1 && !isDraggable(target[0]))) return
 
-  const fromSlot = dragged.slot
-  pendingMoves.set(taskId, slot)
+  pendingMoves.set(draggingKey.value, slot)
   if (target.length === 1) {
-    pendingMoves.set(target[0].task_id, fromSlot)
+    pendingMoves.set(target[0]._key, draggingFromSlot.value!)
   }
   dirtyClasses.add(classId)
-  draggingTaskId.value = null
+  draggingKey.value = null
+  draggingClassId.value = null
+  draggingFromSlot.value = null
 }
 
 function isDirty(classId: number): boolean {
@@ -165,7 +176,7 @@ function messagesFor(classId: number): string[] {
 
 function cancel(classId: number) {
   for (const p of basePlacements.value) {
-    if (p.class_id === classId) pendingMoves.delete(p.task_id)
+    if (p.class_id === classId) pendingMoves.delete(baseKey(p))
   }
   dirtyClasses.delete(classId)
   revertMessages.delete(classId)
@@ -173,9 +184,11 @@ function cancel(classId: number) {
 
 async function confirm(classId: number) {
   if (!props.jobId || !props.candidateIndex) return
-  const moves = basePlacements.value
-    .filter((p) => p.class_id === classId && pendingMoves.has(p.task_id))
-    .map((p) => ({ task_id: p.task_id, to_slot: pendingMoves.get(p.task_id)! }))
+  const classEntries = basePlacements.value.filter((p) => p.class_id === classId)
+  const pendingKeysForClass = classEntries.map(baseKey).filter((key) => pendingMoves.has(key))
+  const moves = classEntries
+    .filter((p) => pendingMoves.has(baseKey(p)))
+    .map((p) => ({ task_id: p.task_id, from_slot: p.slot, to_slot: pendingMoves.get(baseKey(p))! }))
   if (!moves.length) {
     dirtyClasses.delete(classId)
     return
@@ -190,9 +203,10 @@ async function confirm(classId: number) {
       ...basePlacements.value.filter((p) => p.class_id !== classId),
       ...result.placements as Placement[],
     ]
-    for (const p of basePlacements.value) {
-      if (p.class_id === classId) pendingMoves.delete(p.task_id)
-    }
+    // 这批 key 是 confirm 前算好的快照——数组已经整体换了一批新对象，
+    // 不能再用新 basePlacements 反查该清哪些 key（其他班级的 pendingMoves
+    // 完全不受影响，因为 key 本身不依赖数组下标）。
+    for (const key of pendingKeysForClass) pendingMoves.delete(key)
     revertMessages.set(classId, result.reverted.map((r) => r.reason))
     dirtyClasses.delete(classId)
   } finally {
@@ -238,7 +252,7 @@ async function confirm(classId: number) {
             class="cell"
             :class="[cellFamilyClass(classId, row.slot), { draggable: isCellDraggable(classId, row.slot) }]"
             :draggable="isCellDraggable(classId, row.slot)"
-            @dragstart="cellPlacements(classId, row.slot)[0] && onDragStart($event, cellPlacements(classId, row.slot)[0].task_id)"
+            @dragstart="cellPlacements(classId, row.slot)[0] && onDragStart($event, cellPlacements(classId, row.slot)[0])"
             @dragend="onDragEnd"
             @dragover="onDragOver($event, classId, row.slot)"
             @drop="onDrop($event, classId, row.slot)"

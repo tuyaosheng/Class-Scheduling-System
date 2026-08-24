@@ -28,7 +28,7 @@ from scheduler.core.verifier import verify
 
 from . import sessions
 from .schemas import (
-    AdjustRequest, AdjustResponse, CandidateItem, RevertedMoveItem,
+    AdjustRequest, AdjustResponse, CandidateItem, MoveItem, RevertedMoveItem,
     SolveJobCreated, SolveJobDetail, SolveJobSummary, SolveJobsListResponse, SolveRequest,
 )
 
@@ -241,17 +241,22 @@ def adjust_candidate(job_id: str, index: int, body: AdjustRequest):
         raise HTTPException(status_code=404, detail='候选方案不存在')
 
     solution = job.solutions[index - 1]
-    by_task_id = {p.task_id: p for p in solution.placements}
+    # task_id 不足以定位具体某一节课——周课时 > 1 的任务在 placements 里
+    # 有多条记录共用同一个 task_id，只有 (task_id, from_slot) 这一对才能
+    # 唯一定位到用户实际拖的是哪一节。
+    by_key = {(p.task_id, p.slot): p for p in solution.placements}
     for move in body.moves:
-        task = by_task_id.get(move.task_id)
+        task = by_key.get((move.task_id, move.from_slot))
         if task is None:
-            raise HTTPException(status_code=400, detail='任务 %d 不存在于这个候选方案' % move.task_id)
+            raise HTTPException(status_code=400,
+                               detail='任务 %d 在第 %d 格不存在于这个候选方案'
+                                      % (move.task_id, move.from_slot))
         if task.class_id != body.class_id:
             raise HTTPException(status_code=400,
                                detail='任务 %d 属于 %d 班，不是请求里的 %d 班'
                                       % (move.task_id, task.class_id, body.class_id))
 
-    moves = {m.task_id: m.to_slot for m in body.moves}
+    moves = {(m.task_id, m.from_slot): m.to_slot for m in body.moves}
     result = adjust.apply_and_prune(solution.placements, moves, job.dataset, job.cfg, job.rules)
 
     solution.placements = result.placements
@@ -261,8 +266,10 @@ def adjust_candidate(job_id: str, index: int, body: AdjustRequest):
 
     class_placements = [p.model_dump() for p in result.placements if p.class_id == body.class_id]
     return AdjustResponse(
-        applied=result.applied,
-        reverted=[RevertedMoveItem(task_id=r.task_id, reason=r.reason) for r in result.reverted],
+        applied=[MoveItem(task_id=tid, from_slot=from_slot, to_slot=moves[(tid, from_slot)])
+                for tid, from_slot in result.applied],
+        reverted=[RevertedMoveItem(task_id=r.task_id, from_slot=r.from_slot, reason=r.reason)
+                 for r in result.reverted],
         placements=class_placements,
     )
 

@@ -214,12 +214,13 @@ export async function clearSolveJobs() {
 
 export interface AdjustMove {
   task_id: number
+  from_slot: number
   to_slot: number
 }
 
 export interface AdjustResponse {
-  applied: number[]
-  reverted: Array<{ task_id: number; reason: string }>
+  applied: AdjustMove[]
+  reverted: Array<{ task_id: number; from_slot: number; reason: string }>
   placements: Array<{ task_id: number; class_id: number; course: string; slot: number; parity: string | null }>
 }
 
