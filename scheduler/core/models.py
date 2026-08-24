@@ -81,7 +81,11 @@ class GradeCalendar(BaseModel):
         raise ValueError('未知时段：%r' % section)
 
     def adjacent_pairs(self) -> List[Tuple[int, int]]:
-        """一天之内可构成连堂的节次对，排除午休边界。"""
+        """一天之内可构成连堂的节次对，排除午休边界。
+
+        【铁律4】仅供 compiler.py 使用。verifier.py 必须独立从 midday_break_after
+        推导相邻性，不得调用本方法——见 CLAUDE.md「铁律 4 的能力边界」一节的历史教训。
+        """
         return [(p, p + 1) for p in range(1, self.periods_per_day)
                 if p != self.midday_break_after]
 
