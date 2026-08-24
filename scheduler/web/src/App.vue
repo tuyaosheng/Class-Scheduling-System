@@ -16,7 +16,7 @@ interface Candidate {
   status: string
   wall_time: number
   violations: unknown[]
-  placements: Array<{ class_id: number; course: string; slot: number; parity: string | null }>
+  placements: Array<{ task_id: number; class_id: number; course: string; slot: number; parity: string | null }>
 }
 
 const stage = ref<Stage>('idle')

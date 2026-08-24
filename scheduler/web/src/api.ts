@@ -184,7 +184,7 @@ export interface Candidate {
   status: string
   wall_time: number
   violations: unknown[]
-  placements: Array<{ class_id: number; course: string; slot: number; parity: string | null }>
+  placements: Array<{ task_id: number; class_id: number; course: string; slot: number; parity: string | null }>
 }
 
 export interface SolveJobDetail {
@@ -210,4 +210,25 @@ export async function deleteSolveJob(jobId: string) {
 
 export async function clearSolveJobs() {
   return request<{ ok: boolean }>('/api/solve/jobs', { method: 'DELETE' })
+}
+
+export interface AdjustMove {
+  task_id: number
+  to_slot: number
+}
+
+export interface AdjustResponse {
+  applied: number[]
+  reverted: Array<{ task_id: number; reason: string }>
+  placements: Array<{ task_id: number; class_id: number; course: string; slot: number; parity: string | null }>
+}
+
+export async function adjustCandidate(
+  jobId: string, candidateIndex: number, classId: number, moves: AdjustMove[],
+) {
+  return request<AdjustResponse>(`/api/solve/${jobId}/candidates/${candidateIndex}/adjust`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ class_id: classId, moves }),
+  })
 }

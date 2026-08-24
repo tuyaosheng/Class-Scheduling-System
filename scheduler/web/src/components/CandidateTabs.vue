@@ -8,7 +8,7 @@ interface Candidate {
   status: string
   wall_time: number
   violations: unknown[]
-  placements: Array<{ class_id: number; course: string; slot: number; parity: string | null }>
+  placements: Array<{ task_id: number; class_id: number; course: string; slot: number; parity: string | null }>
 }
 
 const props = defineProps<{ candidates: Candidate[]; jobId: string | null; classes: number[] }>()
@@ -40,7 +40,7 @@ function activate(index: number) {
 
     <template v-for="c in candidates" :key="c.index">
       <div v-if="c.index === activeIndex" class="candidate-body">
-        <ScheduleGrid :classes="classes" :placements="c.placements" />
+        <ScheduleGrid :classes="classes" :placements="c.placements" :job-id="jobId" :candidate-index="c.index" />
         <div class="export-row">
           <a v-if="jobId" data-test="export-link" class="btn btn-secondary" :href="exportUrl(jobId, c.index, false)">
             导出 Excel（简单网格版）
