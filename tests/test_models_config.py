@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from scheduler.core.config import load_config, ConfigError, SchedulerConfig
-from scheduler.core.models import Course, Venue, TeachingTask
+from scheduler.core.models import Course, Venue, TeachingTask, GradeCalendar
 
 CONFIG_DIR = Path(__file__).resolve().parents[1] / 'scheduler' / 'config'
 
@@ -73,6 +73,9 @@ def test_validate_plan_rejects_overflow():
         courses={'语文': Course(name='语文', family='语文')},
         plans={'初三': {'语文': 50}},
         venues={},
+        calendars={'初三': GradeCalendar(
+            days=['周一', '周二', '周三', '周四', '周五'],
+            periods_per_day=9, midday_break_after=5)},
     )
     with pytest.raises(ConfigError, match='超出'):
         bad.validate_plan('初三')
@@ -139,3 +142,51 @@ def test_dataset_calendar_defaults_to_current_global_shape():
     assert ds.calendar.n_slots == 45
     assert ds.calendar.periods_per_day == 9
     assert ds.calendar.midday_break_after == 5
+
+
+def test_config_loads_calendars(cfg):
+    calendar = cfg.calendar_of('初三')
+    assert calendar.periods_per_day == 9
+    assert calendar.midday_break_after == 5
+    assert len(calendar.reserved_slots) == 8
+
+
+def test_calendar_of_unknown_grade_raises(cfg):
+    with pytest.raises(ConfigError):
+        cfg.calendar_of('不存在的年级')
+
+
+def test_reserved_slot_indices_use_grade_calendar_not_global():
+    """reserved_slot_indices 必须按该年级自己的 periods_per_day 换算，不能借用全局 cal 模块。
+
+    否则 periods_per_day 与全局默认（9）不同的年级会得到静默算错的格位索引。
+    """
+    from scheduler.core import calendar as global_cal
+
+    small_calendar = GradeCalendar(
+        days=['周一', '周二', '周三', '周四', '周五'],
+        periods_per_day=8, midday_break_after=4)
+    cfg = SchedulerConfig(
+        courses={}, plans={}, venues={},
+        reserved_slots={'初一': [[1, 3]]},
+        calendars={'初一': small_calendar},
+    )
+
+    global_index = global_cal.slot_index(1, 3)          # 全局口径：9 节/天
+    grade_index = cfg.calendar_of('初一').slot_index(1, 3)  # 该年级口径：8 节/天
+
+    assert grade_index != global_index
+    assert cfg.reserved_slot_indices('初一') == {grade_index}
+
+
+def test_validate_plan_uses_grade_specific_slot_count():
+    """validate_plan 的容量上限必须来自该年级的日历，不能用全局 45 格。"""
+    tiny_calendar = GradeCalendar(days=['周一'], periods_per_day=2, midday_break_after=1)
+    cfg = SchedulerConfig(
+        courses={'语文': Course(name='语文', family='语文')},
+        plans={'初一': {'语文': 3}},
+        venues={},
+        calendars={'初一': tiny_calendar},
+    )
+    with pytest.raises(ConfigError, match='超出可用 2 格'):
+        cfg.validate_plan('初一')

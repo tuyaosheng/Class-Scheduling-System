@@ -45,7 +45,7 @@ def tiny_config(tmp_path, monkeypatch):
     tmp_path.mkdir(parents=True, exist_ok=True)
     write_teaching_yaml(result, tmp_path / 'teaching.yaml')
     write_rules_yaml(result, tmp_path / 'rules.generated.yaml')
-    for name in ('courses.yaml', 'plans.yaml', 'venues.yaml'):
+    for name in ('courses.yaml', 'plans.yaml', 'venues.yaml', 'calendars.yaml'):
         (tmp_path / name).write_text((CONFIG_DIR / name).read_text(encoding='utf-8'),
                                      encoding='utf-8')
     return tmp_path

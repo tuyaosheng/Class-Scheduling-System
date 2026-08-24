@@ -57,7 +57,7 @@ def test_dry_run_writes_nothing(tmp_path, capsys):
     """不带 --write 时，配置目录里不应新增 teaching.yaml / rules.generated.yaml。"""
     config_dir = tmp_path / 'config'
     config_dir.mkdir()
-    for name in ('calendar.yaml', 'courses.yaml', 'plans.yaml', 'venues.yaml'):
+    for name in ('calendar.yaml', 'calendars.yaml', 'courses.yaml', 'plans.yaml', 'venues.yaml'):
         (config_dir / name).write_text(
             (CONFIG_DIR / name).read_text(encoding='utf-8'), encoding='utf-8')
 

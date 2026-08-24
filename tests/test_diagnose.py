@@ -92,7 +92,7 @@ def test_cli_solve_stops_at_precheck(tmp_path, monkeypatch, capsys):
         encoding='utf-8')
     # 复制其余配置到 tmp_path
     import shutil
-    for name in ('calendar.yaml', 'courses.yaml', 'plans.yaml', 'venues.yaml',
+    for name in ('calendar.yaml', 'calendars.yaml', 'courses.yaml', 'plans.yaml', 'venues.yaml',
                  'rules.generated.yaml'):
         shutil.copy(root / 'scheduler' / 'config' / name, tmp_path / name)
     code = main(['solve', '--config-dir', str(tmp_path),

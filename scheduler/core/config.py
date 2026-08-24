@@ -5,8 +5,7 @@ from typing import Dict, List
 import yaml
 from pydantic import BaseModel
 
-from . import calendar as cal
-from .models import Course, Venue
+from .models import Course, GradeCalendar, Venue
 
 
 class ConfigError(ValueError):
@@ -18,9 +17,20 @@ class SchedulerConfig(BaseModel):
     plans: Dict[str, Dict[str, int]]
     venues: Dict[str, Venue]
     reserved_slots: Dict[str, List[List[int]]] = {}   # 年级 -> 教务固定占位的 [day, period] 列表
+    calendars: Dict[str, GradeCalendar] = {}
+
+    def calendar_of(self, grade: str) -> GradeCalendar:
+        try:
+            return self.calendars[grade]
+        except KeyError:
+            raise ConfigError('年级 %r 没有对应的日历配置（calendars.yaml）' % grade)
 
     def reserved_slot_indices(self, grade: str) -> set:
-        return {cal.slot_index(d, p) for d, p in self.reserved_slots.get(grade, [])}
+        slots = self.reserved_slots.get(grade, [])
+        if not slots:
+            return set()
+        calendar = self.calendar_of(grade)
+        return {calendar.slot_index(d, p) for d, p in slots}
 
     def family_of(self, course_name: str) -> str:
         try:
@@ -49,11 +59,14 @@ class SchedulerConfig(BaseModel):
         for key in plan:
             self.resolve_plan_key(key)          # 未知项在这里抛错
         total = sum(plan.values())
-        available = cal.N_SLOTS - len(self.reserved_slots.get(grade, ()))
+        if total == 0:
+            return                              # 空计划（如初一/初二待补）不需要该年级的日历配置
+        n_slots = self.calendar_of(grade).n_slots
+        available = n_slots - len(self.reserved_slots.get(grade, ()))
         if total > available:
             raise ConfigError(
                 '%s 每班周课时 %d 超出可用 %d 格（每周 %d 格，教务固定占位 %d 格）'
-                % (grade, total, available, cal.N_SLOTS, cal.N_SLOTS - available))
+                % (grade, total, available, n_slots, n_slots - available))
 
 
 def _read(path: Path, key: str):
@@ -77,12 +90,18 @@ def load_config(config_dir) -> SchedulerConfig:
         raw = yaml.safe_load(plans_path.read_text(encoding='utf-8')) or {}
         reserved_slots = raw.get('reserved_slots') or {}
 
+    calendars_path = config_dir / 'calendars.yaml'
+    calendars = {}
+    if calendars_path.exists():
+        raw_calendars = yaml.safe_load(calendars_path.read_text(encoding='utf-8')) or {}
+        calendars = {g: GradeCalendar(**c) for g, c in (raw_calendars.get('grade_calendars') or {}).items()}
+
     for course in courses.values():
         if course.venue and course.venue not in venues:
             raise ConfigError('课程 %s 引用了未声明的场地 %r' % (course.name, course.venue))
 
     cfg = SchedulerConfig(courses=courses, plans={g: (p or {}) for g, p in plans.items()},
-                          venues=venues, reserved_slots=reserved_slots)
+                          venues=venues, reserved_slots=reserved_slots, calendars=calendars)
     for grade in cfg.plans:
         cfg.validate_plan(grade)
     return cfg

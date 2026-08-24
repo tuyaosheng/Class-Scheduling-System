@@ -58,9 +58,9 @@ def _rules_sheet_bytes_conflicting():
 
 
 def _copy_static_config_into(dest_dir):
-    """`load_config` 需要 courses/venues/plans 静态配置；把仓库里真实的这
-    三份复制进隔离目录，既让 load_config 能跑通，又不污染真实配置。"""
-    for name in ('courses.yaml', 'venues.yaml', 'plans.yaml'):
+    """`load_config` 需要 courses/venues/plans/calendars 静态配置；把仓库里真实的这
+    四份复制进隔离目录，既让 load_config 能跑通，又不污染真实配置。"""
+    for name in ('courses.yaml', 'venues.yaml', 'plans.yaml', 'calendars.yaml'):
         shutil.copy(CONFIG_DIR / name, dest_dir / name)
 
 

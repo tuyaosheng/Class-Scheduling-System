@@ -1,0 +1,24 @@
+grade_calendars:
+  初三:
+    days: [周一, 周二, 周三, 周四, 周五]
+    periods_per_day: 9
+    midday_break_after: 5
+    clock_times:
+      - ["08:00", "08:40"]
+      - ["09:15", "09:55"]
+      - ["10:05", "10:43"]
+      - ["10:53", "11:31"]
+      - ["11:40", "12:20"]
+      - ["14:20", "15:00"]
+      - ["15:15", "15:55"]
+      - ["16:10", "16:50"]
+      - ["16:50", "17:30"]
+    reserved_slots:
+      - {day: 0, period: 9, label: 班会}
+      - {day: 1, period: 8, label: 体比}
+      - {day: 1, period: 9, label: 体比}
+      - {day: 2, period: 8, label: 校本1}
+      - {day: 2, period: 9, label: 校本1}
+      - {day: 3, period: 8, label: 综实2}
+      - {day: 3, period: 9, label: 综实2}
+      - {day: 4, period: 9, label: 体选}
