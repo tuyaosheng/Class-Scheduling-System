@@ -5,8 +5,6 @@ Excel 后四列是教务手写的自然语言。这里把它们转成结构化�
 """
 import re
 
-from . import calendar as cal
-
 
 class RuleTextError(ValueError):
     """规则文本无法解析。"""
@@ -28,28 +26,28 @@ def _split_clauses(text):
     return clauses
 
 
-def parse_time_expr(text):
+def parse_time_expr(text, calendar):
     """解析禁排/固定节次文本，返回 {(day_index, period)} 集合。"""
     if not text or not str(text).strip():
         return set()
     text = str(text).strip()
     slots = set()
     for weekday, body in _split_clauses(text):
-        day = cal.day_index(weekday)
+        day = calendar.day_index(weekday)
         section = '上午' if '上午' in body else ('下午' if '下午' in body else None)
         numbers = [int(n) for n in _DIGITS_RE.findall(body)]
         if numbers:
             for n in numbers:
                 try:
-                    slots.add((day, cal.section_period(section, n)))
+                    slots.add((day, calendar.section_period(section, n)))
                 except ValueError as exc:
                     raise RuleTextError('%s%r: %s' % (weekday, body, exc)) from exc
         elif section == '上午':
-            slots.update((day, p) for p in cal.MORNING)
+            slots.update((day, p) for p in calendar.morning)
         elif section == '下午':
-            slots.update((day, p) for p in cal.AFTERNOON)
+            slots.update((day, p) for p in calendar.afternoon)
         else:
-            slots.update((day, p) for p in range(1, cal.PERIODS_PER_DAY + 1))
+            slots.update((day, p) for p in range(1, calendar.periods_per_day + 1))
     return slots
 
 
@@ -66,9 +64,9 @@ _REMARK_SPACING_RE = re.compile(r'两个班之间要隔开(\d+)节')
 _ALT_SELF_PARITY = {'心理': '单周', '美术': '双周'}
 
 
-def parse_fixed_slots(text):
+def parse_fixed_slots(text, calendar):
     """解析「固定节次」列。语义是窗口：在这些格里排完该课的周课时。"""
-    return parse_time_expr(text)
+    return parse_time_expr(text, calendar)
 
 
 def parse_requirement(text):

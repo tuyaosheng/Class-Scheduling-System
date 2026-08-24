@@ -1,25 +1,29 @@
 import pytest
+from scheduler.core.models import GradeCalendar
 from scheduler.core.ruletext import (
     parse_fixed_slots, parse_requirement, parse_remark, RuleTextError,
 )
 
+CAL = GradeCalendar(days=['周一', '周二', '周三', '周四', '周五'],
+                    periods_per_day=9, midday_break_after=5)
+
 
 def test_fixed_slots_single():
     # 班会：周一第9节，1 格放 1 节，退化为钉死
-    assert parse_fixed_slots('周一第9节') == {(0, 9)}
+    assert parse_fixed_slots('周一第9节', CAL) == {(0, 9)}
 
 
 def test_fixed_slots_window():
     # 体比周课时 1，窗口 2 格 —— 语义是「在这 2 格里占 1 格」
-    assert parse_fixed_slots('周二第8、9节') == {(1, 8), (1, 9)}
-    assert parse_fixed_slots('周三第8、9节') == {(2, 8), (2, 9)}
-    assert parse_fixed_slots('周四第8、9节') == {(3, 8), (3, 9)}
-    assert parse_fixed_slots('周五第9节') == {(4, 9)}
+    assert parse_fixed_slots('周二第8、9节', CAL) == {(1, 8), (1, 9)}
+    assert parse_fixed_slots('周三第8、9节', CAL) == {(2, 8), (2, 9)}
+    assert parse_fixed_slots('周四第8、9节', CAL) == {(3, 8), (3, 9)}
+    assert parse_fixed_slots('周五第9节', CAL) == {(4, 9)}
 
 
 def test_fixed_slots_empty():
-    assert parse_fixed_slots('') == set()
-    assert parse_fixed_slots(None) == set()
+    assert parse_fixed_slots('', CAL) == set()
+    assert parse_fixed_slots(None, CAL) == set()
 
 
 def test_requirement_daily_min():
