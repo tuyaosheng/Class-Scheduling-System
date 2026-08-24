@@ -7,7 +7,6 @@ import sys
 from collections import OrderedDict
 from pathlib import Path
 
-from .core import calendar as cal
 from .core.config import load_config
 from .core.importer import (
     COLUMNS, FIRST_DATA_ROW, import_excel, write_rules_yaml, write_teaching_yaml,
@@ -17,16 +16,16 @@ from .core.ruletext import parse_fixed_slots, parse_remark, parse_requirement, p
 DEFAULT_CONFIG_DIR = Path(__file__).resolve().parent / 'config'
 
 
-def _fmt_slots(slots):
+def _fmt_slots(slots, calendar):
     """{(0,4),(0,5),(2,1)} -> '周一 4,5 | 周三 1'"""
     by_day = OrderedDict()
     for day, period in sorted(slots):
-        by_day.setdefault(cal.DAYS[day], []).append(period)
+        by_day.setdefault(calendar.days[day], []).append(period)
     return ' | '.join('%s %s' % (d, ','.join(str(p) for p in ps))
                       for d, ps in by_day.items())
 
 
-def _echo_column(rows, column, parser):
+def _echo_column(rows, column, parser, calendar):
     """按原文去重，输出「原文 -> 解析结果」对照。"""
     lines = []
     seen = set()
@@ -36,9 +35,9 @@ def _echo_column(rows, column, parser):
         if not raw or raw in seen:
             continue
         seen.add(raw)
-        parsed = parser(raw)
+        parsed = parser(raw, calendar) if parser in (parse_time_expr, parse_fixed_slots) else parser(raw)
         if isinstance(parsed, set):
-            rendered = _fmt_slots(parsed)
+            rendered = _fmt_slots(parsed, calendar)
         else:
             rendered = '; '.join('%s %s' % (f['type'], f['params']) for f in parsed)
         lines.append('  %s -> %s' % (raw, rendered))
@@ -47,6 +46,7 @@ def _echo_column(rows, column, parser):
 
 def render_import_report(result, rows=None) -> str:
     ds = result.dataset
+    calendar = ds.calendar
     used = {}
     for task in ds.tasks:
         if task.consumes_slot:
@@ -58,7 +58,7 @@ def render_import_report(result, rows=None) -> str:
         '教师 %d 人 | 班级 %d 个 | 任务 %d 个（占格 %d 个）'
         % (len(ds.teachers), len(ds.classes), len(ds.tasks),
            sum(1 for t in ds.tasks if t.consumes_slot)),
-        '每班占格数 %s / 每周 %d 格' % (occupancy, cal.N_SLOTS),
+        '每班占格数 %s / 每周 %d 格' % (occupancy, calendar.n_slots),
         '生成规则 %d 条' % len(result.rules),
         '',
     ]
@@ -69,7 +69,7 @@ def render_import_report(result, rows=None) -> str:
                                ('排课要求', parse_requirement),
                                ('备注', parse_remark)]:
             out.append('[%s]' % column)
-            out.extend(_echo_column(rows, column, parser))
+            out.extend(_echo_column(rows, column, parser, calendar))
             out.append('')
     if result.warnings:
         out.append('=== 警告 ===')
