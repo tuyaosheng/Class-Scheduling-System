@@ -60,6 +60,45 @@ class SolveJobCreated(BaseModel):
     job_id: str
 
 
+class SolveJobSummary(BaseModel):
+    job_id: str
+    status: str
+    grade: str
+    created_at: str
+    candidate_count: int
+
+
+class SolveJobsListResponse(BaseModel):
+    jobs: List[SolveJobSummary]
+
+
+class ImportSessionSummary(BaseModel):
+    token: str
+    grade: str
+    created_at: str
+
+
+class ImportSessionsListResponse(BaseModel):
+    imports: List[ImportSessionSummary]
+
+
+class CandidateItem(BaseModel):
+    index: int
+    status: str
+    wall_time: float
+    violations: List[dict]
+    placements: List[dict]
+
+
+class SolveJobDetail(BaseModel):
+    job_id: str
+    status: str
+    grade: str
+    candidates: List[CandidateItem]
+    issues: List[dict] = []
+    conflict: Optional[str] = None
+
+
 class AiSettingsGetResponse(BaseModel):
     configured: bool
     source: str

@@ -26,11 +26,19 @@ from scheduler.core.solver import Placement, Solution, _STATUS_NAME
 from scheduler.core.verifier import verify
 
 from . import sessions
-from .schemas import SolveJobCreated, SolveRequest
+from .schemas import (
+    CandidateItem, SolveJobCreated, SolveJobDetail, SolveJobSummary,
+    SolveJobsListResponse, SolveRequest,
+)
 
 DEFAULT_CONFIG_DIR = Path(__file__).resolve().parents[1] / 'config'
 
 ws_router = APIRouter(prefix='/api')
+
+# 求解任务本身持久化在 SQLite（sessions.py），但 WebSocket 推送用的
+# asyncio.Queue 是连接期间的运行时管道，既不可序列化也不该持久化——
+# 单独用一个进程内字典按 job_id 追踪，随连接生命周期增删。
+_job_queues: dict = {}
 
 
 def _solve_streaming(dataset, cfg, rules, *, count, min_diff, max_seconds, on_candidate):
@@ -99,6 +107,7 @@ def _run_job(job_id, grade, count, min_diff, max_seconds, loop, queue):
             job.issues = [{'kind': '年级不匹配',
                            'detail': '已导入的数据是 %s，但排课请求指定的是 %s'
                                      % (data['grade'], grade)}]
+            sessions.save_job(job)
             emit({'type': 'precheck_failed', 'issues': job.issues})
             emit({'type': 'done', 'count': 0})
             return
@@ -111,16 +120,19 @@ def _run_job(job_id, grade, count, min_diff, max_seconds, loop, queue):
         rules = load_rules(DEFAULT_CONFIG_DIR / 'rules.yaml',
                            DEFAULT_CONFIG_DIR / 'rules.generated.yaml')
 
-        job.dataset, job.cfg = dataset, cfg
+        job.dataset, job.cfg, job.rules = dataset, cfg, rules
+        sessions.save_job(job)
         issues = precheck(dataset, cfg, rules)
         if issues:
             job.status = 'precheck_failed'
             job.issues = [{'kind': i.kind, 'detail': i.detail} for i in issues]
+            sessions.save_job(job)
             emit({'type': 'precheck_failed', 'issues': job.issues})
             emit({'type': 'done', 'count': 0})
             return
 
         job.status = 'solving'
+        sessions.save_job(job)
         emit({'type': 'solving'})
 
         def on_candidate(solution):
@@ -128,6 +140,7 @@ def _run_job(job_id, grade, count, min_diff, max_seconds, loop, queue):
             violations = verify(solution, dataset, cfg, rules)
             job.solutions.append(solution)
             job.violations.append(violations)
+            sessions.save_job(job)
             emit({
                 'type': 'candidate', 'index': idx, 'status': solution.status,
                 'wall_time': solution.wall_time,
@@ -155,11 +168,13 @@ def _run_job(job_id, grade, count, min_diff, max_seconds, loop, queue):
             emit({'type': 'infeasible', 'conflict': job.conflict})
         else:
             job.status = 'done'
+        sessions.save_job(job)
         emit({'type': 'done', 'count': produced})
     except Exception as exc:
         job.status = 'error'
         message = '求解任务异常终止（%s）：%s' % (type(exc).__name__, exc)
         job.conflict = message
+        sessions.save_job(job)
         emit({'type': 'error', 'message': message})
         emit({'type': 'done', 'count': 0})
 
@@ -170,22 +185,50 @@ async def start_solve(body: SolveRequest):
     if not teaching_path.exists():
         raise HTTPException(status_code=400, detail='还没有导入任课数据，请先完成导入确认')
 
-    job = sessions.create_job()
+    job = sessions.create_job(body.grade)
     loop = asyncio.get_event_loop()
     queue: asyncio.Queue = asyncio.Queue()
-    job._queue = queue  # 挂在 job 上，供 WebSocket 端点读取
+    _job_queues[job.job_id] = queue
 
     loop.run_in_executor(None, _run_job, job.job_id, body.grade, body.count,
                          body.min_diff, body.max_seconds, loop, queue)
     return SolveJobCreated(job_id=job.job_id)
 
 
-@ws_router.get('/solve/{job_id}')
+@ws_router.get('/solve/jobs', response_model=SolveJobsListResponse)
+def list_solve_jobs():
+    return SolveJobsListResponse(jobs=[SolveJobSummary(**row) for row in sessions.list_jobs()])
+
+
+@ws_router.delete('/solve/jobs')
+def clear_solve_jobs():
+    sessions.clear_jobs()
+    return {'ok': True}
+
+
+@ws_router.get('/solve/{job_id}', response_model=SolveJobDetail)
 def solve_status(job_id: str):
     job = sessions.get_job(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail='任务不存在')
-    return {'job_id': job.job_id, 'status': job.status, 'candidates': len(job.solutions)}
+    candidates = [
+        CandidateItem(
+            index=i + 1, status=solution.status, wall_time=solution.wall_time,
+            violations=[v.model_dump() for v in violations],
+            placements=[p.model_dump() for p in solution.placements],
+        )
+        for i, (solution, violations) in enumerate(zip(job.solutions, job.violations))
+    ]
+    return SolveJobDetail(job_id=job.job_id, status=job.status, grade=job.grade,
+                          candidates=candidates, issues=job.issues, conflict=job.conflict)
+
+
+@ws_router.delete('/solve/{job_id}')
+def delete_solve_job(job_id: str):
+    if sessions.get_job(job_id) is None:
+        raise HTTPException(status_code=404, detail='任务不存在')
+    sessions.delete_job(job_id)
+    return {'ok': True}
 
 
 @ws_router.websocket('/ws/solve/{job_id}')
@@ -195,7 +238,7 @@ async def solve_ws(websocket: WebSocket, job_id: str):
         await websocket.close(code=4004)
         return
     await websocket.accept()
-    queue = getattr(job, '_queue', None)
+    queue = _job_queues.get(job_id)
     if queue is None:
         await websocket.close(code=4004)
         return
@@ -211,3 +254,5 @@ async def solve_ws(websocket: WebSocket, job_id: str):
                 break
     except WebSocketDisconnect:
         pass
+    finally:
+        _job_queues.pop(job_id, None)

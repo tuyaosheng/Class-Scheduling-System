@@ -269,3 +269,64 @@ def test_put_plan_rejects_unknown_course_name(client, tmp_path, monkeypatch):
     resp = client.put('/api/config/plan',
                       json={'grade': '初三', 'plan': {'不存在的课': 3}})
     assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------- 导入历史
+
+def _run_import(client):
+    resp = client.post(
+        '/api/import',
+        params={'grade': '初三'},
+        files={
+            'teaching_file': ('任课表.xlsx', _teaching_table_bytes(),
+                              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+            'rules_file': ('排课说明.xlsx', _rules_sheet_bytes(),
+                           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+        },
+    )
+    assert resp.status_code == 200
+    return resp.json()['token']
+
+
+def test_list_imports_shows_saved_sessions_newest_first(client):
+    token1 = _run_import(client)
+    token2 = _run_import(client)
+    resp = client.get('/api/imports')
+    assert resp.status_code == 200
+    tokens = [row['token'] for row in resp.json()['imports']]
+    assert tokens[:2] == [token2, token1]
+
+
+def test_get_import_detail_returns_same_shape_as_fresh_preview(client):
+    token = _run_import(client)
+    resp = client.get('/api/imports/%s' % token)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body['token'] == token
+    assert body['classes'] == 2
+    assert body['rule_engine'] == 'regex'
+
+
+def test_get_import_detail_404_for_unknown_token():
+    resp = TestClient(app).get('/api/imports/不存在的token')
+    assert resp.status_code == 404
+
+
+def test_delete_import_removes_it(client):
+    token = _run_import(client)
+    resp = client.delete('/api/imports/%s' % token)
+    assert resp.status_code == 200
+    assert client.get('/api/imports/%s' % token).status_code == 404
+
+
+def test_delete_import_404_for_unknown_token(client):
+    resp = client.delete('/api/imports/不存在的token')
+    assert resp.status_code == 404
+
+
+def test_clear_imports_removes_all(client):
+    _run_import(client)
+    _run_import(client)
+    resp = client.delete('/api/imports')
+    assert resp.status_code == 200
+    assert client.get('/api/imports').json()['imports'] == []

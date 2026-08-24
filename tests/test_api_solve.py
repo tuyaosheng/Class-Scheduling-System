@@ -156,6 +156,75 @@ def test_solve_job_status_reachable_via_polling(client, tiny_config):
     assert status_resp.json()['status'] == 'done'
 
 
+def test_solve_job_detail_includes_candidate_placements(client, tiny_config):
+    resp = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
+                                           'max_seconds': 10})
+    job_id = resp.json()['job_id']
+    with client.websocket_connect('/api/ws/solve/%s' % job_id) as ws:
+        while True:
+            msg = ws.receive_json()
+            if msg['type'] in ('done', 'infeasible', 'precheck_failed'):
+                break
+    detail = client.get('/api/solve/%s' % job_id).json()
+    assert detail['grade'] == '初三'
+    assert len(detail['candidates']) == 1
+    assert detail['candidates'][0]['index'] == 1
+    assert detail['candidates'][0]['placements']
+
+
+def test_solve_job_persists_across_a_fresh_lookup(client, tiny_config):
+    """求解任务落在 SQLite 而不是进程内存字典——直接用新 job_id 查也能查到，
+    不依赖 create_job 返回的那个 Python 对象还留在内存里。"""
+    resp = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
+                                           'max_seconds': 10})
+    job_id = resp.json()['job_id']
+    with client.websocket_connect('/api/ws/solve/%s' % job_id) as ws:
+        while True:
+            msg = ws.receive_json()
+            if msg['type'] in ('done', 'infeasible', 'precheck_failed'):
+                break
+
+    from scheduler.api import sessions
+    reloaded = sessions.get_job(job_id)
+    assert reloaded is not None
+    assert reloaded.status == 'done'
+    assert len(reloaded.solutions) == 1
+
+
+def test_list_solve_jobs_shows_newest_first(client, tiny_config):
+    resp1 = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
+                                            'max_seconds': 10})
+    job_id1 = resp1.json()['job_id']
+    resp2 = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
+                                            'max_seconds': 10})
+    job_id2 = resp2.json()['job_id']
+
+    listed = client.get('/api/solve/jobs').json()['jobs']
+    ids = [j['job_id'] for j in listed]
+    assert ids[:2] == [job_id2, job_id1]
+
+
+def test_delete_solve_job_removes_it(client, tiny_config):
+    resp = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
+                                           'max_seconds': 10})
+    job_id = resp.json()['job_id']
+    assert client.delete('/api/solve/%s' % job_id).status_code == 200
+    assert client.get('/api/solve/%s' % job_id).status_code == 404
+
+
+def test_delete_solve_job_404_for_unknown_id(client):
+    assert client.delete('/api/solve/不存在的job').status_code == 404
+
+
+def test_clear_solve_jobs_removes_all(client, tiny_config):
+    client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
+                                    'max_seconds': 10})
+    client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
+                                    'max_seconds': 10})
+    assert client.delete('/api/solve/jobs').status_code == 200
+    assert client.get('/api/solve/jobs').json()['jobs'] == []
+
+
 def test_export_returns_xlsx_file(client, tiny_config):
     resp = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
                                            'max_seconds': 10})

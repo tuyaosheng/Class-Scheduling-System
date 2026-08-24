@@ -18,6 +18,7 @@ from .schemas import (
     AiSettingsGetResponse, AiSettingsPutRequest,
     ConfigStatus, CourseItem, CoursesGetResponse, CoursesPutRequest,
     ImportConfirmRequest, ImportConfirmResponse, ImportPreview,
+    ImportSessionSummary, ImportSessionsListResponse,
     PlanGetResponse, PlanPutRequest,
 )
 
@@ -111,7 +112,11 @@ async def import_files(teaching_file: UploadFile = File(...),
         except Exception as exc:   # AIParseError 等
             raise HTTPException(status_code=400, detail=str(exc))
 
-    token = sessions.save_import(result, grade)
+    token = sessions.save_import(result, grade, rule_engine)
+    return _build_import_preview(token, result, rule_engine)
+
+
+def _build_import_preview(token: str, result, rule_engine: str) -> ImportPreview:
     used = {}
     for t in result.dataset.tasks:
         if t.consumes_slot:
@@ -144,6 +149,34 @@ def confirm_import(body: ImportConfirmRequest):
     write_rules_yaml(session.result, rules_path)
     return ImportConfirmResponse(ok=True, teaching_path=str(teaching_path),
                                  rules_path=str(rules_path))
+
+
+@router.get('/imports', response_model=ImportSessionsListResponse)
+def list_imports():
+    return ImportSessionsListResponse(
+        imports=[ImportSessionSummary(**row) for row in sessions.list_imports()])
+
+
+@router.get('/imports/{token}', response_model=ImportPreview)
+def get_import_detail(token: str):
+    session = sessions.get_import(token)
+    if session is None:
+        raise HTTPException(status_code=404, detail='导入会话不存在或已过期')
+    return _build_import_preview(token, session.result, session.rule_engine)
+
+
+@router.delete('/imports/{token}')
+def delete_import(token: str):
+    if sessions.get_import(token) is None:
+        raise HTTPException(status_code=404, detail='导入会话不存在或已过期')
+    sessions.delete_import(token)
+    return {'ok': True}
+
+
+@router.delete('/imports')
+def clear_imports():
+    sessions.clear_imports()
+    return {'ok': True}
 
 
 def _load_yaml_dict_or_400(path: Path, what: str) -> dict:
