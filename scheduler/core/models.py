@@ -57,12 +57,12 @@ class GradeCalendar(BaseModel):
             raise ValueError('星期序号越界：%s' % day)
         if not 1 <= period <= self.periods_per_day:
             raise ValueError('节次越界：%s' % period)
-        return day * self.periods_per_day + period
+        return day * self.periods_per_day + (period - 1)
 
     def slot_of(self, index: int) -> Tuple[int, int]:
         if not 0 <= index < self.n_slots:
             raise ValueError('时间格索引越界：%s' % index)
-        return index // self.periods_per_day, index % self.periods_per_day
+        return index // self.periods_per_day, index % self.periods_per_day + 1
 
     def section_period(self, section: Optional[str], n: int) -> int:
         if section == '上午':

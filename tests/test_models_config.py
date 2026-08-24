@@ -113,8 +113,8 @@ def test_grade_calendar_slot_round_trip():
         midday_break_after=5,
     )
     assert calendar.n_slots == 45
-    assert calendar.slot_index(1, 8) == 17
-    assert calendar.slot_of(17) == (1, 8)
+    assert calendar.slot_index(1, 8) == 16
+    assert calendar.slot_of(16) == (1, 8)
     assert calendar.day_index('周三') == 2
     assert calendar.morning == range(1, 6)
     assert calendar.afternoon == range(6, 10)
