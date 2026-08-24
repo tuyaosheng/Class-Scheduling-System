@@ -148,7 +148,7 @@ AI    anthropic SDK
 ```bash
 pip install -r requirements.txt      # ortools 9.15.6755 / pydantic 2 / openpyxl / PyYAML / pytest
 
-python -m pytest -q                  # 全套测试（当前 223 项）
+python -m pytest -q                  # 全套测试（当前 287 项）
 
 # 导入 Excel 并回显中文规则解析结果供教务逐条核对（不落盘）
 python -m scheduler.cli import 任课与排课说明.xlsx --grade 初三
@@ -190,13 +190,17 @@ M1–M3 仅凭现有初三数据即可完成。
 
 | 计划 | 对应设计项 | 状态 |
 |---|---|---|
-| `2026-08-23-年级日历参数化.md` | 年级日历参数化 design 全文 + a-f 的 c | 计划已写，待执行 |
-| 课程系下拉/重命名 + 课程计划增删 UI (a+b) | 课程配置扩展 design §3.2/3.3 | 待写计划 |
+| `2026-08-23-年级日历参数化.md` | 年级日历参数化 design 全文 + a-f 的 c | 计划已写，10 个 Task 均未开始（`models.py` 无 `GradeCalendar`，`config/` 下无 `calendars.yaml`，9 个消费方文件仍 `import calendar as cal`） |
+| 课程目录增删改查 (a 的一部分) | 课程配置扩展 design §3.2 | **已完成**（`CourseSettings.vue` + `GET/PUT /api/config/courses`，课程名/学科系/场地/单双周/占位符的增删改） |
+| 课程系下拉/重命名 (a 剩余部分) | 课程配置扩展 design §3.2 | 待写计划 |
+| 课程计划增删 (b) | 课程配置扩展 design §3.3 | 待写计划——`SettingsPanel.vue` 目前只能编辑已有课程的周课时数字，没有新增/删除课程条目的入口 |
 | 单双周配对课程改造 (f) | 课程配置扩展 design §3.7 | 待写计划 |
 | 空课表模板上传解析 (d) | 课程配置扩展 design §3.5 | 待写计划 |
 | 跨年级防冲突 (e) | 课程配置扩展 design §3.6/4 | 阻塞：「确认排定」交互细节未定 |
 | M5 拖拽可视化 | 2026-08-21 design §7.2/10 | 阻塞：需要单独一轮 writing-plans，规模比其余几项加起来还大 |
 | M6 AI 审核 | 2026-08-21 design §9 | 阻塞：需要单独展开实施细节 |
+
+注意 `scheduler/config/calendar.yaml`（单数）是项目最早骨架提交留下的旧文件，`compiler.py` 只在注释里提过一句，代码不读取它——跟上面这个计划要新建的 `calendars.yaml`（复数、按年级）是两个不相关的东西，不要混淆或复用。
 
 ## 待确认事项
 
