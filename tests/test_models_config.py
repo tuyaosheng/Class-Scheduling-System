@@ -103,3 +103,39 @@ def test_teaching_task_model():
     assert t.parity == '单周'
     assert TeachingTask(id=2, grade='初三', class_id=7, course='语文',
                         teacher='李琼', periods=6).parity is None
+
+
+def test_grade_calendar_slot_round_trip():
+    from scheduler.core.models import GradeCalendar
+    calendar = GradeCalendar(
+        days=['周一', '周二', '周三', '周四', '周五'],
+        periods_per_day=9,
+        midday_break_after=5,
+    )
+    assert calendar.n_slots == 45
+    assert calendar.slot_index(1, 8) == 17
+    assert calendar.slot_of(17) == (1, 8)
+    assert calendar.day_index('周三') == 2
+    assert calendar.morning == range(1, 6)
+    assert calendar.afternoon == range(6, 10)
+    assert (5, 6) not in calendar.adjacent_pairs()
+    assert (4, 5) in calendar.adjacent_pairs()
+
+
+def test_grade_calendar_section_period():
+    from scheduler.core.models import GradeCalendar
+    calendar = GradeCalendar(days=['周一'], periods_per_day=9, midday_break_after=5)
+    assert calendar.section_period('上午', 3) == 3
+    assert calendar.section_period('下午', 2) == 7
+    assert calendar.section_period(None, 9) == 9
+    with pytest.raises(ValueError):
+        calendar.section_period('上午', 6)
+
+
+def test_dataset_calendar_defaults_to_current_global_shape():
+    from scheduler.core.models import Dataset, Teacher, TeachingTask
+    task = TeachingTask(id=0, grade='初三', class_id=1, course='语文', teacher='A', periods=1)
+    ds = Dataset(grade='初三', classes=[1], teachers={'A': Teacher(name='A')}, tasks=[task])
+    assert ds.calendar.n_slots == 45
+    assert ds.calendar.periods_per_day == 9
+    assert ds.calendar.midday_break_after == 5
