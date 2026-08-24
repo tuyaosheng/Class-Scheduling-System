@@ -8,7 +8,6 @@ from typing import Dict, List
 
 from ortools.sat.python import cp_model
 
-from . import calendar as cal
 from .rules import Rule, select_tasks
 
 PARITIES = ('单周', '双周')
@@ -33,13 +32,18 @@ class CompiledModel:
         self.teacher_occ: Dict = {}
 
     def task_vars(self, task_id):
-        return [self.x[(task_id, s)] for s in range(cal.N_SLOTS)]
+        return [self.x[(task_id, s)] for s in range(self.dataset.calendar.n_slots)]
+
+    @property
+    def calendar(self):
+        return self.dataset.calendar
 
 
 def compile_model(dataset, cfg, rules, *, with_assumptions=False) -> CompiledModel:
+    calendar = dataset.calendar
     model = cp_model.CpModel()
     x = {(t.id, s): model.NewBoolVar('x_%d_%d' % (t.id, s))
-         for t in dataset.tasks for s in range(cal.N_SLOTS)}
+         for t in dataset.tasks for s in range(calendar.n_slots)}
     compiled = CompiledModel(model, x, dataset, cfg)
 
     _add_period_counts(compiled)
@@ -78,7 +82,7 @@ def _add_class_no_clash(c: CompiledModel) -> None:
             active = [t for t in tasks if active_in(t, parity)]
             if len(active) < 2:
                 continue
-            for slot in range(cal.N_SLOTS):
+            for slot in range(c.calendar.n_slots):
                 c.model.Add(sum(c.x[(t.id, slot)] for t in active) <= 1)
 
 
@@ -91,7 +95,7 @@ def _add_teacher_no_clash(c: CompiledModel) -> None:
             active = [t for t in tasks if active_in(t, parity)]
             if len(active) < 2:
                 continue
-            for slot in range(cal.N_SLOTS):
+            for slot in range(c.calendar.n_slots):
                 c.model.Add(sum(c.x[(t.id, slot)] for t in active) <= 1)
 
 
@@ -106,14 +110,14 @@ def handler(rule_type):
     return register
 
 
-def _slot_set(rule):
+def _slot_set(rule, calendar):
     """params.slots（[[day, period], ...]）→ 扁平索引集合。"""
-    return {cal.slot_index(int(d), int(p)) for d, p in rule.params.get('slots', [])}
+    return {calendar.slot_index(int(d), int(p)) for d, p in rule.params.get('slots', [])}
 
 
 @handler('forbid_slots')
 def _compile_forbid_slots(c: CompiledModel, rule: Rule, with_assumptions: bool) -> None:
-    slots = _slot_set(rule)
+    slots = _slot_set(rule, c.calendar)
     for task in select_tasks(rule, c.dataset.tasks, c.cfg):
         for slot in slots:
             c.model.Add(c.x[(task.id, slot)] == 0)
@@ -121,15 +125,15 @@ def _compile_forbid_slots(c: CompiledModel, rule: Rule, with_assumptions: bool) 
 
 @handler('pin_window')
 def _compile_pin_window(c: CompiledModel, rule: Rule, with_assumptions: bool) -> None:
-    window = _slot_set(rule)
+    window = _slot_set(rule, c.calendar)
     for task in select_tasks(rule, c.dataset.tasks, c.cfg):
-        for slot in range(cal.N_SLOTS):
+        for slot in range(c.calendar.n_slots):
             if slot not in window:
                 c.model.Add(c.x[(task.id, slot)] == 0)
 
 
-def _slots_of_day(day):
-    return [cal.slot_index(day, p) for p in range(1, cal.PERIODS_PER_DAY + 1)]
+def _slots_of_day(day, calendar):
+    return [calendar.slot_index(day, p) for p in range(1, calendar.periods_per_day + 1)]
 
 
 def _group_by_class(tasks):
@@ -157,10 +161,10 @@ def _add_daily(c: CompiledModel, rule: Rule, with_assumptions: bool, op: str) ->
     """
     n = int(rule.params['n'])
     weekdays = rule.params.get('weekdays')
-    days = [cal.day_index(d) for d in weekdays] if weekdays else range(len(cal.DAYS))
+    days = [c.calendar.day_index(d) for d in weekdays] if weekdays else range(len(c.calendar.days))
     for tasks in _group_by_class(select_tasks(rule, c.dataset.tasks, c.cfg)).values():
         for day in days:
-            total = sum(c.x[(t.id, s)] for t in tasks for s in _slots_of_day(day))
+            total = sum(c.x[(t.id, s)] for t in tasks for s in _slots_of_day(day, c.calendar))
             constraint = {'>=': lambda: c.model.Add(total >= n),
                           '<=': lambda: c.model.Add(total <= n),
                           '==': lambda: c.model.Add(total == n)}[op]()
@@ -184,16 +188,6 @@ def _compile_weekday_exact(c, rule, with_assumptions):
     _add_daily(c, rule, with_assumptions, '==')
 
 
-# 跨午休的 (5, 6) 不算相邻，对应 calendar.yaml 的 no_adjacent
-NO_ADJACENT = frozenset({(5, 6)})
-
-
-def adjacent_pairs():
-    """一天之内可构成连堂的节次对。"""
-    return [(p, p + 1) for p in range(1, cal.PERIODS_PER_DAY)
-            if (p, p + 1) not in NO_ADJACENT]
-
-
 @handler('alternate_weeks')
 def _compile_alternate_weeks(c: CompiledModel, rule: Rule, with_assumptions: bool) -> None:
     """把单双周课程对绑到同一时间格。
@@ -209,7 +203,7 @@ def _compile_alternate_weeks(c: CompiledModel, rule: Rule, with_assumptions: boo
             continue                     # 缺一半就跳过，容量问题交给预检层报
         for ta in a:
             for tb in b:
-                for slot in range(cal.N_SLOTS):
+                for slot in range(c.calendar.n_slots):
                     c.model.Add(c.x[(ta.id, slot)] == c.x[(tb.id, slot)])
 
 
@@ -221,17 +215,17 @@ def _compile_consecutive(c: CompiledModel, rule: Rule, with_assumptions: bool) -
     """
     days_needed = int(rule.params.get('days', 1))
     length = int(rule.params.get('length', 2))
-    pairs = adjacent_pairs()
+    pairs = c.calendar.adjacent_pairs()
     for class_id, tasks in _group_by_class(select_tasks(rule, c.dataset.tasks, c.cfg)).items():
         day_flags = []
-        for day in range(len(cal.DAYS)):
+        for day in range(len(c.calendar.days)):
             hit = {}                     # 节次 -> 「该班这一格上的是本规则命中的课」
 
             def hit_var(period, _day=day, _class_id=class_id, _tasks=tasks):
                 var = hit.get(period)
                 if var is None:
                     var = c.model.NewBoolVar('cons_hit_%d_%d_%d' % (_class_id, _day, period))
-                    slot = cal.slot_index(_day, period)
+                    slot = c.calendar.slot_index(_day, period)
                     # 半具体化：var 为真则这一格至少有一节命中课；由哪个 task 提供不限
                     c.model.Add(
                         sum(c.x[(t.id, slot)] for t in _tasks) >= 1).OnlyEnforceIf(var)
@@ -241,9 +235,9 @@ def _compile_consecutive(c: CompiledModel, rule: Rule, with_assumptions: bool) -
             day_indicators = []          # 这一天的全部 y
             for start, _ in pairs:
                 run_periods = list(range(start, start + length))
-                if run_periods[-1] > cal.PERIODS_PER_DAY:
+                if run_periods[-1] > c.calendar.periods_per_day:
                     continue
-                if any((p, p + 1) in NO_ADJACENT for p in run_periods[:-1]):
+                if any((p, p + 1) not in pairs for p in run_periods[:-1]):
                     continue
                 y = c.model.NewBoolVar('cons_%d_%d_%d' % (class_id, day, start))
                 # 半具体化：y 为真则整段都被命中课占满；反向不需要
@@ -279,7 +273,7 @@ def _limit_venue(c: CompiledModel, venue: str, capacity: int) -> None:
         active = [t for t in tasks if active_in(t, parity)]
         if len(active) <= capacity:
             continue
-        for slot in range(cal.N_SLOTS):
+        for slot in range(c.calendar.n_slots):
             c.model.Add(sum(c.x[(t.id, slot)] for t in active) <= capacity)
 
 
@@ -302,14 +296,14 @@ def soft_handler(rule_type):
     return register
 
 
-def _halfday_run_starts(length=3):
+def _halfday_run_starts(calendar, length=3):
     """每个半天内、长度为 length 的连续窗口的起始节次。
 
     半天边界（5|6）天然隔断——午休那对不算相邻，所以「连续 length 节」
-    不可能跨半天，这里按 cal.MORNING/AFTERNOON 各自枚举。
+    不可能跨半天，这里按 calendar.morning/afternoon 各自枚举。
     """
     starts = []
-    for half in (cal.MORNING, cal.AFTERNOON):
+    for half in (calendar.morning, calendar.afternoon):
         for i in range(len(half) - length + 1):
             starts.append(half[i])
     return starts
@@ -343,7 +337,7 @@ def _compile_teacher_max_run(c: CompiledModel, rule: Rule) -> None:
     max_len = int(rule.params.get('max_len', 2))
     weight = int(rule.weight) or 1
     window_len = max_len + 1
-    starts = _halfday_run_starts(window_len)
+    starts = _halfday_run_starts(c.calendar, window_len)
 
     by_teacher = defaultdict(list)
     for t in c.dataset.tasks:
@@ -354,14 +348,14 @@ def _compile_teacher_max_run(c: CompiledModel, rule: Rule) -> None:
         active_periods = {p: sum(t.periods for t in by_parity[p]) for p in PARITIES}
         if all(active_periods[p] < window_len for p in PARITIES):
             continue                      # 两个周次都凑不出 window_len 连堂
-        for day in range(len(cal.DAYS)):
+        for day in range(len(c.calendar.days)):
             for start in starts:
                 ps = list(range(start, start + window_len))
                 run_by_parity = []
                 for p in PARITIES:
                     if active_periods[p] < window_len:
                         continue
-                    occs = [_teacher_occ_var(c, teacher, p, cal.slot_index(day, pp), by_parity[p])
+                    occs = [_teacher_occ_var(c, teacher, p, c.calendar.slot_index(day, pp), by_parity[p])
                             for pp in ps]
                     rv = c.model.NewBoolVar(
                         'trun_%s_%s_%d_%d' % (teacher, p, day, start))

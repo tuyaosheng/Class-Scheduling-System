@@ -4,7 +4,7 @@ import pytest
 from ortools.sat.python import cp_model
 
 from scheduler.core import calendar as cal
-from scheduler.core.compiler import adjacent_pairs, compile_model
+from scheduler.core.compiler import compile_model
 from scheduler.core.config import load_config
 from scheduler.core.models import Dataset, Teacher, TeachingTask
 from scheduler.core.rules import Rule
@@ -33,8 +33,8 @@ def slots_of(solver, compiled, task_id):
     return sorted(s for s in range(cal.N_SLOTS) if solver.Value(compiled.x[(task_id, s)]))
 
 
-def test_adjacent_pairs_excludes_lunch_break():
-    pairs = adjacent_pairs()
+def test_adjacent_pairs_excludes_lunch_break(cfg):
+    pairs = cfg.calendar_of('初三').adjacent_pairs()
     assert (4, 5) in pairs and (5, 6) not in pairs   # 第5节与第6节跨午休
     assert (6, 7) in pairs and (8, 9) in pairs
     assert len(pairs) == 7                            # 每天 7 对
@@ -98,7 +98,7 @@ def test_consecutive_produces_a_double_period(cfg):
     placed = set(slots_of(solver, compiled, 0))
     has_double = any(s in placed and s + 1 in placed
                      and cal.slot_of(s)[0] == cal.slot_of(s + 1)[0]
-                     and (cal.slot_of(s)[1], cal.slot_of(s + 1)[1]) in adjacent_pairs()
+                     and (cal.slot_of(s)[1], cal.slot_of(s + 1)[1]) in cfg.calendar_of('初三').adjacent_pairs()
                      for s in placed)
     assert has_double
 
@@ -162,7 +162,7 @@ def test_consecutive_may_be_supplied_by_two_teachers(cfg):
     placed = sorted(slots_of(solver, compiled, 0) + slots_of(solver, compiled, 1))
     a, b = placed
     assert b - a == 1 and cal.slot_of(a)[0] == cal.slot_of(b)[0]
-    assert (cal.slot_of(a)[1], cal.slot_of(b)[1]) in adjacent_pairs()
+    assert (cal.slot_of(a)[1], cal.slot_of(b)[1]) in cfg.calendar_of('初三').adjacent_pairs()
 
 
 def test_cross_task_consecutive_still_needs_adjacency(cfg):
