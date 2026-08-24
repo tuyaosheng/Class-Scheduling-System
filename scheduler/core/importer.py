@@ -247,11 +247,10 @@ def _read_rule_rows(path):
             if r and r[COLUMNS['姓名']]]
 
 
-def _fmt_slots_display(slots):
-    from . import calendar as cal
+def _fmt_slots_display(slots, calendar):
     by_day = {}
     for d, p in sorted(slots):
-        by_day.setdefault(cal.DAYS[d], []).append(p)
+        by_day.setdefault(calendar.days[d], []).append(p)
     return ' | '.join('%s %s' % (day, ','.join(str(p) for p in ps))
                       for day, ps in by_day.items())
 
@@ -320,10 +319,10 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
             not_avail_display_slots = ({(d, p) for d, p in parsed.not_available} if rule_engine == 'ai'
                                        else parse_time_expr(not_avail_raw, calendar))
             rule_echo['不能排课节次'].append(
-                {'raw': not_avail_raw, 'parsed': _fmt_slots_display(not_avail_display_slots)})
+                {'raw': not_avail_raw, 'parsed': _fmt_slots_display(not_avail_display_slots, calendar)})
         if fixed_raw and fixed_raw not in seen_raw['固定节次']:
             seen_raw['固定节次'].add(fixed_raw)
-            rule_echo['固定节次'].append({'raw': fixed_raw, 'parsed': _fmt_slots_display(fixed_slots)})
+            rule_echo['固定节次'].append({'raw': fixed_raw, 'parsed': _fmt_slots_display(fixed_slots, calendar)})
         if req_raw and req_raw not in seen_raw['排课要求']:
             seen_raw['排课要求'].add(req_raw)
             rule_echo['排课要求'].append({
