@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  confirmImport, connectSolveSocket, exportUrl, getAiSettings, getConfigStatus,
-  getCourses, getPlan, importFiles, putAiSettings, putCourses, putPlan, startSolve, testAiSettings,
+  clearImports, clearSolveJobs, confirmImport, connectSolveSocket, deleteImport, deleteSolveJob,
+  exportUrl, getAiSettings, getConfigStatus, getCourses, getImportDetail, getPlan,
+  getSolveJobDetail, importFiles, listImports, listSolveJobs, putAiSettings, putCourses, putPlan,
+  startSolve, testAiSettings,
 } from '../api'
 
 afterEach(() => {
@@ -142,5 +144,66 @@ describe('exportUrl', () => {
   it('builds the export URL with optional template flag', () => {
     expect(exportUrl('job-1', 1, false)).toBe('/api/export/job-1/1?template=0')
     expect(exportUrl('job-1', 2, true)).toBe('/api/export/job-1/2?template=1')
+  })
+})
+
+describe('import history', () => {
+  it('listImports GETs /api/imports', async () => {
+    const fetchMock = mockFetchOnce({ imports: [{ token: 't1', grade: '初三', created_at: 'now' }] })
+    const { imports } = await listImports()
+    expect(imports[0].token).toBe('t1')
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/imports')
+  })
+
+  it('getImportDetail GETs /api/imports/{token}', async () => {
+    const fetchMock = mockFetchOnce({ token: 't1', teachers: 1, classes: 1, tasks: 1 })
+    await getImportDetail('t1')
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/imports/t1')
+  })
+
+  it('deleteImport DELETEs /api/imports/{token}', async () => {
+    const fetchMock = mockFetchOnce({ ok: true })
+    await deleteImport('t1')
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/imports/t1')
+    expect(options.method).toBe('DELETE')
+  })
+
+  it('clearImports DELETEs /api/imports', async () => {
+    const fetchMock = mockFetchOnce({ ok: true })
+    await clearImports()
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/imports')
+    expect(options.method).toBe('DELETE')
+  })
+})
+
+describe('solve job history', () => {
+  it('listSolveJobs GETs /api/solve/jobs', async () => {
+    const fetchMock = mockFetchOnce({ jobs: [] })
+    await listSolveJobs()
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/solve/jobs')
+  })
+
+  it('getSolveJobDetail GETs /api/solve/{jobId}', async () => {
+    const fetchMock = mockFetchOnce({ job_id: 'job-1', status: 'done', grade: '初三', candidates: [] })
+    await getSolveJobDetail('job-1')
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/solve/job-1')
+  })
+
+  it('deleteSolveJob DELETEs /api/solve/{jobId}', async () => {
+    const fetchMock = mockFetchOnce({ ok: true })
+    await deleteSolveJob('job-1')
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/solve/job-1')
+    expect(options.method).toBe('DELETE')
+  })
+
+  it('clearSolveJobs DELETEs /api/solve/jobs', async () => {
+    const fetchMock = mockFetchOnce({ ok: true })
+    await clearSolveJobs()
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toBe('/api/solve/jobs')
+    expect(options.method).toBe('DELETE')
   })
 })

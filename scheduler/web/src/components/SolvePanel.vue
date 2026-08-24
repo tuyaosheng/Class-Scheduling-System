@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { connectSolveSocket, startSolve } from '../api'
-
-interface Candidate {
-  index: number
-  status: string
-  wall_time: number
-  violations: unknown[]
-  placements: Array<{ class_id: number; course: string; slot: number; parity: string | null }>
-}
+import { computed, onMounted, ref } from 'vue'
+import {
+  clearSolveJobs, connectSolveSocket, deleteSolveJob, getSolveJobDetail, listSolveJobs, startSolve,
+  type Candidate, type SolveJobSummary,
+} from '../api'
+import HistoryList, { type HistoryRow } from './HistoryList.vue'
 
 const emit = defineEmits<{ jobId: [id: string]; candidates: [payload: Candidate[]] }>()
 
@@ -78,6 +74,7 @@ async function start() {
       finished = true
       running.value = false
       statusText.value = `完成，共 ${candidates.length} 个候选方案`
+      loadHistory()
     }
   })
   socket = ws
@@ -92,6 +89,61 @@ async function start() {
   ws.onerror = onDisconnect
   ws.onclose = onDisconnect
 }
+
+const historyRows = ref<HistoryRow[]>([])
+const historyLoading = ref(false)
+
+function toHistoryRows(rows: SolveJobSummary[]): HistoryRow[] {
+  return rows.map((r) => ({
+    id: r.job_id, label: `${r.grade} · ${r.status}`,
+    sublabel: `${r.candidate_count} 个候选方案 · ${r.created_at}`,
+  }))
+}
+
+async function loadHistory() {
+  historyLoading.value = true
+  try {
+    const resp = await listSolveJobs()
+    historyRows.value = toHistoryRows(resp.jobs)
+  } catch (err) {
+    statusText.value = '历史记录加载失败：' + (err as Error).message
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+async function selectHistory(jobId: string) {
+  try {
+    const detail = await getSolveJobDetail(jobId)
+    candidates.length = 0
+    candidates.push(...detail.candidates)
+    emit('jobId', jobId)
+    emit('candidates', [...candidates])
+    statusText.value = `已加载历史任务，共 ${candidates.length} 个候选方案`
+  } catch (err) {
+    statusText.value = '加载历史任务失败：' + (err as Error).message
+  }
+}
+
+async function deleteHistory(jobId: string) {
+  try {
+    await deleteSolveJob(jobId)
+    await loadHistory()
+  } catch (err) {
+    statusText.value = '删除失败：' + (err as Error).message
+  }
+}
+
+async function clearHistory() {
+  try {
+    await clearSolveJobs()
+    await loadHistory()
+  } catch (err) {
+    statusText.value = '清空失败：' + (err as Error).message
+  }
+}
+
+onMounted(loadHistory)
 
 const statusKind = computed<'good' | 'warning' | 'critical' | 'neutral'>(() => {
   const t = statusText.value
@@ -122,6 +174,9 @@ const statusKind = computed<'good' | 'warning' | 'critical' | 'neutral'>(() => {
     <p v-if="statusText" class="badge" :class="`badge-${statusKind}`">
       {{ statusText }}
     </p>
+
+    <HistoryList title="历史求解任务" :rows="historyRows" :loading="historyLoading"
+                @select="selectHistory" @delete="deleteHistory" @clear="clearHistory" />
   </section>
 </template>
 

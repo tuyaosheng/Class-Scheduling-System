@@ -148,3 +148,66 @@ export async function putCourses(courses: CourseItem[]) {
     body: JSON.stringify({ courses }),
   })
 }
+
+export interface ImportSessionSummary {
+  token: string
+  grade: string
+  created_at: string
+}
+
+export async function listImports() {
+  return request<{ imports: ImportSessionSummary[] }>('/api/imports')
+}
+
+export async function getImportDetail(token: string) {
+  return request<ImportPreview>(`/api/imports/${token}`)
+}
+
+export async function deleteImport(token: string) {
+  return request<{ ok: boolean }>(`/api/imports/${token}`, { method: 'DELETE' })
+}
+
+export async function clearImports() {
+  return request<{ ok: boolean }>('/api/imports', { method: 'DELETE' })
+}
+
+export interface SolveJobSummary {
+  job_id: string
+  status: string
+  grade: string
+  created_at: string
+  candidate_count: number
+}
+
+export interface Candidate {
+  index: number
+  status: string
+  wall_time: number
+  violations: unknown[]
+  placements: Array<{ class_id: number; course: string; slot: number; parity: string | null }>
+}
+
+export interface SolveJobDetail {
+  job_id: string
+  status: string
+  grade: string
+  candidates: Candidate[]
+  issues: unknown[]
+  conflict: string | null
+}
+
+export async function listSolveJobs() {
+  return request<{ jobs: SolveJobSummary[] }>('/api/solve/jobs')
+}
+
+export async function getSolveJobDetail(jobId: string) {
+  return request<SolveJobDetail>(`/api/solve/${jobId}`)
+}
+
+export async function deleteSolveJob(jobId: string) {
+  return request<{ ok: boolean }>(`/api/solve/${jobId}`, { method: 'DELETE' })
+}
+
+export async function clearSolveJobs() {
+  return request<{ ok: boolean }>('/api/solve/jobs', { method: 'DELETE' })
+}

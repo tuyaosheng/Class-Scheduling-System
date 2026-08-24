@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { confirmImport, importFiles, type ImportPreview } from '../api'
+import { onMounted, ref } from 'vue'
+import {
+  clearImports, confirmImport, deleteImport, getImportDetail, importFiles, listImports,
+  type ImportPreview, type ImportSessionSummary,
+} from '../api'
+import HistoryList, { type HistoryRow } from './HistoryList.vue'
 
 const emit = defineEmits<{ confirmed: [payload: { teaching_path: string; rules_path: string }] }>()
 
@@ -11,6 +15,56 @@ const grade = ref('初三')
 const preview = ref<ImportPreview | null>(null)
 const error = ref('')
 const confirming = ref(false)
+
+const history = ref<ImportSessionSummary[]>([])
+const historyLoading = ref(false)
+const historyRows = ref<HistoryRow[]>([])
+
+function toHistoryRows(rows: ImportSessionSummary[]): HistoryRow[] {
+  return rows.map((r) => ({ id: r.token, label: r.grade, sublabel: r.created_at }))
+}
+
+async function loadHistory() {
+  historyLoading.value = true
+  try {
+    const resp = await listImports()
+    history.value = resp.imports
+    historyRows.value = toHistoryRows(resp.imports)
+  } catch (err) {
+    error.value = (err as Error).message
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+async function selectHistory(token: string) {
+  error.value = ''
+  try {
+    preview.value = await getImportDetail(token)
+  } catch (err) {
+    error.value = (err as Error).message
+  }
+}
+
+async function deleteHistory(token: string) {
+  try {
+    await deleteImport(token)
+    await loadHistory()
+  } catch (err) {
+    error.value = (err as Error).message
+  }
+}
+
+async function clearHistory() {
+  try {
+    await clearImports()
+    await loadHistory()
+  } catch (err) {
+    error.value = (err as Error).message
+  }
+}
+
+onMounted(loadHistory)
 
 function onTeachingFileChange(event: Event) {
   teachingFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
@@ -28,6 +82,7 @@ async function runImport() {
   }
   try {
     preview.value = await importFiles(teachingFile.value, rulesFile.value, grade.value, ruleEngine.value)
+    await loadHistory()
   } catch (err) {
     error.value = (err as Error).message
   }
@@ -52,6 +107,9 @@ defineExpose({ runImport })
 <template>
   <section class="card">
     <h2>导入任课表与排课说明</h2>
+
+    <HistoryList title="历史记录" :rows="historyRows" :loading="historyLoading"
+                @select="selectHistory" @delete="deleteHistory" @clear="clearHistory" />
 
     <div class="import-form">
       <label class="field">

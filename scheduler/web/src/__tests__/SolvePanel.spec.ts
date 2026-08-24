@@ -1,9 +1,16 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import SolvePanel from '../components/SolvePanel.vue'
 import * as api from '../api'
 
 describe('SolvePanel', () => {
+  beforeEach(() => {
+    // 组件挂载时会自动拉一次历史求解任务列表；这里统一 mock 掉，避免每个
+    // 测试各自处理，也避免真的打一次没被 mock 的 fetch（jsdom 环境下相对
+    // URL 会直接抛错，污染跟本测试无关的 statusText）。
+    vi.spyOn(api, 'listSolveJobs').mockResolvedValue({ jobs: [] })
+  })
+
   it('starts a solve job and forwards candidate events from the socket', async () => {
     vi.spyOn(api, 'startSolve').mockResolvedValue({ job_id: 'job-1' })
 
@@ -172,5 +179,52 @@ describe('SolvePanel', () => {
     } as MessageEvent)
     const lastEmit = wrapper.emitted('candidates')!.at(-1)![0] as unknown[]
     expect(lastEmit).toHaveLength(1)   // 只有一份候选列表在增长，没有重复
+  })
+
+  it('loads history on mount and shows one row per job', async () => {
+    vi.spyOn(api, 'listSolveJobs').mockResolvedValue({
+      jobs: [{ job_id: 'job-1', status: 'done', grade: '初三', created_at: 'now', candidate_count: 2 }],
+    })
+    const wrapper = mount(SolvePanel)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(wrapper.findAll('[data-test="history-row"]')).toHaveLength(1)
+  })
+
+  it('selecting a history row loads its candidates and emits them', async () => {
+    vi.spyOn(api, 'listSolveJobs').mockResolvedValue({
+      jobs: [{ job_id: 'job-1', status: 'done', grade: '初三', created_at: 'now', candidate_count: 1 }],
+    })
+    vi.spyOn(api, 'getSolveJobDetail').mockResolvedValue({
+      job_id: 'job-1', status: 'done', grade: '初三', issues: [], conflict: null,
+      candidates: [{ index: 1, status: 'OPTIMAL', wall_time: 0.2, violations: [], placements: [] }],
+    })
+
+    const wrapper = mount(SolvePanel)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await wrapper.find('[data-test="history-select"]').trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(api.getSolveJobDetail).toHaveBeenCalledWith('job-1')
+    expect(wrapper.emitted('jobId')!.at(-1)).toEqual(['job-1'])
+    const lastEmit = wrapper.emitted('candidates')!.at(-1)![0] as unknown[]
+    expect(lastEmit).toHaveLength(1)
+  })
+
+  it('clearing history calls clearSolveJobs and refreshes the list', async () => {
+    const listSpy = vi.spyOn(api, 'listSolveJobs')
+      .mockResolvedValueOnce({
+        jobs: [{ job_id: 'job-1', status: 'done', grade: '初三', created_at: 'now', candidate_count: 1 }],
+      })
+      .mockResolvedValueOnce({ jobs: [] })
+    vi.spyOn(api, 'clearSolveJobs').mockResolvedValue({ ok: true })
+
+    const wrapper = mount(SolvePanel)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await wrapper.find('[data-test="history-clear"]').trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(api.clearSolveJobs).toHaveBeenCalled()
+    expect(listSpy).toHaveBeenCalledTimes(2)
+    expect(wrapper.findAll('[data-test="history-row"]')).toHaveLength(0)
   })
 })
