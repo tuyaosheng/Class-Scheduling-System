@@ -5,21 +5,19 @@ from pathlib import Path
 import openpyxl
 from openpyxl.styles import Alignment, Font
 
-from . import calendar as cal
-
 
 _RESERVED_LABEL = '（教务固定安排）'
 
 
-def _write_grid(ws, columns, cell_text, reserved_slots=()):
+def _write_grid(ws, columns, cell_text, calendar, reserved_slots=()):
     ws.cell(row=1, column=1, value='星期').font = Font(bold=True)
     ws.cell(row=1, column=2, value='节次').font = Font(bold=True)
     for col, name in enumerate(columns, start=3):
         ws.cell(row=1, column=col, value=name).font = Font(bold=True)
-    for slot in range(cal.N_SLOTS):
-        day, period = cal.slot_of(slot)
+    for slot in range(calendar.n_slots):
+        day, period = calendar.slot_of(slot)
         row = slot + 2
-        ws.cell(row=row, column=1, value=cal.DAYS[day])
+        ws.cell(row=row, column=1, value=calendar.days[day])
         ws.cell(row=row, column=2, value=period)
         for col, name in enumerate(columns, start=3):
             text = cell_text(name, slot) or (_RESERVED_LABEL if slot in reserved_slots else '')
@@ -47,6 +45,7 @@ def export_excel(solution, dataset, path, cfg=None) -> None:
         lambda class_id, slot: '/'.join(
             '%s%s' % (p.course, '(%s)' % p.parity if p.parity else '')
             for p in by_class.get((class_id, slot), [])),
+        dataset.calendar,
         reserved_slots=reserved)
 
     ws2 = wb.create_sheet('教师课表')
@@ -54,7 +53,8 @@ def export_excel(solution, dataset, path, cfg=None) -> None:
         ws2, sorted(dataset.teachers),
         lambda teacher, slot: '/'.join(
             '%d班%s' % (p.class_id, p.course)
-            for p in by_teacher.get((teacher, slot), [])))
+            for p in by_teacher.get((teacher, slot), [])),
+        dataset.calendar)
 
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
@@ -69,10 +69,10 @@ _TEMPLATE_FIRST_CLASS_ROW = 12
 _TEMPLATE_FIRST_DAY_COL = 2
 
 
-def _template_cell(class_id, slot):
-    day, period = cal.slot_of(slot)
+def _template_cell(class_id, slot, calendar):
+    day, period = calendar.slot_of(slot)
     row = _TEMPLATE_FIRST_CLASS_ROW + (class_id - 1)
-    col = _TEMPLATE_FIRST_DAY_COL + day * cal.PERIODS_PER_DAY + (period - 1)
+    col = _TEMPLATE_FIRST_DAY_COL + day * calendar.periods_per_day + (period - 1)
     return row, col
 
 
@@ -114,7 +114,7 @@ def export_to_template(solution, dataset, template_path, out_path, sheet_name='�
 
     by_cell = defaultdict(list)
     for p in solution.placements:
-        by_cell[_template_cell(p.class_id, p.slot)].append(p)
+        by_cell[_template_cell(p.class_id, p.slot, dataset.calendar)].append(p)
 
     for (row, col), placements in by_cell.items():
         ws.cell(row=row, column=col, value=_cell_text(placements, cfg))
@@ -126,7 +126,7 @@ def export_to_template(solution, dataset, template_path, out_path, sheet_name='�
             if course.alternate:
                 by_class_family[(p.class_id, course.family)].append(p)
         families = sorted({family for _, family in by_class_family})
-        note_col_of = {family: _TEMPLATE_FIRST_DAY_COL + len(cal.DAYS) * cal.PERIODS_PER_DAY + i
+        note_col_of = {family: _TEMPLATE_FIRST_DAY_COL + len(dataset.calendar.days) * dataset.calendar.periods_per_day + i
                       for i, family in enumerate(families)}
         for family, col in note_col_of.items():
             ws.cell(row=_TEMPLATE_NOTE_HEADER_ROW, column=col, value='%s单双周安排' % family)
