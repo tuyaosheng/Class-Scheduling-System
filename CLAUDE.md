@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目状态
 
-中小学（初中）排课系统。**M1–M3 已完成**（领域模型/配置/Excel 导入/中文规则解析 → 规则 DSL/约束编译/求解/场地 → 校验器/预检/冲突集）。M4 起未开始。
+中小学（初中）排课系统。**M1–M4 已完成**（领域模型/配置/Excel 导入/中文规则解析 → 规则 DSL/约束编译/求解/场地 → 校验器/预检/冲突集 → 软约束优化/多候选方案），Web 前后端批次一已完成。M5（拖拽可视化）的核心切片（拖拽调整 + 实时冲突检测）与会话持久化已完成，M5 其余视图与 M6 AI 审核未开始，详见下方「实施计划」表。
 
 实测：初三 32 班 OPTIMAL 0.41 秒，独立校验 0 处违规，预检 3 毫秒零假阳性。
 
@@ -148,7 +148,7 @@ AI    anthropic SDK
 ```bash
 pip install -r requirements.txt      # ortools 9.15.6755 / pydantic 2 / openpyxl / PyYAML / pytest
 
-python -m pytest -q                  # 全套测试（当前 287 项）
+python -m pytest -q                  # 全套测试（当前 340 项，前端另有 80 项 `cd scheduler/web && npm run test`）
 
 # 导入 Excel 并回显中文规则解析结果供教务逐条核对（不落盘）
 python -m scheduler.cli import 任课与排课说明.xlsx --grade 初三
@@ -190,17 +190,20 @@ M1–M3 仅凭现有初三数据即可完成。
 
 | 计划 | 对应设计项 | 状态 |
 |---|---|---|
-| `2026-08-23-年级日历参数化.md` | 年级日历参数化 design 全文 + a-f 的 c | 计划已写，10 个 Task 均未开始（`models.py` 无 `GradeCalendar`，`config/` 下无 `calendars.yaml`，9 个消费方文件仍 `import calendar as cal`） |
+| `2026-08-23-年级日历参数化.md` | 年级日历参数化 design 全文 + a-f 的 c | **已完成**（`GradeCalendar` + `calendars.yaml`，9 个消费方文件全部迁移完，全套分支审查通过） |
 | 课程目录增删改查 (a 的一部分) | 课程配置扩展 design §3.2 | **已完成**（`CourseSettings.vue` + `GET/PUT /api/config/courses`，课程名/学科系/场地/单双周/占位符的增删改） |
 | 课程系下拉/重命名 (a 剩余部分) | 课程配置扩展 design §3.2 | 待写计划 |
 | 课程计划增删 (b) | 课程配置扩展 design §3.3 | 待写计划——`SettingsPanel.vue` 目前只能编辑已有课程的周课时数字，没有新增/删除课程条目的入口 |
 | 单双周配对课程改造 (f) | 课程配置扩展 design §3.7 | 待写计划 |
 | 空课表模板上传解析 (d) | 课程配置扩展 design §3.5 | 待写计划 |
 | 跨年级防冲突 (e) | 课程配置扩展 design §3.6/4 | 阻塞：「确认排定」交互细节未定 |
-| M5 拖拽可视化 | 2026-08-21 design §7.2/10 | 阻塞：需要单独一轮 writing-plans，规模比其余几项加起来还大 |
+| `2026-08-24-求解会话持久化与历史列表-design.md` | 不在原路线图里，本次会话新提出 | **已完成**——`ImportSession`/`SolveJob` 从进程内存字典改成 SQLite（复用 `settings_store.py` 模式），重启不丢；历史列表可查看/选中/单条删除/按类型清空 |
+| `2026-08-24-课表拖拽调整与实时冲突检测-design.md` | M5 design §7.2/10 里"最高价值"那部分（拖拽微调 + 实时反馈），范围小于完整 M5 | **已完成**——`ScheduleGrid.vue` 支持同班内拖拽（原生 HTML5 拖拽，非设计文档原定的 SortableJS），本地暂存多处改动，确认时一次性提交 `/adjust` 校验，只退肇事者（复用 `verify()` 当黑盒裁判，不新增独立冲突判断实现）。手动浏览器实测揪出一个单元测试没覆盖到的真实 bug 并已修复：周课时 > 1 的任务在 placements 里有多条记录共用同一 task_id，拖动其中一节曾经会把全部节次一起拖走——现在用 `(task_id, from_slot)` 复合 key 唯一定位。M5 design 里其余视图（教师课表/场地占用/求解监控/诊断面板/规则配置编辑）不在这次范围内 |
 | M6 AI 审核 | 2026-08-21 design §9 | 阻塞：需要单独展开实施细节 |
 
-注意 `scheduler/config/calendar.yaml`（单数）是项目最早骨架提交留下的旧文件，`compiler.py` 只在注释里提过一句，代码不读取它——跟上面这个计划要新建的 `calendars.yaml`（复数、按年级）是两个不相关的东西，不要混淆或复用。
+注意 `scheduler/config/calendar.yaml`（单数）是项目最早骨架提交留下的旧文件，`compiler.py` 只在注释里提过一句，代码不读取它——跟年级日历参数化那次新建的 `calendars.yaml`（复数、按年级）是两个不相关的东西，不要混淆或复用。
+
+年级日历参数化那次分支审查还留了三处已知、暂不影响初三的遗留缺口（`scheduler/ai/rule_parser.py` 的 AI 规则解析提示词硬编码 9 节/天；`solver.py` 的 `Placement.day`/`.period` 属性是死代码，同样硬编码；`ScheduleGrid.vue` 曾经硬编码 `PERIODS_PER_DAY=9`，这次拖拽功能顺手把它改成了可选 `days`/`periodsPerDay` props，但调用方还没接入真实日历数据）——这三处只有在真正给七/八年级排课时才会暴露，届时需要专门处理。
 
 ## 待确认事项
 
