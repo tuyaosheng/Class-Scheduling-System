@@ -44,7 +44,7 @@ def _cfg():
         '数学': Course(name='数学', family='数学'),
         '语文': Course(name='语文', family='语文'),
     }
-    return SchedulerConfig(courses=courses, plans={}, venues={}, reserved_slots={})
+    return SchedulerConfig(courses={'初三': courses}, plans={}, venues={}, reserved_slots={})
 
 
 def _solution_two_math_same_day():

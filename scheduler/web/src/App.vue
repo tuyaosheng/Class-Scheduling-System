@@ -138,8 +138,7 @@ function onJobId(id: string) {
 
         <div v-else-if="currentStep === 3" class="step-block">
           <div class="step-eyebrow">第 3 步 · 共 9 步</div>
-          <h1 class="page-title">课程与学科系（{{ activeGrade }}）</h1>
-          <CourseSettings />
+          <CourseSettings v-if="activeGrade" :grade="activeGrade" />
           <SettingsPanel v-if="activeGrade" :grade="activeGrade" />
         </div>
 
@@ -164,7 +163,7 @@ function onJobId(id: string) {
           <div class="step-eyebrow">第 7 步 · 共 9 步</div>
           <h1 class="page-title">排课与调整</h1>
           <SolvePanel @job-id="onJobId" @candidates="onCandidates" />
-          <CandidateTabs :candidates="candidates" :job-id="jobId" :classes="classes" />
+          <CandidateTabs :candidates="candidates" :job-id="jobId" :classes="classes" :grade="activeGrade" />
         </div>
 
         <ComingSoonPanel v-else-if="currentStep === 8"

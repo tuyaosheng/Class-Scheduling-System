@@ -10,6 +10,7 @@ interface Placement {
 
 const props = defineProps<{
   placements: Placement[]
+  grade: string
   days?: string[]
   periodsPerDay?: number
 }>()
@@ -33,7 +34,7 @@ const error = ref('')
 async function refresh() {
   error.value = ''
   try {
-    const [coursesResp, venuesResp] = await Promise.all([getCourses(), getVenues()])
+    const [coursesResp, venuesResp] = await Promise.all([getCourses(props.grade), getVenues()])
     const map: Record<string, string> = {}
     for (const c of coursesResp.courses) {
       if (c.venue) map[c.name] = c.venue

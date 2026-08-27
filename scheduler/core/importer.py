@@ -47,6 +47,7 @@ def _class_ids(text):
 
 def import_excel(path, cfg, grade='初三') -> ImportResult:
     calendar = cfg.calendar_of(grade)
+    courses = cfg.courses_of(grade)
     wb = openpyxl.load_workbook(path, data_only=True)
     rows = [r for r in wb[wb.sheetnames[0]].iter_rows(min_row=FIRST_DATA_ROW, values_only=True)
             if r and r[COLUMNS['姓名']]]
@@ -73,16 +74,16 @@ def import_excel(path, cfg, grade='初三') -> ImportResult:
     classes = set()
     for row in rows:
         name, course = _cell(row, '姓名'), _cell(row, '学科')
-        if course not in cfg.courses:
+        if course not in courses:
             raise ValueError('Excel 中的学科 %r 不在课程目录里' % course)
-        if cfg.courses[course].external:
+        if courses[course].external:
             for class_id in _class_ids(_cell(row, '任教班')):
                 classes.add(class_id)
             continue
         hours = float(_cell(row, '周课时'))
         base_parity = None
         if hours == 0.5:
-            base_parity = cfg.courses[course].alternate
+            base_parity = courses[course].alternate
             if not base_parity:
                 raise ValueError('%s 周课时 0.5 但课程目录未声明 alternate' % course)
             periods = 1
@@ -115,6 +116,7 @@ def _build_rules(rows, cfg, grade, forbidden, calendar) -> List[dict]:
     避免与 Teacher.forbidden 各自独立计算导致悄悄分叉（见 review Important）。
     """
     rules: List[dict] = []
+    courses = cfg.courses_of(grade)
 
     # 教师禁排：来自 import_excel 已聚合好的并集
     for name in sorted(forbidden):
@@ -132,7 +134,7 @@ def _build_rules(rows, cfg, grade, forbidden, calendar) -> List[dict]:
     pins = defaultdict(set)
     for row in rows:
         course = _cell(row, '学科')
-        if cfg.courses[course].external:
+        if courses[course].external:
             continue
         slots = parse_fixed_slots(_cell(row, '固定节次'), calendar)
         if slots:
@@ -164,7 +166,7 @@ def _build_rules(rows, cfg, grade, forbidden, calendar) -> List[dict]:
         for frag in fragments:
             rtype, params = frag['type'], frag['params']
             if rtype in _FAMILY_SCOPED:
-                scope = {'grade': grade, 'family': cfg.family_of(course)}
+                scope = {'grade': grade, 'family': cfg.family_of(grade, course)}
             elif rtype in _COURSE_SCOPED:
                 scope = {'grade': grade, 'course': course}
             else:                       # alternate_weeks 等年级级规则
@@ -220,14 +222,15 @@ TEACHING_TABLE_HEADER_ROW = 2
 TEACHING_TABLE_FIRST_DATA_ROW = 3
 
 
-def parse_teaching_table(path, cfg) -> Dict[Tuple[int, str], str]:
+def parse_teaching_table(path, cfg, grade='初三') -> Dict[Tuple[int, str], str]:
     """解析『班别 × 学科』矩阵版式的任课表，返回 (班级,课程) -> 教师。"""
+    course_catalog = cfg.courses_of(grade)
     wb = openpyxl.load_workbook(path, data_only=True)
     ws = wb[wb.sheetnames[0]]
     header = [c.value for c in ws[TEACHING_TABLE_HEADER_ROW]]
     courses = header[1:]
     for course in courses:
-        if course and course not in cfg.courses:
+        if course and course not in course_catalog:
             raise ValueError("任课表中的学科 %r 不在课程目录里" % course)
 
     pivot: Dict[Tuple[int, str], str] = {}
@@ -265,7 +268,8 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
     from .ruletext import parse_fixed_slots, parse_remark, parse_requirement, parse_time_expr
 
     calendar = cfg.calendar_of(grade)
-    teaching_pivot = parse_teaching_table(teaching_path, cfg)
+    courses = cfg.courses_of(grade)
+    teaching_pivot = parse_teaching_table(teaching_path, cfg, grade)
     rows = _read_rule_rows(rules_path)
 
     forbidden: Dict[str, set] = defaultdict(set)
@@ -296,7 +300,7 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
 
     for row in rows:
         rules_teacher, course = _cell(row, '姓名'), _cell(row, '学科')
-        if course not in cfg.courses:
+        if course not in courses:
             raise ValueError('Excel 中的学科 %r 不在课程目录里' % course)
 
         not_avail_raw = _cell(row, '不能排课节次')
@@ -336,14 +340,14 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
                 'parsed': '; '.join('%s %s' % (f['type'], f['params']) for f in
                                      (parse_remark(remark_raw) if rule_engine != 'ai' else parsed.remark))})
 
-        if not cfg.courses[course].external and fixed_slots:
+        if not courses[course].external and fixed_slots:
             pins[course] |= fixed_slots
 
-        if not cfg.courses[course].external:
+        if not courses[course].external:
             for frag in fragments:
                 rtype, params = frag['type'], frag['params']
                 if rtype in _FAMILY_SCOPED:
-                    scope = {'grade': grade, 'family': cfg.family_of(course)}
+                    scope = {'grade': grade, 'family': cfg.family_of(grade, course)}
                 elif rtype in _COURSE_SCOPED:
                     scope = {'grade': grade, 'course': course}
                 else:
@@ -356,7 +360,7 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
                 rules.append({'type': rtype, 'scope': scope, 'params': params,
                               'mode': 'hard' if rtype != 'spacing' else 'soft'})
 
-        if cfg.courses[course].external:
+        if courses[course].external:
             for class_id in _class_ids(_cell(row, '任教班')):
                 classes.add(class_id)
                 covered_keys.add((class_id, course))
@@ -365,7 +369,7 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
         hours = float(_cell(row, '周课时'))
         base_parity = None
         if hours == 0.5:
-            base_parity = cfg.courses[course].alternate
+            base_parity = courses[course].alternate
             if not base_parity:
                 raise ValueError('%s 周课时 0.5 但课程目录未声明 alternate' % course)
             periods = 1

@@ -14,7 +14,7 @@ describe('CandidateTabs', () => {
       ] },
     ]
     const wrapper = mount(CandidateTabs, {
-      props: { candidates, jobId: 'job-1', classes: [1] },
+      props: { candidates, jobId: 'job-1', classes: [1], grade: '初三' },
     })
 
     const tabs = wrapper.findAll('[data-test="candidate-tab"]')
@@ -30,7 +30,7 @@ describe('CandidateTabs', () => {
       { index: 1, status: 'OPTIMAL', wall_time: 0.4, objective: null, stats: '', violations: [], placements: [] },
     ]
     const wrapper = mount(CandidateTabs, {
-      props: { candidates, jobId: 'job-1', classes: [1] },
+      props: { candidates, jobId: 'job-1', classes: [1], grade: '初三' },
     })
     const link = wrapper.find('[data-test="export-link"]')
     expect(link.attributes('href')).toBe('/api/export/job-1/1?template=0')
@@ -43,7 +43,7 @@ describe('CandidateTabs', () => {
         placements: [] },
     ]
     const wrapper = mount(CandidateTabs, {
-      props: { candidates, jobId: 'job-1', classes: [1] },
+      props: { candidates, jobId: 'job-1', classes: [1], grade: '初三' },
     })
     expect(wrapper.text()).toContain('教师分身')
     expect(wrapper.text()).toContain('李老师同一时间在 1 班和 3 班')
@@ -58,7 +58,7 @@ describe('CandidateTabs', () => {
       ] },
     ]
     const wrapper = mount(CandidateTabs, {
-      props: { candidates, jobId: 'job-1', classes: [1] },
+      props: { candidates, jobId: 'job-1', classes: [1], grade: '初三' },
     })
 
     await wrapper.find('[data-test="view-teacher"]').trigger('click')

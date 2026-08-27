@@ -23,7 +23,7 @@ def _use_tmp_config(tmp_path, monkeypatch):
 
 def test_get_courses_returns_current_catalog(client, tmp_path, monkeypatch):
     _use_tmp_config(tmp_path, monkeypatch)
-    resp = client.get('/api/config/courses')
+    resp = client.get('/api/config/courses', params={'grade': '初三'})
     assert resp.status_code == 200
     courses = resp.json()['courses']
     names = {c['name'] for c in courses}
@@ -33,48 +33,68 @@ def test_get_courses_returns_current_catalog(client, tmp_path, monkeypatch):
     assert tibi['venue'] == '操场'
 
 
+def test_get_courses_returns_empty_list_for_a_grade_without_a_catalog_yet(client, tmp_path, monkeypatch):
+    _use_tmp_config(tmp_path, monkeypatch)
+    resp = client.get('/api/config/courses', params={'grade': '初一'})
+    assert resp.status_code == 200
+    assert resp.json()['courses'] == []
+
+
 def test_put_courses_round_trips(client, tmp_path, monkeypatch):
     _use_tmp_config(tmp_path, monkeypatch)
-    get_resp = client.get('/api/config/courses')
+    get_resp = client.get('/api/config/courses', params={'grade': '初三'})
     courses = get_resp.json()['courses']
 
-    put_resp = client.put('/api/config/courses', json={'courses': courses})
+    put_resp = client.put('/api/config/courses', json={'grade': '初三', 'courses': courses})
     assert put_resp.status_code == 200
 
-    reread = client.get('/api/config/courses')
+    reread = client.get('/api/config/courses', params={'grade': '初三'})
     assert reread.json()['courses'] == courses
+
+
+def test_put_courses_for_one_grade_does_not_touch_another_grades_catalog(client, tmp_path, monkeypatch):
+    _use_tmp_config(tmp_path, monkeypatch)
+    seven = client.get('/api/config/courses', params={'grade': '七年级'}).json()['courses']
+
+    put_resp = client.put('/api/config/courses', json={
+        'grade': '初一', 'courses': [{'name': '科学', 'family': '科学'}],
+    })
+    assert put_resp.status_code == 200
+
+    assert client.get('/api/config/courses', params={'grade': '七年级'}).json()['courses'] == seven
+    assert client.get('/api/config/courses', params={'grade': '初三'}).json()['courses'][0]['name'] == '语文'
 
 
 def test_put_courses_can_add_a_placeholder_course(client, tmp_path, monkeypatch):
     _use_tmp_config(tmp_path, monkeypatch)
-    courses = client.get('/api/config/courses').json()['courses']
+    courses = client.get('/api/config/courses', params={'grade': '初三'}).json()['courses']
     courses.append({'name': '眼操', 'family': '眼操', 'external': True})
 
-    resp = client.put('/api/config/courses', json={'courses': courses})
+    resp = client.put('/api/config/courses', json={'grade': '初三', 'courses': courses})
     assert resp.status_code == 200
 
-    reread = client.get('/api/config/courses').json()['courses']
+    reread = client.get('/api/config/courses', params={'grade': '初三'}).json()['courses']
     added = next(c for c in reread if c['name'] == '眼操')
     assert added['external'] is True
 
 
 def test_put_courses_rejects_duplicate_names(client, tmp_path, monkeypatch):
     _use_tmp_config(tmp_path, monkeypatch)
-    courses = client.get('/api/config/courses').json()['courses']
+    courses = client.get('/api/config/courses', params={'grade': '初三'}).json()['courses']
     courses.append({'name': '语文', 'family': '语文'})
 
-    resp = client.put('/api/config/courses', json={'courses': courses})
+    resp = client.put('/api/config/courses', json={'grade': '初三', 'courses': courses})
     assert resp.status_code == 400
     assert '语文' in resp.json()['detail']
 
 
 def test_put_courses_rejects_deleting_a_course_still_referenced_by_a_plan(client, tmp_path, monkeypatch):
     _use_tmp_config(tmp_path, monkeypatch)
-    courses = client.get('/api/config/courses').json()['courses']
+    courses = client.get('/api/config/courses', params={'grade': '初三'}).json()['courses']
     # 语文在 plans.yaml 的初三计划里被引用，删掉它必须失败
     remaining = [c for c in courses if c['name'] != '语文']
 
-    resp = client.put('/api/config/courses', json={'courses': remaining})
+    resp = client.put('/api/config/courses', json={'grade': '初三', 'courses': remaining})
     assert resp.status_code == 400
 
 
@@ -87,12 +107,45 @@ def test_get_venues_returns_current_catalog(client, tmp_path, monkeypatch):
     assert venues['操场']['capacity'] is None
 
 
+def test_put_venues_updates_capacity(client, tmp_path, monkeypatch):
+    _use_tmp_config(tmp_path, monkeypatch)
+    venues = client.get('/api/config/venues').json()['venues']
+    for v in venues:
+        if v['name'] == '操场':
+            v['capacity'] = 4
+
+    resp = client.put('/api/config/venues', json={'venues': venues})
+    assert resp.status_code == 200
+
+    reread = {v['name']: v for v in client.get('/api/config/venues').json()['venues']}
+    assert reread['操场']['capacity'] == 4
+
+
+def test_put_venues_rejects_removing_one_still_referenced_by_a_course(client, tmp_path, monkeypatch):
+    _use_tmp_config(tmp_path, monkeypatch)
+    venues = client.get('/api/config/venues').json()['venues']
+    remaining = [v for v in venues if v['name'] != '物理实验室']
+
+    resp = client.put('/api/config/venues', json={'venues': remaining})
+    assert resp.status_code == 400
+    assert '物理实验室' in resp.json()['detail']
+
+
+def test_put_venues_rejects_duplicate_names(client, tmp_path, monkeypatch):
+    _use_tmp_config(tmp_path, monkeypatch)
+    venues = client.get('/api/config/venues').json()['venues']
+    venues.append({'name': venues[0]['name'], 'capacity': None})
+
+    resp = client.put('/api/config/venues', json={'venues': venues})
+    assert resp.status_code == 400
+
+
 def test_put_courses_auto_creates_new_venue(client, tmp_path, monkeypatch):
     _use_tmp_config(tmp_path, monkeypatch)
-    courses = client.get('/api/config/courses').json()['courses']
+    courses = client.get('/api/config/courses', params={'grade': '初三'}).json()['courses']
     courses.append({'name': '新课', 'family': '新课', 'venue': '新场地'})
 
-    resp = client.put('/api/config/courses', json={'courses': courses})
+    resp = client.put('/api/config/courses', json={'grade': '初三', 'courses': courses})
     assert resp.status_code == 200
 
     venues_raw = (tmp_path / 'venues.yaml').read_text(encoding='utf-8')

@@ -24,7 +24,7 @@ from .schemas import (
     ImportConfirmRequest, ImportConfirmResponse, ImportPreview,
     ImportSessionSummary, ImportSessionsListResponse, ParsedCalendarSheetItem,
     PlanGetResponse, PlanPutRequest, RuleItem, RulesGetResponse, RulesPutRequest,
-    VenueItem, VenuesGetResponse,
+    VenueItem, VenuesGetResponse, VenuesPutRequest,
 )
 
 DEFAULT_CONFIG_DIR = Path(__file__).resolve().parents[1] / 'config'
@@ -242,10 +242,10 @@ def put_plan(body: PlanPutRequest):
 
 
 @router.get('/config/courses', response_model=CoursesGetResponse)
-def get_courses():
+def get_courses(grade: str = '初三'):
     cfg = _load_config_or_400()
     return CoursesGetResponse(courses=[
-        CourseItem(**c.model_dump()) for c in cfg.courses.values()
+        CourseItem(**c.model_dump()) for c in cfg.courses.get(grade, {}).values()
     ])
 
 
@@ -340,6 +340,36 @@ def get_venues():
     ])
 
 
+@router.put('/config/venues', response_model=VenuesGetResponse)
+def put_venues(body: VenuesPutRequest):
+    """场地容量（数量）编辑。不允许删掉某个年级的课程还在引用的场地——
+    那会在下次 load_config 时炸出『未声明的场地』，不如现在就拒绝。"""
+    cfg = _load_config_or_400()
+    names = {item.name for item in body.venues}
+    if len(names) != len(body.venues):
+        dup_list = [item.name for item in body.venues]
+        dup = next(n for n in dup_list if dup_list.count(n) > 1)
+        raise HTTPException(status_code=400, detail='场地名 %r 重复' % dup)
+
+    still_referenced = {
+        course.venue
+        for grade_courses in cfg.courses.values()
+        for course in grade_courses.values()
+        if course.venue
+    }
+    missing = still_referenced - names
+    if missing:
+        raise HTTPException(status_code=400,
+                           detail='场地 %s 仍被课程引用，不能删除' % '、'.join(sorted(missing)))
+
+    venues_path = DEFAULT_CONFIG_DIR / 'venues.yaml'
+    venues_path.write_text(
+        yaml.safe_dump({'venues': [item.model_dump(exclude_defaults=True) for item in body.venues]},
+                       allow_unicode=True, sort_keys=False),
+        encoding='utf-8')
+    return VenuesGetResponse(venues=body.venues)
+
+
 @router.get('/config/rules', response_model=RulesGetResponse)
 def get_rules():
     """只读写 rules.yaml（手写的政策级规则），不碰 rules.generated.yaml——
@@ -380,7 +410,7 @@ def put_courses(body: CoursesPutRequest):
         raise HTTPException(status_code=400, detail='课程名 %r 重复' % dup)
 
     candidate = cfg.model_copy(deep=True)
-    candidate.courses = {item.name: Course(**item.model_dump()) for item in body.courses}
+    candidate.courses[body.grade] = {item.name: Course(**item.model_dump()) for item in body.courses}
 
     new_venues = {item.venue for item in body.courses
                   if item.venue and item.venue not in candidate.venues}
@@ -393,10 +423,11 @@ def put_courses(body: CoursesPutRequest):
         except ConfigError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
 
-    courses_path = DEFAULT_CONFIG_DIR / 'courses.yaml'
-    courses_path.write_text(
-        yaml.safe_dump({'courses': [item.model_dump(exclude_defaults=True) for item in body.courses]},
-                       allow_unicode=True, sort_keys=False),
+    courses_raw = _load_yaml_dict_or_400(DEFAULT_CONFIG_DIR / 'courses.yaml', 'courses.yaml')
+    courses_raw.setdefault('courses', {})[body.grade] = [
+        item.model_dump(exclude_defaults=True) for item in body.courses]
+    (DEFAULT_CONFIG_DIR / 'courses.yaml').write_text(
+        yaml.safe_dump({'courses': courses_raw['courses']}, allow_unicode=True, sort_keys=False),
         encoding='utf-8')
     if new_venues:
         venues_raw = _load_yaml_dict_or_400(DEFAULT_CONFIG_DIR / 'venues.yaml', 'venues.yaml')

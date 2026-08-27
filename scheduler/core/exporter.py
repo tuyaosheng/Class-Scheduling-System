@@ -80,12 +80,13 @@ _PARITY_ORDER = {'单周': 0, '双周': 1}
 _TEMPLATE_NOTE_HEADER_ROW = 11   # 与「节  次」表头同一行
 
 
-def _cell_text(placements, cfg):
+def _cell_text(placements, cfg, grade):
     """单双周家族（心美）整格折叠成家族名；其余按原样拼课程名。"""
     if cfg is not None and placements:
-        families = {cfg.courses[p.course].family for p in placements
-                    if cfg.courses[p.course].alternate}
-        if len(families) == 1 and all(cfg.courses[p.course].alternate for p in placements):
+        courses = cfg.courses_of(grade)
+        families = {courses[p.course].family for p in placements
+                    if courses[p.course].alternate}
+        if len(families) == 1 and all(courses[p.course].alternate for p in placements):
             return next(iter(families))
     return '/'.join('%s%s' % (p.course, '(%s)' % p.parity if p.parity else '')
                     for p in placements)
@@ -117,12 +118,13 @@ def export_to_template(solution, dataset, template_path, out_path, sheet_name='�
         by_cell[_template_cell(p.class_id, p.slot, dataset.calendar)].append(p)
 
     for (row, col), placements in by_cell.items():
-        ws.cell(row=row, column=col, value=_cell_text(placements, cfg))
+        ws.cell(row=row, column=col, value=_cell_text(placements, cfg, dataset.grade))
 
     if cfg is not None:
+        courses = cfg.courses_of(dataset.grade)
         by_class_family = defaultdict(list)
         for p in solution.placements:
-            course = cfg.courses[p.course]
+            course = courses[p.course]
             if course.alternate:
                 by_class_family[(p.class_id, course.family)].append(p)
         families = sorted({family for _, family in by_class_family})

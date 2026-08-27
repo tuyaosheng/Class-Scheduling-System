@@ -54,6 +54,21 @@ def _job_to_data(job: SolveJob) -> dict:
     }
 
 
+def _migrate_flat_courses(cfg_data: dict, grade: str) -> None:
+    """兼容 2026-08-28 之前持久化的求解任务——那时 courses 是全局扁平字典
+    （name -> Course 字段），课程目录改按年级分组之后，旧数据反序列化会因为
+    形状对不上直接报 pydantic ValidationError（第二层的 Course 字段被当成
+    了「年级 -> 课程」的课程字典）。用 job 自己的 grade 包一层，行为等价于
+    "旧数据本来就只有这一个年级"，历史求解任务不会因为这次结构调整就读不出来。
+    """
+    courses = cfg_data.get('courses')
+    if not courses:
+        return
+    sample = next(iter(courses.values()))
+    if isinstance(sample, dict) and 'family' in sample and 'name' in sample:
+        cfg_data['courses'] = {grade: courses}
+
+
 def _data_to_job(job_id: str, payload: dict) -> SolveJob:
     job = SolveJob(job_id, payload.get('grade', ''))
     job.status = payload.get('status', 'pending')
@@ -62,7 +77,12 @@ def _data_to_job(job_id: str, payload: dict) -> SolveJob:
     job.solutions = [Solution(**s) for s in payload.get('solutions', [])]
     job.violations = [[Violation(**v) for v in vs] for vs in payload.get('violations', [])]
     job.dataset = Dataset(**payload['dataset']) if payload.get('dataset') else None
-    job.cfg = SchedulerConfig(**payload['cfg']) if payload.get('cfg') else None
+    if payload.get('cfg'):
+        cfg_data = payload['cfg']
+        _migrate_flat_courses(cfg_data, job.grade)
+        job.cfg = SchedulerConfig(**cfg_data)
+    else:
+        job.cfg = None
     job.rules = [Rule(**r) for r in payload.get('rules', [])]
     job.ai_findings = {int(k): v for k, v in payload.get('ai_findings', {}).items()}
     return job

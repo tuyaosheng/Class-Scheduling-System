@@ -20,7 +20,7 @@ interface Candidate {
 
 type ViewMode = 'class' | 'teacher' | 'venue' | 'monitor'
 
-const props = defineProps<{ candidates: Candidate[]; jobId: string | null; classes: number[] }>()
+const props = defineProps<{ candidates: Candidate[]; jobId: string | null; classes: number[]; grade: string }>()
 
 const activeIndex = ref(1)
 const viewMode = ref<ViewMode>('class')
@@ -64,7 +64,7 @@ function activate(index: number) {
         <ScheduleGrid v-if="viewMode === 'class'"
                       :classes="classes" :placements="c.placements" :job-id="jobId" :candidate-index="c.index" />
         <TeacherScheduleGrid v-else-if="viewMode === 'teacher'" :placements="c.placements" />
-        <VenueOccupancyGrid v-else-if="viewMode === 'venue'" :placements="c.placements" />
+        <VenueOccupancyGrid v-else-if="viewMode === 'venue'" :placements="c.placements" :grade="grade" />
         <SolveMonitor v-else :candidates="candidates" :active-index="activeIndex" />
 
         <IssueList title="本方案违规明细" tone="critical" :items="c.violations" />

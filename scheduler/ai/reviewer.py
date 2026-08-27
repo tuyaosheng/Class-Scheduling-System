@@ -98,7 +98,7 @@ def _daily_family_hotspots(solution, dataset, cfg) -> List[str]:
     counts: Dict[tuple, int] = defaultdict(int)
     for p in solution.placements:
         day, _ = calendar.slot_of(p.slot)
-        family = cfg.family_of(p.course)
+        family = cfg.family_of(dataset.grade, p.course)
         counts[(p.class_id, family, day)] += 1
     return [
         '%d班%s%s：%d节' % (class_id, calendar.days[day], family, n)
@@ -130,7 +130,7 @@ def _consecutive_family_runs(solution, dataset, cfg) -> List[str]:
     by_class_day: Dict[tuple, Dict[int, str]] = defaultdict(dict)
     for p in solution.placements:
         day, period = calendar.slot_of(p.slot)
-        by_class_day[(p.class_id, day)][period] = cfg.family_of(p.course)
+        by_class_day[(p.class_id, day)][period] = cfg.family_of(dataset.grade, p.course)
 
     lines = []
     for (class_id, day), period_family in sorted(by_class_day.items()):

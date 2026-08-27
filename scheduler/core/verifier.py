@@ -32,7 +32,7 @@ def verify(solution, dataset, cfg, rules) -> List[Violation]:
     out += _check_period_counts(placements, dataset)
     out += _check_class_clash(placements, calendar)
     out += _check_teacher_clash(placements, calendar)
-    out += _check_venues(placements, cfg, calendar)
+    out += _check_venues(placements, cfg, dataset.grade, calendar)
     for rule in rules:
         if not rule.enabled or rule.mode != 'hard':
             continue
@@ -117,11 +117,12 @@ def _check_teacher_clash(placements, calendar):
     return _dedup(out)
 
 
-def _venue_load(placements, cfg, venue_name, parity):
+def _venue_load(placements, cfg, grade, venue_name, parity):
     """某场地在各时间格上的占位数。"""
+    courses = cfg.courses_of(grade)
     load = defaultdict(set)
     for p in placements:
-        if cfg.courses[p.course].venue != venue_name:
+        if courses[p.course].venue != venue_name:
             continue
         if not _runs_in_parity(p, parity):
             continue
@@ -129,10 +130,10 @@ def _venue_load(placements, cfg, venue_name, parity):
     return {slot: len(keys) for slot, keys in load.items()}
 
 
-def _venue_overflow(placements, cfg, venue_name, capacity, calendar):
+def _venue_overflow(placements, cfg, grade, venue_name, capacity, calendar):
     out = []
     for parity in PARITIES:
-        for slot, count in sorted(_venue_load(placements, cfg, venue_name, parity).items()):
+        for slot, count in sorted(_venue_load(placements, cfg, grade, venue_name, parity).items()):
             if count > capacity:
                 day, period = calendar.slot_of(slot)
                 out.append(Violation(
@@ -142,11 +143,11 @@ def _venue_overflow(placements, cfg, venue_name, capacity, calendar):
     return out
 
 
-def _check_venues(placements, cfg, calendar):
+def _check_venues(placements, cfg, grade, calendar):
     out = []
     for venue in cfg.venues.values():
         if venue.capacity is not None:
-            out += _venue_overflow(placements, cfg, venue.name, venue.capacity, calendar)
+            out += _venue_overflow(placements, cfg, grade, venue.name, venue.capacity, calendar)
     return _dedup(out)
 
 
@@ -308,7 +309,7 @@ def _check_venue_capacity(placements, dataset, cfg, rule):
     capacity = rule.params.get('capacity')
     if capacity is None:
         return []
-    out = _venue_overflow(placements, cfg, rule.params['venue'], int(capacity), dataset.calendar)
+    out = _venue_overflow(placements, cfg, dataset.grade, rule.params['venue'], int(capacity), dataset.calendar)
     for v in out:
         v.rule_type, v.scope = rule.type, rule.scope
     return out

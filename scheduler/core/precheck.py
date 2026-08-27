@@ -131,9 +131,10 @@ def _check_pin_windows(dataset, cfg, rules) -> List[Issue]:
 
 def _venue_demand(dataset, cfg, venue_name) -> int:
     """场地占位需求：按任务累加占用节数。"""
+    courses = cfg.courses_of(dataset.grade)
     total = 0
     for task in dataset.tasks:
-        if cfg.courses[task.course].venue != venue_name:
+        if courses[task.course].venue != venue_name:
             continue
         total += task.periods
     return total

@@ -57,7 +57,7 @@ def _task_dim(task, dim, cfg):
     if dim == 'course':
         return task.course
     if dim == 'family':
-        return cfg.family_of(task.course)
+        return cfg.family_of(task.grade, task.course)
     if dim == 'teacher':
         return task.teacher
     if dim == 'class':

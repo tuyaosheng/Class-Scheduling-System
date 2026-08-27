@@ -147,6 +147,7 @@ class CoursesGetResponse(BaseModel):
 
 
 class CoursesPutRequest(BaseModel):
+    grade: str
     courses: List[CourseItem]
 
 
@@ -156,6 +157,10 @@ class VenueItem(BaseModel):
 
 
 class VenuesGetResponse(BaseModel):
+    venues: List[VenueItem]
+
+
+class VenuesPutRequest(BaseModel):
     venues: List[VenueItem]
 
 

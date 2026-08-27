@@ -70,10 +70,10 @@ def test_alternate_week_family_collapses_to_family_name_with_note_column(tmp_pat
     _blank_template(template)
 
     cfg = SchedulerConfig(
-        courses={
+        courses={'初三': {
             '美术': Course(name='美术', family='心美', alternate='单周'),
             '心理': Course(name='心理', family='心美', alternate='双周'),
-        },
+        }},
         plans={}, venues={})
 
     dataset = Dataset(grade='初三', classes=[1],

@@ -266,7 +266,8 @@ def _compile_venue_capacity(c: CompiledModel, rule: Rule, with_assumptions: bool
 
 
 def _limit_venue(c: CompiledModel, venue: str, capacity: int) -> None:
-    tasks = [t for t in c.dataset.tasks if c.cfg.courses[t.course].venue == venue]
+    courses = c.cfg.courses_of(c.dataset.grade)
+    tasks = [t for t in c.dataset.tasks if courses[t.course].venue == venue]
     if not tasks:
         return
     for parity in PARITIES:

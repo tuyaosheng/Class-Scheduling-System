@@ -66,6 +66,28 @@ def test_get_job_returns_none_for_unknown_id():
     assert sessions.get_job('不存在的job') is None
 
 
+def test_get_job_migrates_pre_2026_08_28_flat_courses_shape():
+    """旧版本存的 cfg.courses 是全局扁平字典（没有按年级分组）——课程目录
+    改成按年级分组之后，读旧数据不该直接报 pydantic ValidationError/500，
+    得按 job 自己的 grade 包一层，等价于「旧数据本来就只有这一个年级」。"""
+    from scheduler.core import session_store
+
+    job = sessions.create_job(grade='初三')
+    old_shape_cfg = {
+        'courses': {'语文': {'name': '语文', 'family': '语文', 'venue': None,
+                            'alternate': None, 'external': False}},
+        'plans': {}, 'venues': {}, 'reserved_slots': {}, 'calendars': {}, 'grades': [],
+    }
+    session_store.update_job(job.job_id, 'pending', {
+        'issues': [], 'conflict': None, 'solutions': [], 'violations': [],
+        'dataset': None, 'cfg': old_shape_cfg, 'rules': [], 'ai_findings': {},
+    })
+
+    reloaded = sessions.get_job(job.job_id)
+    assert reloaded is not None
+    assert reloaded.cfg.courses_of('初三')['语文'].family == '语文'
+
+
 def test_list_jobs_reports_candidate_count():
     from scheduler.core.solver import Solution
 

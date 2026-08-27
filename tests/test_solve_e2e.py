@@ -82,7 +82,7 @@ def test_physics_family_every_day(solved):
     cfg, _, solution = solved
     by_class_day = defaultdict(int)
     for p in solution.placements:
-        if cfg.family_of(p.course) == '物理':
+        if cfg.family_of('初三', p.course) == '物理':
             by_class_day[(p.class_id, cal.slot_of(p.slot)[0])] += 1
     for class_id in range(1, 33):
         for day in range(5):

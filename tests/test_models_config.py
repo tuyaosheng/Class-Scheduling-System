@@ -14,41 +14,43 @@ def cfg():
 
 
 def test_loads_17_courses(cfg):
-    assert len(cfg.courses) == 17
+    assert len(cfg.courses_of('初三')) == 17
 
 
 def test_shadow_courses_map_to_主科_family(cfg):
     """影子课必须并入主科学科系 —— 按课程名统计会直接导致无解。"""
-    assert cfg.family_of('综实1') == '物理'
-    assert cfg.family_of('校本1') == '英语'
-    assert cfg.family_of('综实2') == '数学'
-    assert cfg.family_of('体比') == '体育'
-    assert cfg.family_of('体选') == '体育'
+    assert cfg.family_of('初三', '综实1') == '物理'
+    assert cfg.family_of('初三', '校本1') == '英语'
+    assert cfg.family_of('初三', '综实2') == '数学'
+    assert cfg.family_of('初三', '体比') == '体育'
+    assert cfg.family_of('初三', '体选') == '体育'
 
 
 def test_physics_family_has_five_periods(cfg):
     """物理 4 节 + 综实1 1 节 = 5 节，「每天 1 节」才成立。"""
     plan = cfg.plans['初三']
-    total = sum(plan[c] for c in cfg.courses_in_family('物理') if c in plan)
+    total = sum(plan[c] for c in cfg.courses_in_family('初三', '物理') if c in plan)
     assert total == 5
 
 
 def test_alternate_pair(cfg):
-    assert cfg.courses['美术'].alternate == '单周'
-    assert cfg.courses['心理'].alternate == '双周'
-    assert cfg.courses['美术'].family == cfg.courses['心理'].family == '心美'
+    courses = cfg.courses_of('初三')
+    assert courses['美术'].alternate == '单周'
+    assert courses['心理'].alternate == '双周'
+    assert courses['美术'].family == courses['心理'].family == '心美'
 
 
 def test_venues(cfg):
+    courses = cfg.courses_of('初三')
     assert cfg.venues['物理实验室'].capacity == 3
     assert cfg.venues['操场'].capacity is None    # 不限制
-    assert cfg.courses['综实1'].venue == '物理实验室'
-    assert cfg.courses['音乐'].venue is None      # 音乐在普通教室上
+    assert courses['综实1'].venue == '物理实验室'
+    assert courses['音乐'].venue is None      # 音乐在普通教室上
 
 
 def test_resolve_plan_key_expands_alternate_family(cfg):
-    assert cfg.resolve_plan_key('心美') == ['美术', '心理']
-    assert cfg.resolve_plan_key('语文') == ['语文']
+    assert cfg.resolve_plan_key('初三', '心美') == ['美术', '心理']
+    assert cfg.resolve_plan_key('初三', '语文') == ['语文']
 
 
 def test_grade3_plan_totals_37_slots(cfg):
@@ -70,7 +72,7 @@ def test_empty_plan_is_allowed(cfg):
 
 def test_validate_plan_rejects_overflow():
     bad = SchedulerConfig(
-        courses={'语文': Course(name='语文', family='语文')},
+        courses={'初三': {'语文': Course(name='语文', family='语文')}},
         plans={'初三': {'语文': 50}},
         venues={},
         calendars={'初三': GradeCalendar(
@@ -83,7 +85,7 @@ def test_validate_plan_rejects_overflow():
 
 def test_validate_plan_rejects_unknown_course():
     bad = SchedulerConfig(
-        courses={'语文': Course(name='语文', family='语文')},
+        courses={'初三': {'语文': Course(name='语文', family='语文')}},
         plans={'初三': {'围棋': 1}},
         venues={},
     )
@@ -93,7 +95,7 @@ def test_validate_plan_rejects_unknown_course():
 
 def test_config_rejects_course_with_unknown_venue(tmp_path):
     (tmp_path / 'courses.yaml').write_text(
-        'courses:\n  - {name: 化学, family: 化学, venue: 天文台}\n', encoding='utf-8')
+        'courses:\n  初三:\n    - {name: 化学, family: 化学, venue: 天文台}\n', encoding='utf-8')
     (tmp_path / 'plans.yaml').write_text('plans: {初三: {化学: 1}}\n', encoding='utf-8')
     (tmp_path / 'venues.yaml').write_text('venues: []\n', encoding='utf-8')
     with pytest.raises(ConfigError, match='天文台'):
@@ -188,7 +190,7 @@ def test_validate_plan_uses_grade_specific_slot_count():
     """validate_plan 的容量上限必须来自该年级的日历，不能用全局 45 格。"""
     tiny_calendar = GradeCalendar(days=['周一'], periods_per_day=2, midday_break_after=1)
     cfg = SchedulerConfig(
-        courses={'语文': Course(name='语文', family='语文')},
+        courses={'初一': {'语文': Course(name='语文', family='语文')}},
         plans={'初一': {'语文': 3}},
         venues={},
         calendars={'初一': tiny_calendar},

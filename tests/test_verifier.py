@@ -102,7 +102,7 @@ def test_detects_missing_daily_min(real):
     # 把 1 班某天唯一的物理系课程挪到别的一天
     target_day = 2
     victim = next(p for p in solution.placements
-                  if p.class_id == 1 and cfg.family_of(p.course) == '物理'
+                  if p.class_id == 1 and cfg.family_of('初三', p.course) == '物理'
                   and cal.slot_of(p.slot)[0] == target_day)
     broken = tamper(solution, victim.task_id, victim.slot, cal.slot_index(0, 1))
     assert '每日下限不足' in kinds(verify(broken, dataset, cfg, rules))
@@ -230,7 +230,7 @@ def test_detects_daily_max_overflow(real):
     """化学每天至多 1 节：把某节化学挪到同班已有化学的那天。"""
     cfg, dataset, rules, solution = real
     chem = [p for p in solution.placements
-            if p.class_id == 1 and cfg.family_of(p.course) == '化学']
+            if p.class_id == 1 and cfg.family_of('初三', p.course) == '化学']
     assert len(chem) >= 2
     keep, victim = chem[0], chem[1]
     target_day = cal.slot_of(keep.slot)[0]
@@ -245,7 +245,7 @@ def test_detects_weekday_exact_mismatch(real):
     """体育周一三四各恰好 1 节：把周一那节挪去周三，两天都不符。"""
     cfg, dataset, rules, solution = real
     victim = next(p for p in solution.placements
-                  if p.class_id == 1 and cfg.family_of(p.course) == '体育'
+                  if p.class_id == 1 and cfg.family_of('初三', p.course) == '体育'
                   and cal.slot_of(p.slot)[0] == 0)
     target = next(s for s in range(cal.N_SLOTS)
                   if cal.slot_of(s)[0] == 2 and s != victim.slot)

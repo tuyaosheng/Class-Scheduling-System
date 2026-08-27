@@ -142,20 +142,29 @@ export function exportUrl(jobId: string, candidateIndex: number, template: boole
   return `/api/export/${jobId}/${candidateIndex}?template=${template ? 1 : 0}`
 }
 
-export async function getCourses() {
-  return request<{ courses: CourseItem[] }>('/api/config/courses')
+export async function getCourses(grade: string) {
+  const params = new URLSearchParams({ grade })
+  return request<{ courses: CourseItem[] }>(`/api/config/courses?${params.toString()}`)
 }
 
-export async function putCourses(courses: CourseItem[]) {
+export async function putCourses(grade: string, courses: CourseItem[]) {
   return request<{ courses: CourseItem[] }>('/api/config/courses', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ courses }),
+    body: JSON.stringify({ grade, courses }),
   })
 }
 
 export async function getVenues() {
   return request<{ venues: VenueItem[] }>('/api/config/venues')
+}
+
+export async function putVenues(venues: VenueItem[]) {
+  return request<{ venues: VenueItem[] }>('/api/config/venues', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ venues }),
+  })
 }
 
 export interface GradeItem {

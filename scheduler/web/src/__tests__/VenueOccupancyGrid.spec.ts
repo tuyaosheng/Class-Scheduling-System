@@ -23,6 +23,7 @@ describe('VenueOccupancyGrid', () => {
           { class_id: 2, course: '综实1', slot: 0 },
           { class_id: 3, course: '语文', slot: 0 },
         ],
+        grade: '初三',
       },
     })
     await new Promise((resolve) => setTimeout(resolve, 0))
@@ -46,6 +47,7 @@ describe('VenueOccupancyGrid', () => {
           { class_id: 1, course: '综实1', slot: 0 },
           { class_id: 2, course: '综实1', slot: 0 },
         ],
+        grade: '初三',
       },
     })
     await new Promise((resolve) => setTimeout(resolve, 0))
@@ -58,7 +60,7 @@ describe('VenueOccupancyGrid', () => {
     vi.spyOn(api, 'getCourses').mockResolvedValue({ courses: [] })
     vi.spyOn(api, 'getVenues').mockResolvedValue({ venues: [] })
 
-    const wrapper = mount(VenueOccupancyGrid, { props: { placements: [] } })
+    const wrapper = mount(VenueOccupancyGrid, { props: { placements: [], grade: '初三' } })
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(wrapper.text()).toContain('尚未配置任何场地')

@@ -1,18 +1,26 @@
 courses:
-  - {name: 语文,  family: 语文}
-  - {name: 数学,  family: 数学}
-  - {name: 综实2, family: 数学, external: true}    # 周四T8、9节，教务固定安排，不进求解器
-  - {name: 英语,  family: 英语}
-  - {name: 校本1, family: 英语, external: true}    # 周三T8、9节，教务固定安排，不进求解器
-  - {name: 物理,  family: 物理}
-  - {name: 综实1, family: 物理, venue: 物理实验室}
-  - {name: 化学,  family: 化学}
-  - {name: 道法,  family: 道法}
-  - {name: 历史,  family: 历史}
-  - {name: 体育,  family: 体育, venue: 操场}
-  - {name: 体比,  family: 体育, venue: 操场, external: true}  # 周二T8、9节，教务固定安排
-  - {name: 体选,  family: 体育, venue: 操场, external: true}  # 周五第9节，教务固定安排
-  - {name: 音乐,  family: 音乐}
-  - {name: 美术,  family: 心美, alternate: 单周}
-  - {name: 心理,  family: 心美, alternate: 双周}
-  - {name: 班会,  family: 班会, external: true}    # 周一第9节，教务固定安排，不进求解器
+  初三:
+    - {name: 语文,  family: 语文}
+    - {name: 数学,  family: 数学}
+    - {name: 综实2, family: 数学, external: true}    # 周四T8、9节，教务固定安排，不进求解器
+    - {name: 英语,  family: 英语}
+    - {name: 校本1, family: 英语, external: true}    # 周三T8、9节，教务固定安排，不进求解器
+    - {name: 物理,  family: 物理}
+    - {name: 综实1, family: 物理, venue: 物理实验室}
+    - {name: 化学,  family: 化学}
+    - {name: 道法,  family: 道法}
+    - {name: 历史,  family: 历史}
+    - {name: 体育,  family: 体育, venue: 操场}
+    - {name: 体比,  family: 体育, venue: 操场, external: true}  # 周二T8、9节，教务固定安排
+    - {name: 体选,  family: 体育, venue: 操场, external: true}  # 周五第9节，教务固定安排
+    - {name: 音乐,  family: 音乐}
+    - {name: 美术,  family: 心美, alternate: 单周}
+    - {name: 心理,  family: 心美, alternate: 双周}
+    - {name: 班会,  family: 班会, external: true}    # 周一第9节，教务固定安排，不进求解器
+
+  # 七年级课程目录暂时只有测试需要的这一门——七年级课程计划尚未整理，
+  # 见 CLAUDE.md「待确认事项」。这里只是让「年级日历参数化」的验证测试
+  # （test_solve_respects_a_different_periods_per_day）能通过课程目录校验，
+  # 不代表七年级正式的课程配置。
+  七年级:
+    - {name: 语文, family: 语文}

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   adjustCandidate, clearImports, clearSolveJobs, confirmImport, connectSolveSocket, deleteImport,
   deleteSolveJob, exportUrl, getAiSettings, getConfigStatus, getCourses, getImportDetail, getPlan,
-  getSolveJobDetail, importFiles, listImports, listSolveJobs, putAiSettings, putCourses, putPlan,
+  getSolveJobDetail, importFiles, listImports, listSolveJobs, putAiSettings, putCourses, putPlan, putVenues,
   startSolve, testAiSettings,
 } from '../api'
 
@@ -104,21 +104,34 @@ describe('ai settings', () => {
 })
 
 describe('courses', () => {
-  it('getCourses performs a GET and returns the catalog', async () => {
-    mockFetchOnce({ courses: [{ name: '语文', family: '语文', venue: null, alternate: null, external: false }] })
-    const { courses } = await getCourses()
+  it('getCourses performs a GET scoped to a grade and returns the catalog', async () => {
+    const fetchMock = mockFetchOnce({ courses: [{ name: '语文', family: '语文', venue: null, alternate: null, external: false }] })
+    const { courses } = await getCourses('初三')
     expect(courses[0].name).toBe('语文')
+    expect(fetchMock.mock.calls[0][0]).toContain('grade=%E5%88%9D%E4%B8%89')
   })
 
-  it('putCourses posts the full course list', async () => {
+  it('putCourses posts the grade and the full course list', async () => {
     const fetchMock = mockFetchOnce({ courses: [] })
-    await putCourses([{ name: '班会', family: '班会', venue: null, alternate: null, external: true }])
+    await putCourses('初三', [{ name: '班会', family: '班会', venue: null, alternate: null, external: true }])
     const [url, options] = fetchMock.mock.calls[0]
     expect(url).toContain('/api/config/courses')
     expect(options.method).toBe('PUT')
     expect(JSON.parse(options.body)).toEqual({
+      grade: '初三',
       courses: [{ name: '班会', family: '班会', venue: null, alternate: null, external: true }],
     })
+  })
+})
+
+describe('venues', () => {
+  it('putVenues posts the full venue list', async () => {
+    const fetchMock = mockFetchOnce({ venues: [] })
+    await putVenues([{ name: '操场', capacity: 2 }])
+    const [url, options] = fetchMock.mock.calls[0]
+    expect(url).toContain('/api/config/venues')
+    expect(options.method).toBe('PUT')
+    expect(JSON.parse(options.body)).toEqual({ venues: [{ name: '操场', capacity: 2 }] })
   })
 })
 

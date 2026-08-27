@@ -13,7 +13,9 @@ class ConfigError(ValueError):
 
 
 class SchedulerConfig(BaseModel):
-    courses: Dict[str, Course]
+    # 课程目录按年级分组——同一门课在不同年级可能挂不同学科系/场地/单双周，
+    # 各年级的课程与学科系互相独立维护（2026-08-28 多年级重构，子项目 2）。
+    courses: Dict[str, Dict[str, Course]] = {}
     plans: Dict[str, Dict[str, int]]
     venues: Dict[str, Venue]
     reserved_slots: Dict[str, List[List[int]]] = {}   # 年级 -> 教务固定占位的 [day, period] 列表
@@ -33,23 +35,30 @@ class SchedulerConfig(BaseModel):
         calendar = self.calendar_of(grade)
         return {calendar.slot_index(d, p) for d, p in slots}
 
-    def family_of(self, course_name: str) -> str:
+    def courses_of(self, grade: str) -> Dict[str, Course]:
         try:
-            return self.courses[course_name].family
+            return self.courses[grade]
         except KeyError:
-            raise ConfigError('课程目录中没有 %r' % course_name)
+            raise ConfigError('年级 %r 没有对应的课程目录（courses.yaml）' % grade)
 
-    def courses_in_family(self, family: str) -> List[str]:
-        return [c.name for c in self.courses.values() if c.family == family]
+    def family_of(self, grade: str, course_name: str) -> str:
+        try:
+            return self.courses_of(grade)[course_name].family
+        except KeyError:
+            raise ConfigError('%s 的课程目录中没有 %r' % (grade, course_name))
 
-    def resolve_plan_key(self, key: str) -> List[str]:
+    def courses_in_family(self, grade: str, family: str) -> List[str]:
+        return [c.name for c in self.courses_of(grade).values() if c.family == family]
+
+    def resolve_plan_key(self, grade: str, key: str) -> List[str]:
         """把课程计划的键展开为课程名列表。
 
         单双周家族（心美）在计划里记 1 节，实际对应美术+心理两门课。
         """
-        if key in self.courses:
+        courses = self.courses_of(grade)
+        if key in courses:
             return [key]
-        members = [c for c in self.courses.values() if c.family == key and c.alternate]
+        members = [c for c in courses.values() if c.family == key and c.alternate]
         if members:
             order = {'单周': 0, '双周': 1}
             return [c.name for c in sorted(members, key=lambda c: order[c.alternate])]
@@ -58,7 +67,7 @@ class SchedulerConfig(BaseModel):
     def validate_plan(self, grade: str) -> None:
         plan = self.plans.get(grade) or {}
         for key in plan:
-            self.resolve_plan_key(key)          # 未知项在这里抛错
+            self.resolve_plan_key(grade, key)          # 未知项在这里抛错
         total = sum(plan.values())
         if total == 0:
             return                              # 空计划（如初一/初二待补）不需要该年级的日历配置
@@ -82,7 +91,9 @@ def _read(path: Path, key: str):
 
 def load_config(config_dir) -> SchedulerConfig:
     config_dir = Path(config_dir)
-    courses = {c['name']: Course(**c) for c in _read(config_dir / 'courses.yaml', 'courses')}
+    raw_courses = _read(config_dir / 'courses.yaml', 'courses')
+    courses = {grade: {c['name']: Course(**c) for c in items}
+              for grade, items in (raw_courses or {}).items()}
     venues = {v['name']: Venue(**v) for v in _read(config_dir / 'venues.yaml', 'venues')}
     plans = _read(config_dir / 'plans.yaml', 'plans') or {}
     plans_path = config_dir / 'plans.yaml'
@@ -97,9 +108,10 @@ def load_config(config_dir) -> SchedulerConfig:
         raw_calendars = yaml.safe_load(calendars_path.read_text(encoding='utf-8')) or {}
         calendars = {g: GradeCalendar(**c) for g, c in (raw_calendars.get('grade_calendars') or {}).items()}
 
-    for course in courses.values():
-        if course.venue and course.venue not in venues:
-            raise ConfigError('课程 %s 引用了未声明的场地 %r' % (course.name, course.venue))
+    for grade, grade_courses in courses.items():
+        for course in grade_courses.values():
+            if course.venue and course.venue not in venues:
+                raise ConfigError('%s 的课程 %s 引用了未声明的场地 %r' % (grade, course.name, course.venue))
 
     grades_path = config_dir / 'grades.yaml'
     grades: List[GradeInfo] = []
