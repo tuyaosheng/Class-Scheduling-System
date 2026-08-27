@@ -209,6 +209,24 @@ class AlternatePairsPutRequest(BaseModel):
     pairs: List[AlternatePairItem]
 
 
+class TeachingTableEntry(BaseModel):
+    class_id: int
+    course: str
+    teacher: str
+
+
+class TeachingTableResponse(BaseModel):
+    classes: List[int]
+    courses: List[str]
+    entries: List[TeachingTableEntry]
+    warnings: List[str] = []
+
+
+class TeachingTablePutRequest(BaseModel):
+    grade: str
+    entries: List[TeachingTableEntry]
+
+
 class GradeItem(BaseModel):
     name: str
     classes: int

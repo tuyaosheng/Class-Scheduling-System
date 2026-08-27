@@ -40,13 +40,27 @@ describe('App navigation', () => {
   it('clicking a nav step switches the main content', async () => {
     stubGrades()
     vi.spyOn(api, 'getConfigStatus').mockResolvedValue({ ready: false, grade: null, classes: 0, tasks: 0 })
+    vi.spyOn(api, 'getTeachingTable').mockResolvedValue({ classes: [], courses: [], entries: [], warnings: [] })
     const wrapper = mount(App)
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     const steps = wrapper.findAll('[data-test="nav-step"]')
     await steps[4].trigger('click')   // 第 5 步：任课表
-    expect(wrapper.findComponent({ name: 'ImportPanel' }).exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'TeachingTableSettings' }).exists()).toBe(true)
     expect(wrapper.findComponent({ name: 'GradesSettings' }).exists()).toBe(false)
+  })
+
+  it('step 6 still hosts the temporary two-file import as a fallback', async () => {
+    stubGrades()
+    vi.spyOn(api, 'getConfigStatus').mockResolvedValue({ ready: false, grade: null, classes: 0, tasks: 0 })
+    vi.spyOn(api, 'getRules').mockResolvedValue({ rules: [], rule_types: [] })
+    const wrapper = mount(App)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const steps = wrapper.findAll('[data-test="nav-step"]')
+    await steps[5].trigger('click')   // 第 6 步：排课规则
+    expect(wrapper.findComponent({ name: 'RulesSettings' }).exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'ImportPanel' }).exists()).toBe(true)
   })
 
   it('opening settings shows AiSettings and hides the step content; a nav click returns to it', async () => {

@@ -13,6 +13,7 @@ import ImportPanel from './components/ImportPanel.vue'
 import RulesSettings from './components/RulesSettings.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import SolvePanel from './components/SolvePanel.vue'
+import TeachingTableSettings from './components/TeachingTableSettings.vue'
 
 interface Candidate {
   index: number
@@ -148,10 +149,9 @@ function onJobId(id: string) {
           <AlternatePairsSettings v-if="activeGrade" :grade="activeGrade" />
         </div>
 
-        <div v-else-if="currentStep === 5" class="step-block">
+        <div v-else-if="currentStep === 5" class="step-block wide">
           <div class="step-eyebrow">第 5 步 · 共 9 步</div>
-          <h1 class="page-title">任课表</h1>
-          <ImportPanel @confirmed="onImportConfirmed" />
+          <TeachingTableSettings v-if="activeGrade" :grade="activeGrade" @saved="onImportConfirmed" />
         </div>
 
         <div v-else-if="currentStep === 6" class="step-block">
@@ -159,6 +159,8 @@ function onJobId(id: string) {
           <h1 class="page-title">排课规则</h1>
           <p class="alert alert-warning">这是临时的开发视图，规则类型仍是内部英文名——后续会换成挑不懂 DSL 也能用的界面。大部分规则应由排课说明导入自动生成，这里只用来手调少数政策性规则（比如教师半天连堂上限）。</p>
           <RulesSettings />
+          <p class="alert alert-warning">下面这个"两份 Excel 一次性导入"是旧版流程的临时保留——它同时处理任课信息和规则解析，跟上面新的「任课表」步骤有重叠。排课说明.xlsx 的规则解析还没独立出一个专门步骤之前，需要完整规则（教师禁排等）时仍要用它；只想改任课表本身，用第 5 步就够。</p>
+          <ImportPanel @confirmed="onImportConfirmed" />
         </div>
 
         <div v-else-if="currentStep === 7" class="step-block">
@@ -200,6 +202,10 @@ function onJobId(id: string) {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.step-block.wide {
+  max-width: none;
 }
 
 .step-eyebrow {

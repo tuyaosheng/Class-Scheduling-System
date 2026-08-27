@@ -2,6 +2,7 @@
 import os
 import tempfile
 from pathlib import Path
+from typing import Dict, List, Tuple
 
 import yaml
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -10,9 +11,10 @@ from pydantic import ValidationError
 from scheduler.core.calendar_import import CalendarParseError, parse_calendar_workbook
 from scheduler.core.config import ConfigError, load_config
 from scheduler.core.importer import (
+    build_dataset_from_pivot, import_teaching_table,
     merge_teaching_and_rules, write_rules_yaml, write_teaching_yaml,
 )
-from scheduler.core.models import Course, GradeCalendar, Venue
+from scheduler.core.models import Course, GradeCalendar, Teacher, Venue
 from scheduler.core.rules import RULE_TYPES, Rule, RuleError
 
 from . import sessions
@@ -25,6 +27,7 @@ from .schemas import (
     ImportSessionSummary, ImportSessionsListResponse, ParsedCalendarSheetItem,
     AlternatePairItem, AlternatePairsGetResponse, AlternatePairsPutRequest,
     PlanGetResponse, PlanPutRequest, RuleItem, RulesGetResponse, RulesPutRequest,
+    TeachingTableEntry, TeachingTablePutRequest, TeachingTableResponse,
     VenueItem, VenuesGetResponse, VenuesPutRequest,
 )
 
@@ -487,6 +490,88 @@ def put_alternate_pairs(body: AlternatePairsPutRequest):
                           encoding='utf-8')
 
     return get_alternate_pairs(body.grade)
+
+
+def _teaching_table_shape(grade: str, cfg) -> Tuple[List[int], List[str]]:
+    courses = [c.name for c in cfg.courses.get(grade, {}).values() if not c.external]
+    grade_info = next((g for g in cfg.grades if g.name == grade), None)
+    classes = list(range(1, grade_info.classes + 1)) if grade_info else []
+    return classes, courses
+
+
+def _load_existing_teachers(grade: str) -> Dict[str, Teacher]:
+    """任课表导入/编辑不产生教师禁排、职务信息，必须沿用 teaching.yaml 里已有的，
+    否则每次保存都会把排课说明.xlsx 导入算出来的这部分信息整体清空（见坑：
+    浏览器实测中招过一次，编辑单个格子会把 121 位教师的 duties/forbidden 清空）。"""
+    teaching_path = DEFAULT_CONFIG_DIR / 'teaching.yaml'
+    if not teaching_path.exists():
+        return {}
+    data = _load_yaml_dict_or_400(teaching_path, 'teaching.yaml')
+    if data.get('grade') != grade:
+        return {}
+    return {t['name']: Teacher(**t) for t in data.get('teachers', [])}
+
+
+@router.get('/config/teaching-table', response_model=TeachingTableResponse)
+def get_teaching_table(grade: str = '初三'):
+    """任课表是"谁教谁"的唯一来源——这里读的是已经确认导入的 teaching.yaml，
+    不是排课说明.xlsx（那份降级为纯规则文本表，另一条路径处理）。"""
+    cfg = _load_config_or_400()
+    classes, courses = _teaching_table_shape(grade, cfg)
+
+    entries: List[TeachingTableEntry] = []
+    teaching_path = DEFAULT_CONFIG_DIR / 'teaching.yaml'
+    if teaching_path.exists():
+        data = _load_yaml_dict_or_400(teaching_path, 'teaching.yaml')
+        if data.get('grade') == grade:
+            entries = [TeachingTableEntry(class_id=t['class_id'], course=t['course'], teacher=t['teacher'])
+                      for t in data.get('tasks', [])]
+    return TeachingTableResponse(classes=classes, courses=courses, entries=entries)
+
+
+@router.post('/config/teaching-table/parse', response_model=TeachingTableResponse)
+async def parse_teaching_table_upload(grade: str = '初三', file: UploadFile = File(...)):
+    """上传后只解析、不落盘——预览页面确认无误再调 PUT 才真正写 teaching.yaml。"""
+    cfg = _load_config_or_400()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        suffix = Path(file.filename or '').suffix or '.xlsx'
+        path = Path(tmpdir) / f'teaching_table{suffix}'
+        path.write_bytes(await file.read())
+        existing_teachers = _load_existing_teachers(grade)
+        try:
+            result = import_teaching_table(path, cfg, grade=grade, existing_teachers=existing_teachers)
+        except (ValueError, ValidationError, ConfigError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    _, courses = _teaching_table_shape(grade, cfg)
+    entries = [TeachingTableEntry(class_id=t.class_id, course=t.course, teacher=t.teacher)
+              for t in result.dataset.tasks]
+    return TeachingTableResponse(classes=result.dataset.classes, courses=courses,
+                                 entries=entries, warnings=result.warnings)
+
+
+@router.put('/config/teaching-table', response_model=TeachingTableResponse)
+def put_teaching_table(body: TeachingTablePutRequest):
+    """确认导入 / 编辑保存共用这一个入口——整份提交，覆盖式写 teaching.yaml。
+
+    只碰 teaching.yaml，不碰 rules.generated.yaml——排课说明.xlsx 导入生成的
+    教师禁排等规则不受这里影响（那是另一条导入路径的职责，子项目5）。
+    """
+    cfg = _load_config_or_400()
+    pivot = {(e.class_id, e.course): e.teacher for e in body.entries}
+    existing_teachers = _load_existing_teachers(body.grade)
+    try:
+        result = build_dataset_from_pivot(pivot, cfg, grade=body.grade, existing_teachers=existing_teachers)
+    except (ValueError, ValidationError, ConfigError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    write_teaching_yaml(result, DEFAULT_CONFIG_DIR / 'teaching.yaml')
+
+    _, courses = _teaching_table_shape(body.grade, cfg)
+    entries = [TeachingTableEntry(class_id=t.class_id, course=t.course, teacher=t.teacher)
+              for t in result.dataset.tasks]
+    return TeachingTableResponse(classes=result.dataset.classes, courses=courses,
+                                 entries=entries, warnings=result.warnings)
 
 
 @router.put('/config/courses', response_model=CoursesGetResponse)

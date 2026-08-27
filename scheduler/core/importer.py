@@ -187,6 +187,78 @@ def _build_rules(rows, cfg, grade, forbidden, calendar) -> List[dict]:
     return rules
 
 
+def _resolve_course_periods(cfg, grade) -> Dict[str, int]:
+    """把课程计划的键（可能是学科系名，比如"心美"代表美术+心理各占 1 节）
+    展开成"课程名 -> 每周节数"的映射，供纯任课表导入（不经过排课说明.xlsx）
+    确定每个任务的 periods 用。"""
+    plan = cfg.plans.get(grade) or {}
+    out: Dict[str, int] = {}
+    for key, hours in plan.items():
+        for name in cfg.resolve_plan_key(grade, key):
+            out[name] = hours
+    return out
+
+
+def build_dataset_from_pivot(pivot: Dict[Tuple[int, str], str], cfg, grade='初三',
+                             existing_teachers: Dict[str, Teacher] = None) -> ImportResult:
+    """任课表（班别×学科矩阵）是"谁教谁"的唯一来源——不依赖排课说明.xlsx
+    提供班级/课程/周课时，那些信息分别来自课程与学科系步骤的课程计划（子项目2）
+    和年级日历。排课说明.xlsx 降级为纯规则文本表，在另一条导入路径里按教师
+    姓名匹配（子项目5），不在这里处理，所以这里产出的 rules 恒为空列表——
+    规则由 rules.yaml/rules.generated.yaml 在求解时另行加载，不是这次导入的一部分。
+
+    pivot 由 parse_teaching_table 解析得到，也可以是前端"编辑任课表"页面
+    提交的整份矩阵（增删几个格子之后的版本）——两条路径共用同一个构建函数，
+    保证「导入」和「编辑保存」产出的 Dataset 形状完全一致。
+
+    existing_teachers：调用方传入"当前已保存的教师信息"（duties/forbidden），
+    同名教师直接沿用，而不是每次都建一个空白 Teacher——这条导入路径本身不
+    产生禁排/职务信息（那是排课说明.xlsx 的职责，子项目5），如果不做这层
+    保留，任何一次"编辑任课表并保存"都会把之前排课说明导入算出来的教师
+    禁排/职务信息整体清空——这是真实发生过的数据丢失（浏览器实测中招过一次）。
+    """
+    existing_teachers = existing_teachers or {}
+    calendar = cfg.calendar_of(grade)
+    courses = cfg.courses_of(grade)
+    course_periods = _resolve_course_periods(cfg, grade)
+
+    tasks: List[TeachingTask] = []
+    classes = set()
+    teacher_names = set()
+    for task_id, ((class_id, course), teacher) in enumerate(sorted(pivot.items())):
+        classes.add(class_id)
+        if course not in courses:
+            raise ValueError('任课表中的学科 %r 不在 %s 的课程目录里' % (course, grade))
+        if courses[course].external:
+            continue   # 教务固定占位的课程不生成任务，任课信息不进 Dataset
+        if course not in course_periods:
+            raise ValueError('课程 %r 没有在 %s 的课程计划里设置周课时' % (course, grade))
+        teacher_names.add(teacher)
+        base_parity = courses[course].alternate
+        parity = base_parity
+        if base_parity and class_id % 2 == 0:
+            # 按班号奇偶各半翻转单双周，否则该老师整学期只在单周（或双周）
+            # 有课，负荷忽高忽低；翻转后每周教的班数固定，见坑 3。
+            parity = '双周' if base_parity == '单周' else '单周'
+        tasks.append(TeachingTask(id=task_id, grade=grade, class_id=class_id,
+                                  course=course, teacher=teacher,
+                                  periods=course_periods[course], parity=parity))
+
+    teachers = {
+        name: existing_teachers[name] if name in existing_teachers else Teacher(name=name)
+        for name in teacher_names
+    }
+    dataset = Dataset(grade=grade, classes=sorted(classes), teachers=teachers,
+                      tasks=tasks, calendar=calendar)
+    warnings = _check_class_loads(dataset, cfg, grade)
+    return ImportResult(dataset=dataset, rules=[], warnings=warnings)
+
+
+def import_teaching_table(path, cfg, grade='初三', existing_teachers: Dict[str, Teacher] = None) -> ImportResult:
+    pivot = parse_teaching_table(path, cfg, grade)
+    return build_dataset_from_pivot(pivot, cfg, grade, existing_teachers=existing_teachers)
+
+
 def _check_class_loads(dataset, cfg, grade) -> List[str]:
     plan_total = sum((cfg.plans.get(grade) or {}).values())
     used = defaultdict(int)

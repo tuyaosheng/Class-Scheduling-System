@@ -179,6 +179,42 @@ export async function putAlternatePairs(grade: string, pairs: AlternatePairItem[
   })
 }
 
+export interface TeachingTableEntry {
+  class_id: number
+  course: string
+  teacher: string
+}
+
+export interface TeachingTableResponse {
+  classes: number[]
+  courses: string[]
+  entries: TeachingTableEntry[]
+  warnings: string[]
+}
+
+export async function getTeachingTable(grade: string) {
+  const params = new URLSearchParams({ grade })
+  return request<TeachingTableResponse>(`/api/config/teaching-table?${params.toString()}`)
+}
+
+export async function parseTeachingTable(grade: string, file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  const params = new URLSearchParams({ grade })
+  return request<TeachingTableResponse>(`/api/config/teaching-table/parse?${params.toString()}`, {
+    method: 'POST',
+    body: form,
+  })
+}
+
+export async function putTeachingTable(grade: string, entries: TeachingTableEntry[]) {
+  return request<TeachingTableResponse>('/api/config/teaching-table', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grade, entries }),
+  })
+}
+
 export async function putVenues(venues: VenueItem[]) {
   return request<{ venues: VenueItem[] }>('/api/config/venues', {
     method: 'PUT',
