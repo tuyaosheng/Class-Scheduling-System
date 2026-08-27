@@ -100,4 +100,17 @@ describe('App navigation', () => {
     expect(wrapper.findComponent({ name: 'CourseSettings' }).exists()).toBe(true)
     expect(wrapper.findComponent({ name: 'SettingsPanel' }).exists()).toBe(true)
   })
+
+  it('step 4 shows the alternate-week pairing settings for the active grade', async () => {
+    stubGrades()
+    vi.spyOn(api, 'getConfigStatus').mockResolvedValue({ ready: false, grade: null, classes: 0, tasks: 0 })
+    vi.spyOn(api, 'getCourses').mockResolvedValue({ courses: [] })
+    vi.spyOn(api, 'getAlternatePairs').mockResolvedValue({ pairs: [] })
+    const wrapper = mount(App)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const steps = wrapper.findAll('[data-test="nav-step"]')
+    await steps[3].trigger('click')   // 第 4 步：单双周设置
+    expect(wrapper.findComponent({ name: 'AlternatePairsSettings' }).exists()).toBe(true)
+  })
 })

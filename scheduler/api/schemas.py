@@ -193,6 +193,22 @@ class RulesPutRequest(BaseModel):
     rules: List[RuleItem]
 
 
+class AlternatePairItem(BaseModel):
+    family: str
+    single_course: str
+    double_course: str
+    editable: bool = True   # False = 来自排课说明导入自动生成，只读展示，不在这里编辑
+
+
+class AlternatePairsGetResponse(BaseModel):
+    pairs: List[AlternatePairItem]
+
+
+class AlternatePairsPutRequest(BaseModel):
+    grade: str
+    pairs: List[AlternatePairItem]
+
+
 class GradeItem(BaseModel):
     name: str
     classes: int

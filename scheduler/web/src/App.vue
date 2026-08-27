@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { getConfigStatus, getGrades } from './api'
 import AiSettings from './components/AiSettings.vue'
+import AlternatePairsSettings from './components/AlternatePairsSettings.vue'
 import AppSidebar, { type StepDef } from './components/AppSidebar.vue'
 import CandidateTabs from './components/CandidateTabs.vue'
 import ComingSoonPanel from './components/ComingSoonPanel.vue'
@@ -142,9 +143,10 @@ function onJobId(id: string) {
           <SettingsPanel v-if="activeGrade" :grade="activeGrade" />
         </div>
 
-        <ComingSoonPanel v-else-if="currentStep === 4"
-          step-eyebrow="第 4 步 · 共 9 步" title="单双周设置"
-          body="选择哪两门课合并为单双周课程，并配置默认的隔班交替规则。这一步还没做——目前可以在「课程与学科系」里给单门课程手动标单周/双周。" />
+        <div v-else-if="currentStep === 4" class="step-block">
+          <div class="step-eyebrow">第 4 步 · 共 9 步</div>
+          <AlternatePairsSettings v-if="activeGrade" :grade="activeGrade" />
+        </div>
 
         <div v-else-if="currentStep === 5" class="step-block">
           <div class="step-eyebrow">第 5 步 · 共 9 步</div>

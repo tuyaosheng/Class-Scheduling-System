@@ -159,6 +159,26 @@ export async function getVenues() {
   return request<{ venues: VenueItem[] }>('/api/config/venues')
 }
 
+export interface AlternatePairItem {
+  family: string
+  single_course: string
+  double_course: string
+  editable: boolean
+}
+
+export async function getAlternatePairs(grade: string) {
+  const params = new URLSearchParams({ grade })
+  return request<{ pairs: AlternatePairItem[] }>(`/api/config/alternate-pairs?${params.toString()}`)
+}
+
+export async function putAlternatePairs(grade: string, pairs: AlternatePairItem[]) {
+  return request<{ pairs: AlternatePairItem[] }>('/api/config/alternate-pairs', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grade, pairs }),
+  })
+}
+
 export async function putVenues(venues: VenueItem[]) {
   return request<{ venues: VenueItem[] }>('/api/config/venues', {
     method: 'PUT',

@@ -23,6 +23,7 @@ from .schemas import (
     GradeItem, GradesGetResponse, GradesPutRequest,
     ImportConfirmRequest, ImportConfirmResponse, ImportPreview,
     ImportSessionSummary, ImportSessionsListResponse, ParsedCalendarSheetItem,
+    AlternatePairItem, AlternatePairsGetResponse, AlternatePairsPutRequest,
     PlanGetResponse, PlanPutRequest, RuleItem, RulesGetResponse, RulesPutRequest,
     VenueItem, VenuesGetResponse, VenuesPutRequest,
 )
@@ -398,6 +399,94 @@ def put_rules(body: RulesPutRequest):
                        allow_unicode=True, sort_keys=False),
         encoding='utf-8')
     return RulesGetResponse(rules=body.rules, rule_types=sorted(RULE_TYPES))
+
+
+def _scan_alternate_pairs(path: Path, grade: str, courses: dict, editable: bool) -> list:
+    if not path.exists():
+        return []
+    raw = _load_yaml_dict_or_400(path, path.name)
+    out = []
+    for r in raw.get('rules', []):
+        if r.get('type') != 'alternate_weeks':
+            continue
+        if (r.get('scope') or {}).get('grade') != grade:
+            continue
+        pair = (r.get('params') or {}).get('pair') or []
+        if len(pair) != 2:
+            continue
+        c1, c2 = pair
+        course1, course2 = courses.get(c1), courses.get(c2)
+        if course1 is None or course2 is None:
+            continue
+        if {course1.alternate, course2.alternate} != {'单周', '双周'}:
+            continue   # 数据不自洽（比如课程目录已经改过但规则没跟上），跳过不展示
+        single, double = (c1, c2) if course1.alternate == '单周' else (c2, c1)
+        out.append(AlternatePairItem(family=course1.family, single_course=single,
+                                     double_course=double, editable=editable))
+    return out
+
+
+@router.get('/config/alternate-pairs', response_model=AlternatePairsGetResponse)
+def get_alternate_pairs(grade: str = '初三'):
+    """单双周配对——从 rules.yaml（手写，可编辑）和 rules.generated.yaml
+    （排课说明导入自动生成，只读展示）里找 alternate_weeks 规则，按课程目录
+    里两门课各自的 alternate 字段区分哪门单周、哪门双周。"""
+    cfg = _load_config_or_400()
+    courses = cfg.courses.get(grade, {})
+    pairs = (_scan_alternate_pairs(DEFAULT_CONFIG_DIR / 'rules.yaml', grade, courses, True)
+            + _scan_alternate_pairs(DEFAULT_CONFIG_DIR / 'rules.generated.yaml', grade, courses, False))
+    return AlternatePairsGetResponse(pairs=pairs)
+
+
+@router.put('/config/alternate-pairs', response_model=AlternatePairsGetResponse)
+def put_alternate_pairs(body: AlternatePairsPutRequest):
+    """只管理手写的配对（写进 rules.yaml）——排课说明导入自动生成的那份
+    （rules.generated.yaml）在这里只读展示，不受这个接口影响。"""
+    cfg = _load_config_or_400()
+    courses = cfg.courses.get(body.grade, {})
+
+    seen_courses = set()
+    for item in body.pairs:
+        if item.single_course == item.double_course:
+            raise HTTPException(status_code=400, detail='单周课程和双周课程不能是同一门课')
+        for name in (item.single_course, item.double_course):
+            if name not in courses:
+                raise HTTPException(status_code=400,
+                                   detail='课程 %r 不在 %s 的课程目录里' % (name, body.grade))
+            if name in seen_courses:
+                raise HTTPException(status_code=400, detail='课程 %r 被用在多个单双周配对里' % name)
+            seen_courses.add(name)
+
+    courses_raw = _load_yaml_dict_or_400(DEFAULT_CONFIG_DIR / 'courses.yaml', 'courses.yaml')
+    grade_courses = courses_raw.setdefault('courses', {}).setdefault(body.grade, [])
+    by_name = {c['name']: c for c in grade_courses}
+    for item in body.pairs:
+        if item.single_course in by_name:
+            by_name[item.single_course]['family'] = item.family
+            by_name[item.single_course]['alternate'] = '单周'
+        if item.double_course in by_name:
+            by_name[item.double_course]['family'] = item.family
+            by_name[item.double_course]['alternate'] = '双周'
+    (DEFAULT_CONFIG_DIR / 'courses.yaml').write_text(
+        yaml.safe_dump({'courses': courses_raw['courses']}, allow_unicode=True, sort_keys=False),
+        encoding='utf-8')
+
+    rules_path = DEFAULT_CONFIG_DIR / 'rules.yaml'
+    rules_raw = _load_yaml_dict_or_400(rules_path, 'rules.yaml') if rules_path.exists() else {}
+    kept = [r for r in rules_raw.get('rules', [])
+           if not (r.get('type') == 'alternate_weeks'
+                   and (r.get('scope') or {}).get('grade') == body.grade)]
+    for item in body.pairs:
+        kept.append({
+            'type': 'alternate_weeks',
+            'scope': {'grade': body.grade},
+            'params': {'pair': [item.single_course, item.double_course]},
+            'mode': 'hard',
+        })
+    rules_path.write_text(yaml.safe_dump({'rules': kept}, allow_unicode=True, sort_keys=False),
+                          encoding='utf-8')
+
+    return get_alternate_pairs(body.grade)
 
 
 @router.put('/config/courses', response_model=CoursesGetResponse)
