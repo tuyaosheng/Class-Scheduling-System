@@ -5,6 +5,7 @@ import {
   type Candidate, type SolveJobSummary,
 } from '../api'
 import HistoryList, { type HistoryRow } from './HistoryList.vue'
+import IssueList from './IssueList.vue'
 
 const emit = defineEmits<{ jobId: [id: string]; candidates: [payload: Candidate[]] }>()
 
@@ -15,6 +16,8 @@ const maxSeconds = ref(60)
 const statusText = ref('')
 const running = ref(false)
 const candidates: Candidate[] = []
+const precheckIssues = ref<Array<{ kind: string; detail: string }>>([])
+const conflictText = ref('')
 
 // 挂在组件作用域上，而不是每次 start() 局部变量——第二次点击时需要能关掉
 // 上一个还没结束的 socket（见 finding I2 第 3 点：否则两个 socket 的
@@ -33,6 +36,8 @@ async function start() {
 
   running.value = true
   statusText.value = '排课中…'
+  precheckIssues.value = []
+  conflictText.value = ''
 
   let jobId: string
   try {
@@ -59,15 +64,18 @@ async function start() {
     const e = event as { type: string; [key: string]: unknown }
     if (e.type === 'precheck_failed') {
       statusText.value = '预检未通过，未进入求解器'
+      precheckIssues.value = (e.issues as Array<{ kind: string; detail: string }>) ?? []
     } else if (e.type === 'solving') {
       statusText.value = '求解中…'
     } else if (e.type === 'candidate') {
       candidates.push(e as unknown as Candidate)
       emit('candidates', [...candidates])
     } else if (e.type === 'infeasible') {
-      statusText.value = '无解：' + (e.conflict as string)
+      statusText.value = '无解，见下方冲突集详情'
+      conflictText.value = e.conflict as string
     } else if (e.type === 'timeout') {
-      statusText.value = '求解超时：' + (e.message as string)
+      statusText.value = '求解超时'
+      conflictText.value = e.message as string
     } else if (e.type === 'error') {
       statusText.value = '求解出错：' + (e.message as string)
     } else if (e.type === 'done') {
@@ -119,6 +127,8 @@ async function selectHistory(jobId: string) {
     candidates.push(...detail.candidates)
     emit('jobId', jobId)
     emit('candidates', [...candidates])
+    precheckIssues.value = (detail.issues as Array<{ kind: string; detail: string }>) ?? []
+    conflictText.value = detail.conflict ?? ''
     statusText.value = `已加载历史任务，共 ${candidates.length} 个候选方案`
   } catch (err) {
     statusText.value = '加载历史任务失败：' + (err as Error).message
@@ -175,6 +185,9 @@ const statusKind = computed<'good' | 'warning' | 'critical' | 'neutral'>(() => {
       {{ statusText }}
     </p>
 
+    <IssueList title="预检问题（L1）" tone="warning" :items="precheckIssues" />
+    <pre v-if="conflictText" data-test="conflict-text" class="conflict-block">{{ conflictText }}</pre>
+
     <HistoryList title="历史求解任务" :rows="historyRows" :loading="historyLoading"
                 @select="selectHistory" @delete="deleteHistory" @clear="clearHistory" />
   </section>
@@ -196,5 +209,16 @@ const statusKind = computed<'good' | 'warning' | 'critical' | 'neutral'>(() => {
 
 .solve-form .btn {
   align-self: flex-end;
+}
+
+.conflict-block {
+  background: var(--status-critical-wash);
+  color: #8a2323;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: 12.5px;
+  font-family: inherit;
+  white-space: pre-wrap;
+  margin: 0;
 }
 </style>

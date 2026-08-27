@@ -16,6 +16,7 @@ from ortools.sat.python import cp_model
 
 import yaml
 
+from scheduler.ai.reviewer import AIReviewError, review_schedule
 from scheduler.core import adjust
 from scheduler.core.compiler import compile_model
 from scheduler.core.config import load_config
@@ -28,8 +29,9 @@ from scheduler.core.verifier import verify
 
 from . import sessions
 from .schemas import (
-    AdjustRequest, AdjustResponse, CandidateItem, MoveItem, RevertedMoveItem,
-    SolveJobCreated, SolveJobDetail, SolveJobSummary, SolveJobsListResponse, SolveRequest,
+    AdjustRequest, AdjustResponse, CandidateItem, FindingItem, MoveItem, RevertedMoveItem,
+    ReviewResponse, SolveJobCreated, SolveJobDetail, SolveJobSummary, SolveJobsListResponse,
+    SolveRequest,
 )
 
 DEFAULT_CONFIG_DIR = Path(__file__).resolve().parents[1] / 'config'
@@ -74,8 +76,9 @@ def _solve_streaming(dataset, cfg, rules, *, count, min_diff, max_seconds, on_ca
                     task_id=task_id, class_id=task.class_id, course=task.course,
                     teacher=task.teacher, slot=slot, parity=task.parity))
         placements.sort(key=lambda p: (p.class_id, p.slot))
-        solution = Solution(status=last_status,
-                            wall_time=elapsed, placements=placements)
+        objective = solver.ObjectiveValue() if compiled.soft_terms else None
+        solution = Solution(status=last_status, wall_time=elapsed, placements=placements,
+                            objective=objective, stats=solver.ResponseStats())
         on_candidate(solution)
         produced += 1
         compiled.model.Add(sum(chosen_vars) <= len(chosen_vars) - min_diff)
@@ -145,6 +148,7 @@ def _run_job(job_id, grade, count, min_diff, max_seconds, loop, queue):
             emit({
                 'type': 'candidate', 'index': idx, 'status': solution.status,
                 'wall_time': solution.wall_time,
+                'objective': solution.objective, 'stats': solution.stats,
                 'violations': [v.model_dump() for v in violations],
                 'placements': [p.model_dump() for p in solution.placements],
             })
@@ -215,6 +219,7 @@ def solve_status(job_id: str):
     candidates = [
         CandidateItem(
             index=i + 1, status=solution.status, wall_time=solution.wall_time,
+            objective=solution.objective, stats=solution.stats,
             violations=[v.model_dump() for v in violations],
             placements=[p.model_dump() for p in solution.placements],
         )
@@ -272,6 +277,30 @@ def adjust_candidate(job_id: str, index: int, body: AdjustRequest):
                  for r in result.reverted],
         placements=class_placements,
     )
+
+
+@ws_router.post('/solve/{job_id}/candidates/{index}/review', response_model=ReviewResponse)
+def review_candidate(job_id: str, index: int):
+    job = sessions.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail='任务不存在')
+    if not 1 <= index <= len(job.solutions):
+        raise HTTPException(status_code=404, detail='候选方案不存在')
+
+    cached = job.ai_findings.get(index)
+    if cached is not None:
+        return ReviewResponse(findings=[FindingItem(**f) for f in cached])
+
+    solution = job.solutions[index - 1]
+    violations = job.violations[index - 1]
+    try:
+        findings = review_schedule(solution, job.dataset, job.cfg, job.rules, violations)
+    except AIReviewError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    job.ai_findings[index] = [f.model_dump() for f in findings]
+    sessions.save_job(job)
+    return ReviewResponse(findings=[FindingItem(**f.model_dump()) for f in findings])
 
 
 @ws_router.websocket('/ws/solve/{job_id}')

@@ -78,6 +78,15 @@ def test_put_courses_rejects_deleting_a_course_still_referenced_by_a_plan(client
     assert resp.status_code == 400
 
 
+def test_get_venues_returns_current_catalog(client, tmp_path, monkeypatch):
+    _use_tmp_config(tmp_path, monkeypatch)
+    resp = client.get('/api/config/venues')
+    assert resp.status_code == 200
+    venues = {v['name']: v for v in resp.json()['venues']}
+    assert venues['物理实验室']['capacity'] == 3
+    assert venues['操场']['capacity'] is None
+
+
 def test_put_courses_auto_creates_new_venue(client, tmp_path, monkeypatch):
     _use_tmp_config(tmp_path, monkeypatch)
     courses = client.get('/api/config/courses').json()['courses']

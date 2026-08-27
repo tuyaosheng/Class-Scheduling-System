@@ -181,6 +181,65 @@ describe('SolvePanel', () => {
     expect(lastEmit).toHaveLength(1)   // 只有一份候选列表在增长，没有重复
   })
 
+  it('shows the precheck issue list when precheck fails', async () => {
+    vi.spyOn(api, 'startSolve').mockResolvedValue({ job_id: 'job-1' })
+
+    class FakeSocket {
+      onmessage: ((ev: MessageEvent) => void) | null = null
+      close() {}
+    }
+    const fakeSocket = new FakeSocket()
+    vi.spyOn(api, 'connectSolveSocket').mockImplementation((_jobId, onEvent) => {
+      fakeSocket.onmessage = (ev) => onEvent(JSON.parse(ev.data))
+      return fakeSocket as unknown as WebSocket
+    })
+
+    const wrapper = mount(SolvePanel)
+    await wrapper.find('[data-test="start-button"]').trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    fakeSocket.onmessage!({
+      data: JSON.stringify({
+        type: 'precheck_failed',
+        issues: [{ kind: '教师超载', detail: '梁艳红需要48节，可用42格，缺6格' }],
+      }),
+    } as MessageEvent)
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain('教师超载')
+    expect(wrapper.text()).toContain('梁艳红需要48节，可用42格，缺6格')
+  })
+
+  it('shows the conflict block when the job is infeasible', async () => {
+    vi.spyOn(api, 'startSolve').mockResolvedValue({ job_id: 'job-1' })
+
+    class FakeSocket {
+      onmessage: ((ev: MessageEvent) => void) | null = null
+      close() {}
+    }
+    const fakeSocket = new FakeSocket()
+    vi.spyOn(api, 'connectSolveSocket').mockImplementation((_jobId, onEvent) => {
+      fakeSocket.onmessage = (ev) => onEvent(JSON.parse(ev.data))
+      return fakeSocket as unknown as WebSocket
+    })
+
+    const wrapper = mount(SolvePanel)
+    await wrapper.find('[data-test="start-button"]').trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    fakeSocket.onmessage!({
+      data: JSON.stringify({
+        type: 'infeasible',
+        conflict: '状态 INFEASIBLE，冲突集含 1 条规则：\n  • 4班物理「周一至少1节」\n松绑其中任意一条即可能有解。',
+      }),
+    } as MessageEvent)
+    await wrapper.vm.$nextTick()
+
+    const block = wrapper.find('[data-test="conflict-text"]')
+    expect(block.exists()).toBe(true)
+    expect(block.text()).toContain('4班物理「周一至少1节」')
+  })
+
   it('loads history on mount and shows one row per job', async () => {
     vi.spyOn(api, 'listSolveJobs').mockResolvedValue({
       jobs: [{ job_id: 'job-1', status: 'done', grade: '初三', created_at: 'now', candidate_count: 2 }],
@@ -195,8 +254,10 @@ describe('SolvePanel', () => {
       jobs: [{ job_id: 'job-1', status: 'done', grade: '初三', created_at: 'now', candidate_count: 1 }],
     })
     vi.spyOn(api, 'getSolveJobDetail').mockResolvedValue({
-      job_id: 'job-1', status: 'done', grade: '初三', issues: [], conflict: null,
-      candidates: [{ index: 1, status: 'OPTIMAL', wall_time: 0.2, violations: [], placements: [] }],
+      job_id: 'job-1', status: 'done', grade: '初三',
+      issues: [{ kind: '教师超载', detail: '梁艳红需要48节，可用42格，缺6格' }],
+      conflict: '状态 INFEASIBLE，冲突集含 1 条规则：\n  • 4班物理「周一至少1节」',
+      candidates: [{ index: 1, status: 'OPTIMAL', wall_time: 0.2, objective: null, stats: '', violations: [], placements: [] }],
     })
 
     const wrapper = mount(SolvePanel)
@@ -208,6 +269,8 @@ describe('SolvePanel', () => {
     expect(wrapper.emitted('jobId')!.at(-1)).toEqual(['job-1'])
     const lastEmit = wrapper.emitted('candidates')!.at(-1)![0] as unknown[]
     expect(lastEmit).toHaveLength(1)
+    expect(wrapper.text()).toContain('教师超载')
+    expect(wrapper.find('[data-test="conflict-text"]').text()).toContain('4班物理「周一至少1节」')
   })
 
   it('clearing history calls clearSolveJobs and refreshes the list', async () => {

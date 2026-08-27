@@ -5,7 +5,7 @@ from typing import Dict, List
 import yaml
 from pydantic import BaseModel
 
-from .models import Course, GradeCalendar, Venue
+from .models import Course, GradeCalendar, GradeInfo, Venue
 
 
 class ConfigError(ValueError):
@@ -18,6 +18,7 @@ class SchedulerConfig(BaseModel):
     venues: Dict[str, Venue]
     reserved_slots: Dict[str, List[List[int]]] = {}   # 年级 -> 教务固定占位的 [day, period] 列表
     calendars: Dict[str, GradeCalendar] = {}
+    grades: List[GradeInfo] = []   # 年级管理页声明的年级骨架，见 GradeInfo 文档
 
     def calendar_of(self, grade: str) -> GradeCalendar:
         try:
@@ -100,8 +101,15 @@ def load_config(config_dir) -> SchedulerConfig:
         if course.venue and course.venue not in venues:
             raise ConfigError('课程 %s 引用了未声明的场地 %r' % (course.name, course.venue))
 
+    grades_path = config_dir / 'grades.yaml'
+    grades: List[GradeInfo] = []
+    if grades_path.exists():
+        raw_grades = yaml.safe_load(grades_path.read_text(encoding='utf-8')) or {}
+        grades = [GradeInfo(**g) for g in (raw_grades.get('grades') or [])]
+
     cfg = SchedulerConfig(courses=courses, plans={g: (p or {}) for g, p in plans.items()},
-                          venues=venues, reserved_slots=reserved_slots, calendars=calendars)
+                          venues=venues, reserved_slots=reserved_slots, calendars=calendars,
+                          grades=grades)
     for grade in cfg.plans:
         cfg.validate_plan(grade)
     return cfg

@@ -7,19 +7,24 @@ import yaml
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import ValidationError
 
+from scheduler.core.calendar_import import CalendarParseError, parse_calendar_workbook
 from scheduler.core.config import ConfigError, load_config
 from scheduler.core.importer import (
     merge_teaching_and_rules, write_rules_yaml, write_teaching_yaml,
 )
-from scheduler.core.models import Course, Venue
+from scheduler.core.models import Course, GradeCalendar, Venue
+from scheduler.core.rules import RULE_TYPES, Rule, RuleError
 
 from . import sessions
 from .schemas import (
     AiSettingsGetResponse, AiSettingsPutRequest,
+    CalendarGetResponse, CalendarParseResponse, CalendarPutRequest,
     ConfigStatus, CourseItem, CoursesGetResponse, CoursesPutRequest,
+    GradeItem, GradesGetResponse, GradesPutRequest,
     ImportConfirmRequest, ImportConfirmResponse, ImportPreview,
-    ImportSessionSummary, ImportSessionsListResponse,
-    PlanGetResponse, PlanPutRequest,
+    ImportSessionSummary, ImportSessionsListResponse, ParsedCalendarSheetItem,
+    PlanGetResponse, PlanPutRequest, RuleItem, RulesGetResponse, RulesPutRequest,
+    VenueItem, VenuesGetResponse,
 )
 
 DEFAULT_CONFIG_DIR = Path(__file__).resolve().parents[1] / 'config'
@@ -242,6 +247,127 @@ def get_courses():
     return CoursesGetResponse(courses=[
         CourseItem(**c.model_dump()) for c in cfg.courses.values()
     ])
+
+
+@router.get('/config/grades', response_model=GradesGetResponse)
+def get_grades():
+    cfg = _load_config_or_400()
+    return GradesGetResponse(grades=[GradeItem(name=g.name, classes=g.classes) for g in cfg.grades])
+
+
+@router.put('/config/grades', response_model=GradesGetResponse)
+def put_grades(body: GradesPutRequest):
+    names = [g.name.strip() for g in body.grades]
+    if any(not n for n in names):
+        raise HTTPException(status_code=400, detail='年级名不能为空')
+    if len(names) != len(set(names)):
+        dup = next(n for n in names if names.count(n) > 1)
+        raise HTTPException(status_code=400, detail='年级名 %r 重复' % dup)
+    if any(g.classes < 1 for g in body.grades):
+        raise HTTPException(status_code=400, detail='班级数必须至少为 1')
+
+    grades_path = DEFAULT_CONFIG_DIR / 'grades.yaml'
+    grades_path.write_text(
+        yaml.safe_dump({'grades': [{'name': n, 'classes': g.classes}
+                                   for n, g in zip(names, body.grades)]},
+                       allow_unicode=True, sort_keys=False),
+        encoding='utf-8')
+    return GradesGetResponse(grades=[GradeItem(name=n, classes=g.classes)
+                                     for n, g in zip(names, body.grades)])
+
+
+@router.post('/config/calendars/parse', response_model=CalendarParseResponse)
+async def parse_calendars(file: UploadFile = File(...)):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        suffix = Path(file.filename or '').suffix or '.xlsx'
+        path = Path(tmpdir) / f'calendar{suffix}'
+        path.write_bytes(await file.read())
+        try:
+            sheets = parse_calendar_workbook(path)
+        except CalendarParseError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+    return CalendarParseResponse(sheets=[
+        ParsedCalendarSheetItem(**s.model_dump()) for s in sheets
+    ])
+
+
+@router.get('/config/calendars/{grade}', response_model=CalendarGetResponse)
+def get_calendar(grade: str):
+    cfg = _load_config_or_400()
+    try:
+        calendar = cfg.calendar_of(grade)
+    except ConfigError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return CalendarGetResponse(grade=grade, days=calendar.days,
+                               periods_per_day=calendar.periods_per_day,
+                               midday_break_after=calendar.midday_break_after,
+                               clock_times=calendar.clock_times or [])
+
+
+@router.put('/config/calendars/{grade}', response_model=CalendarGetResponse)
+def put_calendar(grade: str, body: CalendarPutRequest):
+    try:
+        GradeCalendar(days=body.days, periods_per_day=body.periods_per_day,
+                     midday_break_after=body.midday_break_after,
+                     clock_times=body.clock_times)
+    except ValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    calendars_path = DEFAULT_CONFIG_DIR / 'calendars.yaml'
+    raw = _load_yaml_dict_or_400(calendars_path, 'calendars.yaml') if calendars_path.exists() else {}
+    all_calendars = raw.setdefault('grade_calendars', {})
+    existing = all_calendars.get(grade) or {}
+    all_calendars[grade] = {
+        'days': body.days,
+        'periods_per_day': body.periods_per_day,
+        'midday_break_after': body.midday_break_after,
+        'clock_times': [list(t) for t in body.clock_times],
+        'reserved_slots': existing.get('reserved_slots', []),
+    }
+    calendars_path.write_text(yaml.safe_dump(raw, allow_unicode=True, sort_keys=False),
+                              encoding='utf-8')
+    return CalendarGetResponse(grade=grade, days=body.days,
+                               periods_per_day=body.periods_per_day,
+                               midday_break_after=body.midday_break_after,
+                               clock_times=body.clock_times)
+
+
+@router.get('/config/venues', response_model=VenuesGetResponse)
+def get_venues():
+    cfg = _load_config_or_400()
+    return VenuesGetResponse(venues=[
+        VenueItem(**v.model_dump()) for v in cfg.venues.values()
+    ])
+
+
+@router.get('/config/rules', response_model=RulesGetResponse)
+def get_rules():
+    """只读写 rules.yaml（手写的政策级规则），不碰 rules.generated.yaml——
+
+    后者是导入器从 Excel 批量生成的 121 位教师的 forbid_slots，走的是导入
+    确认流程，不该在这个通用规则编辑器里被当成"新增/删除一行"来操作。
+    """
+    rules_path = DEFAULT_CONFIG_DIR / 'rules.yaml'
+    raw = _load_yaml_dict_or_400(rules_path, 'rules.yaml') if rules_path.exists() else {}
+    return RulesGetResponse(rules=[RuleItem(**r) for r in raw.get('rules', [])],
+                            rule_types=sorted(RULE_TYPES))
+
+
+@router.put('/config/rules', response_model=RulesGetResponse)
+def put_rules(body: RulesPutRequest):
+    validated = []
+    for item in body.rules:
+        try:
+            validated.append(Rule(**item.model_dump()).validate_type())
+        except RuleError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    rules_path = DEFAULT_CONFIG_DIR / 'rules.yaml'
+    rules_path.write_text(
+        yaml.safe_dump({'rules': [r.model_dump(exclude_defaults=True) for r in validated]},
+                       allow_unicode=True, sort_keys=False),
+        encoding='utf-8')
+    return RulesGetResponse(rules=body.rules, rule_types=sorted(RULE_TYPES))
 
 
 @router.put('/config/courses', response_model=CoursesGetResponse)

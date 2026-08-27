@@ -2,18 +2,28 @@
 import { ref } from 'vue'
 import { exportUrl } from '../api'
 import ScheduleGrid from './ScheduleGrid.vue'
+import TeacherScheduleGrid from './TeacherScheduleGrid.vue'
+import VenueOccupancyGrid from './VenueOccupancyGrid.vue'
+import IssueList from './IssueList.vue'
+import AiReviewPanel from './AiReviewPanel.vue'
+import SolveMonitor from './SolveMonitor.vue'
 
 interface Candidate {
   index: number
   status: string
   wall_time: number
-  violations: unknown[]
-  placements: Array<{ task_id: number; class_id: number; course: string; slot: number; parity: string | null }>
+  objective: number | null
+  stats: string
+  violations: Array<{ kind: string; detail: string }>
+  placements: Array<{ task_id: number; class_id: number; course: string; teacher: string; slot: number; parity: string | null }>
 }
+
+type ViewMode = 'class' | 'teacher' | 'venue' | 'monitor'
 
 const props = defineProps<{ candidates: Candidate[]; jobId: string | null; classes: number[] }>()
 
 const activeIndex = ref(1)
+const viewMode = ref<ViewMode>('class')
 
 function activate(index: number) {
   activeIndex.value = index
@@ -40,7 +50,27 @@ function activate(index: number) {
 
     <template v-for="c in candidates" :key="c.index">
       <div v-if="c.index === activeIndex" class="candidate-body">
-        <ScheduleGrid :classes="classes" :placements="c.placements" :job-id="jobId" :candidate-index="c.index" />
+        <nav class="view-nav">
+          <button data-test="view-class" class="view-tab" :class="{ active: viewMode === 'class' }"
+                  @click="viewMode = 'class'">班级课表</button>
+          <button data-test="view-teacher" class="view-tab" :class="{ active: viewMode === 'teacher' }"
+                  @click="viewMode = 'teacher'">教师课表</button>
+          <button data-test="view-venue" class="view-tab" :class="{ active: viewMode === 'venue' }"
+                  @click="viewMode = 'venue'">场地占用</button>
+          <button data-test="view-monitor" class="view-tab" :class="{ active: viewMode === 'monitor' }"
+                  @click="viewMode = 'monitor'">求解监控</button>
+        </nav>
+
+        <ScheduleGrid v-if="viewMode === 'class'"
+                      :classes="classes" :placements="c.placements" :job-id="jobId" :candidate-index="c.index" />
+        <TeacherScheduleGrid v-else-if="viewMode === 'teacher'" :placements="c.placements" />
+        <VenueOccupancyGrid v-else-if="viewMode === 'venue'" :placements="c.placements" />
+        <SolveMonitor v-else :candidates="candidates" :active-index="activeIndex" />
+
+        <IssueList title="本方案违规明细" tone="critical" :items="c.violations" />
+
+        <AiReviewPanel :job-id="jobId" :candidate-index="c.index" />
+
         <div class="export-row">
           <a v-if="jobId" data-test="export-link" class="btn btn-secondary" :href="exportUrl(jobId, c.index, false)">
             导出 Excel（简单网格版）
@@ -89,6 +119,32 @@ function activate(index: number) {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.view-nav {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--page-bg);
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  align-self: flex-start;
+}
+
+.view-tab {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.view-tab.active {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 .export-row {

@@ -34,6 +34,9 @@ class SolveJob:
         self.dataset: Optional[Dataset] = None
         self.cfg: Optional[SchedulerConfig] = None
         self.rules: List[Rule] = []
+        # AI 审核结果按候选方案序号（1-based）缓存——调一次 API 花真钱，
+        # 切换候选方案 tab 或刷新历史都不该重新触发。
+        self.ai_findings: Dict[int, List[dict]] = {}
 
 
 def _job_to_data(job: SolveJob) -> dict:
@@ -45,6 +48,9 @@ def _job_to_data(job: SolveJob) -> dict:
         'dataset': job.dataset.model_dump() if job.dataset is not None else None,
         'cfg': job.cfg.model_dump() if job.cfg is not None else None,
         'rules': [r.model_dump() for r in job.rules],
+        # JSON 对象键只能是字符串——存的时候把候选序号转成字符串，读回来
+        # 时（见下）再转回 int，不能让调用方 (routes/ws) 操心这层转换。
+        'ai_findings': {str(k): v for k, v in job.ai_findings.items()},
     }
 
 
@@ -58,6 +64,7 @@ def _data_to_job(job_id: str, payload: dict) -> SolveJob:
     job.dataset = Dataset(**payload['dataset']) if payload.get('dataset') else None
     job.cfg = SchedulerConfig(**payload['cfg']) if payload.get('cfg') else None
     job.rules = [Rule(**r) for r in payload.get('rules', [])]
+    job.ai_findings = {int(k): v for k, v in payload.get('ai_findings', {}).items()}
     return job
 
 

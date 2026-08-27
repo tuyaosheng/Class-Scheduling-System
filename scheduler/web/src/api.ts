@@ -54,6 +54,11 @@ export interface CourseItem {
   external: boolean
 }
 
+export interface VenueItem {
+  name: string
+  capacity: number | null
+}
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const resp = await fetch(url, options)
   const body = await resp.json()
@@ -149,6 +154,86 @@ export async function putCourses(courses: CourseItem[]) {
   })
 }
 
+export async function getVenues() {
+  return request<{ venues: VenueItem[] }>('/api/config/venues')
+}
+
+export interface GradeItem {
+  name: string
+  classes: number
+}
+
+export async function getGrades() {
+  return request<{ grades: GradeItem[] }>('/api/config/grades')
+}
+
+export async function putGrades(grades: GradeItem[]) {
+  return request<{ grades: GradeItem[] }>('/api/config/grades', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grades }),
+  })
+}
+
+export interface ParsedCalendarSheet {
+  sheet_name: string
+  periods_per_day: number
+  midday_break_after: number
+  clock_times: Array<[string, string]>
+}
+
+export async function parseCalendarWorkbook(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  return request<{ sheets: ParsedCalendarSheet[] }>('/api/config/calendars/parse', {
+    method: 'POST',
+    body: form,
+  })
+}
+
+export interface CalendarItem {
+  grade: string
+  days: string[]
+  periods_per_day: number
+  midday_break_after: number
+  clock_times: Array<[string, string]>
+}
+
+export async function getCalendar(grade: string) {
+  return request<CalendarItem>(`/api/config/calendars/${encodeURIComponent(grade)}`)
+}
+
+export async function putCalendar(grade: string, body: {
+  days?: string[]; periods_per_day: number; midday_break_after: number; clock_times: Array<[string, string]>
+}) {
+  return request<CalendarItem>(`/api/config/calendars/${encodeURIComponent(grade)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+export interface RuleItem {
+  type: string
+  scope: Record<string, unknown>
+  params: Record<string, unknown>
+  mode: string
+  enabled: boolean
+  weight: number
+}
+
+export async function getRules() {
+  return request<{ rules: RuleItem[]; rule_types: string[] }>('/api/config/rules')
+}
+
+export async function putRules(rules: RuleItem[]) {
+  return request<{ rules: RuleItem[]; rule_types: string[] }>('/api/config/rules', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rules }),
+  })
+}
+
 export interface ImportSessionSummary {
   token: string
   grade: string
@@ -183,8 +268,10 @@ export interface Candidate {
   index: number
   status: string
   wall_time: number
-  violations: unknown[]
-  placements: Array<{ task_id: number; class_id: number; course: string; slot: number; parity: string | null }>
+  objective: number | null
+  stats: string
+  violations: Array<{ kind: string; detail: string }>
+  placements: Array<{ task_id: number; class_id: number; course: string; teacher: string; slot: number; parity: string | null }>
 }
 
 export interface SolveJobDetail {
@@ -222,6 +309,20 @@ export interface AdjustResponse {
   applied: AdjustMove[]
   reverted: Array<{ task_id: number; from_slot: number; reason: string }>
   placements: Array<{ task_id: number; class_id: number; course: string; slot: number; parity: string | null }>
+}
+
+export interface Finding {
+  severity: string
+  scope: Record<string, unknown>
+  issue: string
+  suggestion: string
+}
+
+export async function reviewCandidate(jobId: string, candidateIndex: number) {
+  return request<{ findings: Finding[] }>(
+    `/api/solve/${jobId}/candidates/${candidateIndex}/review`,
+    { method: 'POST' },
+  )
 }
 
 export async function adjustCandidate(

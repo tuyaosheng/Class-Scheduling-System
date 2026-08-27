@@ -151,6 +151,11 @@ def test_config_loads_calendars(cfg):
     assert len(calendar.reserved_slots) == 8
 
 
+def test_config_loads_grades(cfg):
+    names = {g.name: g.classes for g in cfg.grades}
+    assert names == {'初三': 32}
+
+
 def test_calendar_of_unknown_grade_raises(cfg):
     with pytest.raises(ConfigError):
         cfg.calendar_of('不存在的年级')

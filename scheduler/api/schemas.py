@@ -1,5 +1,5 @@
 """API 请求/响应模型——只用于 HTTP 边界，不与 scheduler.core.models 混用。"""
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -86,6 +86,8 @@ class CandidateItem(BaseModel):
     index: int
     status: str
     wall_time: float
+    objective: Optional[float] = None
+    stats: str = ''
     violations: List[dict]
     placements: List[dict]
 
@@ -146,3 +148,80 @@ class CoursesGetResponse(BaseModel):
 
 class CoursesPutRequest(BaseModel):
     courses: List[CourseItem]
+
+
+class VenueItem(BaseModel):
+    name: str
+    capacity: Optional[int] = None
+
+
+class VenuesGetResponse(BaseModel):
+    venues: List[VenueItem]
+
+
+class FindingItem(BaseModel):
+    severity: str
+    scope: Dict = {}
+    issue: str
+    suggestion: str = ''
+
+
+class ReviewResponse(BaseModel):
+    findings: List[FindingItem]
+
+
+class RuleItem(BaseModel):
+    type: str
+    scope: Dict = {}
+    params: Dict = {}
+    mode: str = 'hard'
+    enabled: bool = True
+    weight: int = 0
+
+
+class RulesGetResponse(BaseModel):
+    rules: List[RuleItem]
+    rule_types: List[str]
+
+
+class RulesPutRequest(BaseModel):
+    rules: List[RuleItem]
+
+
+class GradeItem(BaseModel):
+    name: str
+    classes: int
+
+
+class GradesGetResponse(BaseModel):
+    grades: List[GradeItem]
+
+
+class GradesPutRequest(BaseModel):
+    grades: List[GradeItem]
+
+
+class ParsedCalendarSheetItem(BaseModel):
+    sheet_name: str
+    periods_per_day: int
+    midday_break_after: int
+    clock_times: List[Tuple[str, str]]
+
+
+class CalendarParseResponse(BaseModel):
+    sheets: List[ParsedCalendarSheetItem]
+
+
+class CalendarGetResponse(BaseModel):
+    grade: str
+    days: List[str]
+    periods_per_day: int
+    midday_break_after: int
+    clock_times: List[Tuple[str, str]]
+
+
+class CalendarPutRequest(BaseModel):
+    days: List[str] = ['周一', '周二', '周三', '周四', '周五']
+    periods_per_day: int
+    midday_break_after: int
+    clock_times: List[Tuple[str, str]]

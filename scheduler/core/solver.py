@@ -41,6 +41,12 @@ class Solution(BaseModel):
     status: str
     wall_time: float
     placements: List[Placement] = []
+    # 软约束加权目标值——只有模型里有软约束（soft_terms 非空）时才有意义，
+    # 纯硬约束模型没有 Minimize 目标，此时是 None。数值越低越好。
+    objective: Optional[float] = None
+    # CP-SAT 的 solver.ResponseStats() 原文，求解监控面板用来展示"求解器
+    # 真实做了什么"，不是伪造的逐格填充动画（见 CLAUDE.md 「关于看到程序怎么算」）。
+    stats: str = ''
 
     @property
     def feasible(self) -> bool:
@@ -75,8 +81,10 @@ def solve(dataset, cfg, rules, *, max_seconds=60, workers=8) -> Solution:
     if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         by_id = {t.id: t for t in dataset.tasks}
         placements, _ = _extract_placements(solver, compiled, by_id)
+    objective = solver.ObjectiveValue() if compiled.soft_terms else None
     return Solution(status=_STATUS_NAME.get(status, str(status)),
-                    wall_time=elapsed, placements=placements)
+                    wall_time=elapsed, placements=placements,
+                    objective=objective, stats=solver.ResponseStats())
 
 
 def solve_many(dataset, cfg, rules, *, count=3, min_diff=8,
@@ -103,7 +111,9 @@ def solve_many(dataset, cfg, rules, *, count=3, min_diff=8,
             break
 
         placements, chosen_vars = _extract_placements(solver, compiled, by_id)
+        objective = solver.ObjectiveValue() if compiled.soft_terms else None
         solutions.append(Solution(status=_STATUS_NAME.get(status, str(status)),
-                                  wall_time=elapsed, placements=placements))
+                                  wall_time=elapsed, placements=placements,
+                                  objective=objective, stats=solver.ResponseStats()))
         compiled.model.Add(sum(chosen_vars) <= len(chosen_vars) - min_diff)
     return solutions

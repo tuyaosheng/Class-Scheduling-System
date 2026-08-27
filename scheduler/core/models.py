@@ -90,6 +90,17 @@ class GradeCalendar(BaseModel):
                 if p != self.midday_break_after]
 
 
+class GradeInfo(BaseModel):
+    """年级管理页声明的年级——名字任意、数量不限。
+
+    这里只记"有哪些年级、每个年级几个班"，供 UI 在导入任何 Excel 之前
+    先把年级/班级骨架搭起来；求解链路仍然读 Dataset.classes（从实际导入
+    的任课表算出来），两者不是同一件事——这里是声明与校验用的骨架。
+    """
+    name: str
+    classes: int
+
+
 class Course(BaseModel):
     name: str
     family: str

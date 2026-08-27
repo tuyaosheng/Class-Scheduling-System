@@ -369,6 +369,62 @@ def test_adjust_400_when_from_slot_does_not_match_a_real_placement(client, tiny_
     assert resp.status_code == 400
 
 
+# ---------------------------------------------------------------- AI 审核
+
+def test_review_returns_findings_and_caches_them(client, tiny_config, monkeypatch):
+    """第二次调用同一个候选方案应该直接命中缓存，不再花钱调一次 AI。"""
+    import scheduler.api.ws as ws_module
+    from scheduler.ai.reviewer import Finding
+
+    calls = []
+
+    def fake_review(solution, dataset, cfg, rules, violations, *, client=None):
+        calls.append(1)
+        return [Finding(severity='warning', scope={'class': 1},
+                        issue='不合理编排', suggestion='加一条规则')]
+
+    monkeypatch.setattr(ws_module, 'review_schedule', fake_review)
+
+    job_id = _solved_job_id(client)
+    resp = client.post('/api/solve/%s/candidates/1/review' % job_id)
+    assert resp.status_code == 200
+    findings = resp.json()['findings']
+    assert findings == [{'severity': 'warning', 'scope': {'class': 1},
+                         'issue': '不合理编排', 'suggestion': '加一条规则'}]
+    assert len(calls) == 1
+
+    resp2 = client.post('/api/solve/%s/candidates/1/review' % job_id)
+    assert resp2.status_code == 200
+    assert resp2.json()['findings'] == findings
+    assert len(calls) == 1   # 缓存命中，没有再调一次
+
+
+def test_review_404_for_unknown_job():
+    resp = TestClient(app).post('/api/solve/不存在的job/candidates/1/review')
+    assert resp.status_code == 404
+
+
+def test_review_404_for_out_of_range_candidate_index(client, tiny_config):
+    job_id = _solved_job_id(client)
+    resp = client.post('/api/solve/%s/candidates/99/review' % job_id)
+    assert resp.status_code == 404
+
+
+def test_review_400_when_ai_review_fails(client, tiny_config, monkeypatch):
+    import scheduler.api.ws as ws_module
+    from scheduler.ai.reviewer import AIReviewError
+
+    def fake_review(*args, **kwargs):
+        raise AIReviewError('未配置 Anthropic API key：请先在「设置 → AI 设置」里填写')
+
+    monkeypatch.setattr(ws_module, 'review_schedule', fake_review)
+
+    job_id = _solved_job_id(client)
+    resp = client.post('/api/solve/%s/candidates/1/review' % job_id)
+    assert resp.status_code == 400
+    assert 'API key' in resp.json()['detail']
+
+
 def test_export_returns_xlsx_file(client, tiny_config):
     resp = client.post('/api/solve', json={'grade': '初三', 'count': 1, 'min_diff': 1,
                                            'max_seconds': 10})
