@@ -415,7 +415,7 @@ export interface AdjustMove {
 
 export interface AdjustResponse {
   applied: AdjustMove[]
-  reverted: Array<{ task_id: number; from_slot: number; reason: string }>
+  reverted: Array<{ task_id: number; from_slot: number; reason: string; kinds: string[] }>
   placements: Array<{ task_id: number; class_id: number; course: string; slot: number; parity: string | null }>
 }
 

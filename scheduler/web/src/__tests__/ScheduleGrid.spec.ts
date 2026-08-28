@@ -184,7 +184,7 @@ describe('ScheduleGrid', () => {
   it('reverted moves bounce back and show the reason', async () => {
     vi.spyOn(api, 'adjustCandidate').mockResolvedValue({
       applied: [],
-      reverted: [{ task_id: 0, from_slot: 0, reason: '教师分身：李老师同一时间在 3 班' }],
+      reverted: [{ task_id: 0, from_slot: 0, reason: '教师分身：李老师同一时间在 3 班', kinds: ['教师分身'] }],
       placements: [{ task_id: 0, class_id: 1, course: '语文', slot: 0, parity: null }],
     })
     const wrapper = mount(ScheduleGrid, {
@@ -205,6 +205,9 @@ describe('ScheduleGrid', () => {
     expect(cells[0].text()).toBe('语文')   // 弹回原位
     expect(cells[3].text()).toBe('')
     expect(wrapper.text()).toContain('教师分身：李老师同一时间在 3 班')
+    const badge = wrapper.find('[data-test="revert-kind-badge"]')
+    expect(badge.text()).toBe('教师分身')
+    expect(badge.classes()).toContain('kind-structural')
   })
 
   it('cancel discards the staged moves without calling the backend', async () => {

@@ -29,6 +29,7 @@ class RevertedMove(BaseModel):
     task_id: int
     from_slot: int
     reason: str
+    kinds: List[str] = []
 
 
 class AdjustResult(BaseModel):
@@ -45,9 +46,11 @@ def _with_moves_applied(placements: List[Placement], pending: Dict[MoveKey, int]
     ]
 
 
-def _violation_details(placements: List[Placement], dataset, cfg, rules) -> List[str]:
+def _violation_details(placements: List[Placement], dataset, cfg, rules) -> List[Tuple[str, str]]:
+    """返回 (kind, detail) 对——kind 是校验器给的粗粒度分类（教师分身/班级重课/
+    违反禁排……），供前端"回退提示按违规类型着色"用，见 CLAUDE.md 子项目6。"""
     solution = Solution(status='OPTIMAL', wall_time=0.0, placements=placements)
-    return [v.detail for v in verify(solution, dataset, cfg, rules)]
+    return [(v.kind, v.detail) for v in verify(solution, dataset, cfg, rules)]
 
 
 def apply_and_prune(placements: List[Placement], moves: Dict[MoveKey, int],
@@ -69,6 +72,7 @@ def apply_and_prune(placements: List[Placement], moves: Dict[MoveKey, int],
         best_key = None
         best_count = len(current)
         best_reason = ''
+        best_kinds: List[str] = []
         for key in pending:
             trial = dict(pending)
             del trial[key]
@@ -78,17 +82,20 @@ def apply_and_prune(placements: List[Placement], moves: Dict[MoveKey, int],
                 resolved = set(current) - set(trial_details)
                 best_key = key
                 best_count = len(trial_details)
-                best_reason = '；'.join(sorted(resolved)) if resolved else '存在冲突'
+                best_reason = '；'.join(sorted(d for _, d in resolved)) if resolved else '存在冲突'
+                best_kinds = sorted({k for k, _ in resolved})
 
         if best_key is None:
             # 没有单独撤销任何一处能改善——这批改动互相牵连，整体回退。
+            kinds = sorted({k for k, _ in current})
             reverted += [RevertedMove(task_id=tid, from_slot=from_slot,
-                                     reason='与其他改动互相牵连，已整体撤销')
+                                     reason='与其他改动互相牵连，已整体撤销', kinds=kinds)
                         for tid, from_slot in pending]
             return AdjustResult(placements=placements, applied=[], reverted=reverted)
 
         task_id, from_slot = best_key
-        reverted.append(RevertedMove(task_id=task_id, from_slot=from_slot, reason=best_reason))
+        reverted.append(RevertedMove(task_id=task_id, from_slot=from_slot,
+                                     reason=best_reason, kinds=best_kinds))
         del pending[best_key]
 
     return AdjustResult(placements=placements, applied=[], reverted=reverted)

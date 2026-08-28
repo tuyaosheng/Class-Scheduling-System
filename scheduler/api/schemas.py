@@ -144,6 +144,7 @@ class RevertedMoveItem(BaseModel):
     task_id: int
     from_slot: int
     reason: str
+    kinds: List[str] = []
 
 
 class AdjustResponse(BaseModel):

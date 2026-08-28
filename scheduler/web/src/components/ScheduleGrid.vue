@@ -71,8 +71,37 @@ interface DisplayedPlacement extends Placement {
   _key: string
 }
 
+interface RevertMessage {
+  reason: string
+  kinds: string[]
+}
+
+// 违规类型很细（校验器有 12 种 kind），按严重程度归成 4 组再着色，比
+// 每种 kind 一个颜色更好辨认：结构性冲突（分身/重课/超容）最要紧，禁排
+// 类次之，分布类（每日上下限等软性规则）再次，数据类兜底。未收录的新
+// kind 落到 other，不需要每新增一种校验器 kind 就来改这里。
+const VIOLATION_KIND_GROUP: Record<string, 'structural' | 'forbidden' | 'distribution' | 'data'> = {
+  教师分身: 'structural',
+  班级重课: 'structural',
+  场地超容: 'structural',
+  违反禁排: 'forbidden',
+  越出窗口: 'forbidden',
+  每日下限不足: 'distribution',
+  每日上限超出: 'distribution',
+  指定星期节数不符: 'distribution',
+  缺少连堂: 'distribution',
+  单双周未共格: 'distribution',
+  教师半天连堂过长: 'distribution',
+  课时数不符: 'data',
+  规则未被校验: 'data',
+}
+
+function kindClass(kind: string): string {
+  return `kind-${VIOLATION_KIND_GROUP[kind] ?? 'other'}`
+}
+
 const pendingMoves = reactive(new Map<string, number>())   // baseKey -> 目标 slot
-const revertMessages = reactive(new Map<number, string[]>())
+const revertMessages = reactive(new Map<number, RevertMessage[]>())
 const dirtyClasses = reactive(new Set<number>())
 const draggingKey = ref<string | null>(null)
 const draggingClassId = ref<number | null>(null)
@@ -170,7 +199,7 @@ function isDirty(classId: number): boolean {
   return dirtyClasses.has(classId)
 }
 
-function messagesFor(classId: number): string[] {
+function messagesFor(classId: number): RevertMessage[] {
   return revertMessages.get(classId) ?? []
 }
 
@@ -207,7 +236,7 @@ async function confirm(classId: number) {
     // 不能再用新 basePlacements 反查该清哪些 key（其他班级的 pendingMoves
     // 完全不受影响，因为 key 本身不依赖数组下标）。
     for (const key of pendingKeysForClass) pendingMoves.delete(key)
-    revertMessages.set(classId, result.reverted.map((r) => r.reason))
+    revertMessages.set(classId, result.reverted.map((r) => ({ reason: r.reason, kinds: r.kinds })))
     dirtyClasses.delete(classId)
   } finally {
     confirming.delete(classId)
@@ -237,7 +266,11 @@ async function confirm(classId: number) {
               </span>
             </div>
             <ul v-if="messagesFor(classId).length" data-test="revert-messages" class="revert-messages">
-              <li v-for="(m, i) in messagesFor(classId)" :key="i">{{ m }}</li>
+              <li v-for="(m, i) in messagesFor(classId)" :key="i">
+                <span v-for="kind in m.kinds" :key="kind" class="kind-badge" :class="kindClass(kind)"
+                      data-test="revert-kind-badge">{{ kind }}</span>
+                {{ m.reason }}
+              </li>
             </ul>
           </th>
         </tr>
@@ -373,4 +406,20 @@ tbody tr:hover .cell {
   white-space: normal;
   text-align: left;
 }
+
+.kind-badge {
+  display: inline-block;
+  margin: 0 4px 2px 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.kind-badge.kind-structural { background: #c0392b; }
+.kind-badge.kind-forbidden { background: #d9822b; }
+.kind-badge.kind-distribution { background: #b8960c; }
+.kind-badge.kind-data { background: #6b6b6b; }
+.kind-badge.kind-other { background: #999; }
 </style>

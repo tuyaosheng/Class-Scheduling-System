@@ -273,7 +273,7 @@ def adjust_candidate(job_id: str, index: int, body: AdjustRequest):
     return AdjustResponse(
         applied=[MoveItem(task_id=tid, from_slot=from_slot, to_slot=moves[(tid, from_slot)])
                 for tid, from_slot in result.applied],
-        reverted=[RevertedMoveItem(task_id=r.task_id, from_slot=r.from_slot, reason=r.reason)
+        reverted=[RevertedMoveItem(task_id=r.task_id, from_slot=r.from_slot, reason=r.reason, kinds=r.kinds)
                  for r in result.reverted],
         placements=class_placements,
     )

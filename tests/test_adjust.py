@@ -65,6 +65,7 @@ def test_single_conflicting_move_is_fully_reverted():
     assert len(result.reverted) == 1
     assert result.reverted[0].task_id == 0
     assert result.reverted[0].from_slot == 0
+    assert result.reverted[0].kinds == ['教师分身']
     assert result.placements == placements  # 完全退回原状
 
 
@@ -77,6 +78,7 @@ def test_multi_move_only_reverts_the_culprit():
     result = apply_and_prune(placements, moves, _dataset(), _cfg(), [])
     assert result.applied == [(1, 1)]
     assert [(r.task_id, r.from_slot) for r in result.reverted] == [(0, 0)]
+    assert result.reverted[0].kinds == ['教师分身']
 
     by_slot = {p.slot: p for p in result.placements}
     assert by_slot[0].task_id == 0    # 肇事的那个被退回原位
@@ -94,6 +96,7 @@ def test_entangled_moves_degrade_to_full_revert():
     assert result.applied == []
     assert {(r.task_id, r.from_slot) for r in result.reverted} == {(0, 0), (4, 30)}
     assert all(r.reason == '与其他改动互相牵连，已整体撤销' for r in result.reverted)
+    assert all(r.kinds == ['班级重课'] for r in result.reverted)
     assert result.placements == placements
 
 
