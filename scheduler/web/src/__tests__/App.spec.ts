@@ -115,6 +115,18 @@ describe('App navigation', () => {
     expect(wrapper.findComponent({ name: 'SettingsPanel' }).exists()).toBe(true)
   })
 
+  it('step 9 shows the export-all settings', async () => {
+    stubGrades()
+    vi.spyOn(api, 'getConfigStatus').mockResolvedValue({ ready: false, grade: null, classes: 0, tasks: 0 })
+    vi.spyOn(api, 'listSolveJobs').mockResolvedValue({ jobs: [] })
+    const wrapper = mount(App)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const steps = wrapper.findAll('[data-test="nav-step"]')
+    await steps[8].trigger('click')   // 第 9 步：导出课表
+    expect(wrapper.findComponent({ name: 'ExportAllSettings' }).exists()).toBe(true)
+  })
+
   it('step 4 shows the alternate-week pairing settings for the active grade', async () => {
     stubGrades()
     vi.spyOn(api, 'getConfigStatus').mockResolvedValue({ ready: false, grade: null, classes: 0, tasks: 0 })

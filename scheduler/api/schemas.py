@@ -59,6 +59,36 @@ class RuleSheetPutResponse(BaseModel):
     teachers_updated: int
 
 
+class ExportSelectionItem(BaseModel):
+    grade: str
+    job_id: str
+    candidate_index: int
+
+
+class ExportAllRequest(BaseModel):
+    selections: List[ExportSelectionItem]
+
+
+class CrossGradeConflictItem(BaseModel):
+    teacher: str
+    day: str
+    grade_a: str
+    class_a: int
+    course_a: str
+    start_a: str
+    end_a: str
+    grade_b: str
+    class_b: int
+    course_b: str
+    start_b: str
+    end_b: str
+
+
+class ExportAllCheckResponse(BaseModel):
+    conflicts: List[CrossGradeConflictItem]
+    skipped_grades: List[str]
+
+
 class ConfigStatus(BaseModel):
     ready: bool
     grade: Optional[str] = None

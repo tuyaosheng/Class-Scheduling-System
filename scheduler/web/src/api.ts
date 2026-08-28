@@ -407,6 +407,53 @@ export async function clearSolveJobs() {
   return request<{ ok: boolean }>('/api/solve/jobs', { method: 'DELETE' })
 }
 
+export interface ExportSelectionItem {
+  grade: string
+  job_id: string
+  candidate_index: number
+}
+
+export interface CrossGradeConflictItem {
+  teacher: string
+  day: string
+  grade_a: string
+  class_a: number
+  course_a: string
+  start_a: string
+  end_a: string
+  grade_b: string
+  class_b: number
+  course_b: string
+  start_b: string
+  end_b: string
+}
+
+export interface ExportAllCheckResponse {
+  conflicts: CrossGradeConflictItem[]
+  skipped_grades: string[]
+}
+
+export async function checkExportAll(selections: ExportSelectionItem[]) {
+  return request<ExportAllCheckResponse>('/api/export/all/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ selections }),
+  })
+}
+
+export async function exportAll(selections: ExportSelectionItem[]): Promise<Blob> {
+  const resp = await fetch('/api/export/all', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ selections }),
+  })
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}))
+    throw new Error((body as { detail?: string }).detail ?? '导出失败')
+  }
+  return resp.blob()
+}
+
 export interface AdjustMove {
   task_id: number
   from_slot: number

@@ -25,6 +25,7 @@ from .schemas import (
     AiSettingsGetResponse, AiSettingsPutRequest,
     CalendarGetResponse, CalendarParseResponse, CalendarPutRequest,
     ConfigStatus, CourseItem, CoursesGetResponse, CoursesPutRequest,
+    CrossGradeConflictItem, ExportAllCheckResponse, ExportAllRequest,
     GradeItem, GradesGetResponse, GradesPutRequest,
     ImportConfirmRequest, ImportConfirmResponse, ImportPreview,
     ImportSessionSummary, ImportSessionsListResponse, ParsedCalendarSheetItem,
@@ -683,6 +684,74 @@ def put_courses(body: CoursesPutRequest):
 # 模块级常量，方便测试用 monkeypatch 模拟『模板文件缺失』而不必真的动仓库根目录下
 # 那份未纳入 git 管理的 课程表模板.xlsx（见 finding I3）。
 TEMPLATE_PATH = Path(__file__).resolve().parents[2] / '课程表模板.xlsx'
+
+
+def _load_export_entries(selections):
+    """按 (grade, job_id, candidate_index) 取出每个年级要导出的 (dataset, solution, cfg)。
+    校验 job 存在、年级对得上、候选方案序号在范围内——都是用户能在 UI 里选错的
+    地方，不能让下标越界之类的裸异常传播成 500。"""
+    entries = {}
+    for sel in selections:
+        job = sessions.get_job(sel.job_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail='任务 %s 不存在' % sel.job_id)
+        if job.grade != sel.grade:
+            raise HTTPException(status_code=400,
+                               detail='任务 %s 是 %s 的数据，不是请求里的 %s' % (sel.job_id, job.grade, sel.grade))
+        if not 1 <= sel.candidate_index <= len(job.solutions):
+            raise HTTPException(status_code=404,
+                               detail='任务 %s 下没有候选方案 %d' % (sel.job_id, sel.candidate_index))
+        entries[sel.grade] = (job.dataset, job.solutions[sel.candidate_index - 1], job.cfg)
+    return entries
+
+
+def _describe_cross_grade_conflict(c) -> str:
+    return ('%s 在%s %s-%s 同时排了 %s%d班%s 和 %s%d班%s'
+           % (c.teacher, c.day, c.start_a, c.end_a,
+              c.grade_a, c.class_a, c.course_a, c.grade_b, c.class_b, c.course_b))
+
+
+@router.post('/export/all/check', response_model=ExportAllCheckResponse)
+def check_export_all(body: ExportAllRequest):
+    """导出前的跨年级统一校验——只检查，不落盘。各年级独立求解，互不知道
+    彼此，同一位教师可能被两个年级各自排到"同一时刻"，必须按真实钟点区间
+    比对（不同年级作息形状可能不同，"第几节"不可比），见 cross_grade.py。"""
+    from scheduler.core.cross_grade import find_cross_grade_conflicts
+
+    entries = _load_export_entries(body.selections)
+    conflicts, skipped = find_cross_grade_conflicts(
+        {grade: (dataset, solution) for grade, (dataset, solution, _cfg) in entries.items()})
+    return ExportAllCheckResponse(
+        conflicts=[CrossGradeConflictItem(**c.model_dump()) for c in conflicts],
+        skipped_grades=skipped)
+
+
+@router.post('/export/all')
+def export_all(body: ExportAllRequest):
+    """确认校验通过后才真正导出——服务端重新校验一遍，不信任前端的"我已经
+    check 过了"，避免前端跳过校验直接调这个接口拿到有冲突的课表。"""
+    import zipfile
+
+    from scheduler.core.cross_grade import find_cross_grade_conflicts
+    from scheduler.core.exporter import export_excel
+
+    entries = _load_export_entries(body.selections)
+    conflicts, _skipped = find_cross_grade_conflicts(
+        {grade: (dataset, solution) for grade, (dataset, solution, _cfg) in entries.items()})
+    if conflicts:
+        detail = ('跨年级校验未通过，存在 %d 处教师时间冲突，不能导出：%s'
+                  % (len(conflicts), '；'.join(_describe_cross_grade_conflict(c) for c in conflicts[:5])))
+        raise HTTPException(status_code=400, detail=detail)
+
+    out_dir = Path(tempfile.mkdtemp())
+    zip_path = out_dir / '全部课表.zip'
+    with zipfile.ZipFile(zip_path, 'w') as zf:
+        for grade, (dataset, solution, cfg) in entries.items():
+            xlsx_path = out_dir / ('%s.xlsx' % grade)
+            export_excel(solution, dataset, xlsx_path, cfg=cfg)
+            zf.write(xlsx_path, arcname='%s.xlsx' % grade)
+
+    return FileResponse(zip_path, media_type='application/zip', filename='全部课表.zip')
 
 
 @router.get('/export/{job_id}/{candidate_index}')

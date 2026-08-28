@@ -465,6 +465,44 @@ def test_export_with_template_returns_404_when_template_file_missing(
     assert '课程表模板.xlsx' in export_resp.json()['detail']
 
 
+def test_run_job_wires_the_grades_real_calendar_not_the_hardcoded_default(client, tmp_path, monkeypatch):
+    """真实发生过的 bug（浏览器/API 路径实测中发现）：_run_job 重建 Dataset
+    时以前完全没传 calendar= 参数，等于永远用 models.py 里的默认日历
+    （9节/天，无 clock_times/reserved_slots）——对初三而言形状碰巧一样、
+    掩盖了问题，但七年级是 8 节/天，会静默按错误的 9 节网格求解，且
+    reserved_slots/clock_times 全部失效。cli.py/import_teaching_table 等
+    路径一直是对的（都显式传了 cfg.calendar_of(grade)），只有 _run_job
+    这一条路径漏了，因为它是直接从 teaching.yaml 原始字典重建 Dataset，
+    不经过任何一个已经接入日历参数化的 importer 函数。"""
+    import scheduler.api.routes as routes_module
+    import scheduler.api.ws as ws_module
+    monkeypatch.setattr(routes_module, 'DEFAULT_CONFIG_DIR', tmp_path)
+    monkeypatch.setattr(ws_module, 'DEFAULT_CONFIG_DIR', tmp_path)
+
+    dataset = Dataset(grade='七年级', classes=[1],
+                      teachers={'张老师': Teacher(name='张老师')},
+                      tasks=[TeachingTask(id=0, grade='七年级', class_id=1, course='语文',
+                                         teacher='张老师', periods=1)])
+    result = ImportResult(dataset=dataset, rules=[], warnings=[])
+    write_teaching_yaml(result, tmp_path / 'teaching.yaml')
+    write_rules_yaml(result, tmp_path / 'rules.generated.yaml')
+    for name in ('courses.yaml', 'plans.yaml', 'venues.yaml', 'calendars.yaml'):
+        (tmp_path / name).write_text((CONFIG_DIR / name).read_text(encoding='utf-8'), encoding='utf-8')
+
+    resp = client.post('/api/solve', json={'grade': '七年级', 'count': 1, 'min_diff': 1, 'max_seconds': 10})
+    job_id = resp.json()['job_id']
+    with client.websocket_connect('/api/ws/solve/%s' % job_id) as ws:
+        while True:
+            msg = ws.receive_json()
+            if msg['type'] in ('done', 'infeasible', 'precheck_failed'):
+                break
+
+    from scheduler.api import sessions
+    job = sessions.get_job(job_id)
+    assert job.dataset.calendar.periods_per_day == 8   # 真实七年级日历，不是硬编码默认值 9
+    assert job.dataset.calendar.clock_times is not None
+
+
 def test_run_job_exception_still_reaches_websocket_as_terminal_event(
         client, config_missing_courses):
     """Finding 1 回归测试：_run_job 里任何异常都必须变成一个终结事件。

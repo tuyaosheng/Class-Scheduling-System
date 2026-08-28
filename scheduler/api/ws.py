@@ -120,6 +120,7 @@ def _run_job(job_id, grade, count, min_diff, max_seconds, loop, queue):
             grade=data['grade'], classes=data['classes'],
             teachers={t['name']: Teacher(**t) for t in data['teachers']},
             tasks=[TeachingTask(**t) for t in data['tasks']],
+            calendar=cfg.calendar_of(data['grade']),
         )
         rules = load_rules(DEFAULT_CONFIG_DIR / 'rules.yaml',
                            DEFAULT_CONFIG_DIR / 'rules.generated.yaml')

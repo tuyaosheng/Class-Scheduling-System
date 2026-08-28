@@ -7,6 +7,7 @@ import AppSidebar, { type StepDef } from './components/AppSidebar.vue'
 import CandidateTabs from './components/CandidateTabs.vue'
 import ComingSoonPanel from './components/ComingSoonPanel.vue'
 import CourseSettings from './components/CourseSettings.vue'
+import ExportAllSettings from './components/ExportAllSettings.vue'
 import GradesSettings from './components/GradesSettings.vue'
 import CalendarSettings from './components/CalendarSettings.vue'
 import ImportPanel from './components/ImportPanel.vue'
@@ -176,9 +177,10 @@ function onJobId(id: string) {
           step-eyebrow="第 8 步 · 共 9 步" title="AI 审核"
           body="跨年级统一审核三个年级的课表还没做。现在可以在「排课与调整」页面对单个候选方案单独发起 AI 审核。" />
 
-        <ComingSoonPanel v-else-if="currentStep === 9"
-          step-eyebrow="第 9 步 · 共 9 步" title="导出课表"
-          body="导出前的跨年级统一校验、以及一次性导出全部年级课表还没做。现在可以在「排课与调整」页面为单个年级单独导出。" />
+        <div v-else-if="currentStep === 9" class="step-block">
+          <div class="step-eyebrow">第 9 步 · 共 9 步</div>
+          <ExportAllSettings />
+        </div>
       </template>
     </main>
   </div>
