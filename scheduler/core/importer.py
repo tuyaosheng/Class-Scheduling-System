@@ -521,3 +521,268 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
     warnings = _check_class_loads(dataset, cfg, grade)
     return ImportResult(dataset=dataset, rules=rules, warnings=warnings,
                         conflicts=conflicts, rule_echo=rule_echo)
+
+
+# ---- 子项目5：排课说明.xlsx 降级为纯规则文本表 ----
+# 不再提供任教班/周课时（那是任课表的职责，子项目4），按「姓名+学科」匹配、
+# 不需要按班级交叉核对——"谁教谁"已经完全由任课表决定。
+
+RULE_SHEET_COLUMNS = {
+    '姓名': 0, '任教年级': 1, '学科': 2, '职务': 3,
+    '固定节次': 4, '不能排课节次': 5, '排课要求': 6, '备注': 7,
+}
+RULE_SHEET_FIRST_DATA_ROW = 3
+
+
+class RuleImportResult(BaseModel):
+    rules: List[dict]
+    teacher_facts: List[dict]
+    warnings: List[str]
+    rule_echo: Dict[str, List[dict]] = {}
+
+
+def _rule_cell(row, name):
+    idx = RULE_SHEET_COLUMNS[name]
+    value = row[idx] if idx < len(row) else None
+    return '' if value is None else str(value).strip()
+
+
+def _read_rule_sheet_rows(path):
+    wb = openpyxl.load_workbook(path, data_only=True)
+    return [r for r in wb[wb.sheetnames[0]].iter_rows(min_row=RULE_SHEET_FIRST_DATA_ROW, values_only=True)
+            if r and r[RULE_SHEET_COLUMNS['姓名']]]
+
+
+def _fmt_fragments_display(fragments) -> str:
+    return '; '.join('%s %s' % (f['type'], f['params']) for f in fragments)
+
+
+def import_rule_text_table(path, cfg, grade='初三', ai_client=None) -> RuleImportResult:
+    """排课说明.xlsx 降级为纯规则文本表——正则解析永远跑一遍、是真正生效的规则
+    来源（铁律5：AI 不做硬性判定）；ai_client 给定时额外跑 AI 复核，只用来发现
+    正则漏解析或两者分歧的地方，写进 rule_echo 供人工确认，不单独产出规则。
+    AI 复核失败（未配置/网络错误）不影响正则结果，只记一条 warning。
+    """
+    from .ruletext import parse_fixed_slots, parse_remark, parse_requirement, parse_time_expr
+
+    calendar = cfg.calendar_of(grade)
+    courses = cfg.courses_of(grade)
+    rows = _read_rule_sheet_rows(path)
+
+    forbidden: Dict[str, set] = defaultdict(set)
+    duties: Dict[str, set] = defaultdict(set)
+    for row in rows:
+        name = _rule_cell(row, '姓名')
+        for duty in _rule_cell(row, '职务').split(','):
+            if duty.strip():
+                duties[name].add(duty.strip())
+
+    rule_echo: Dict[str, List[dict]] = {'不能排课节次': [], '固定节次': [], '排课要求': [], '备注': []}
+    seen_raw: Dict[str, set] = {k: set() for k in rule_echo}
+    pins = defaultdict(set)
+    rule_seen = set()
+    rules: List[dict] = []
+    warnings: List[str] = []
+
+    def _echo(column, raw, regex_display, ai_display):
+        if not raw or raw in seen_raw[column]:
+            return
+        seen_raw[column].add(raw)
+        entry = {'raw': raw, 'parsed': regex_display}
+        if ai_display is not None:
+            entry['ai_parsed'] = ai_display
+            entry['mismatch'] = ai_display != regex_display
+        rule_echo[column].append(entry)
+
+    for row in rows:
+        name, course = _rule_cell(row, '姓名'), _rule_cell(row, '学科')
+        if course not in courses:
+            raise ValueError('排课说明中的学科 %r 不在 %s 的课程目录里' % (course, grade))
+
+        not_avail_raw = _rule_cell(row, '不能排课节次')
+        fixed_raw = _rule_cell(row, '固定节次')
+        req_raw = _rule_cell(row, '排课要求')
+        remark_raw = _rule_cell(row, '备注')
+
+        not_avail_slots = parse_time_expr(not_avail_raw, calendar)
+        forbidden[name] |= not_avail_slots
+        fixed_slots = parse_fixed_slots(fixed_raw, calendar)
+        req_fragments = parse_requirement(req_raw)
+        remark_fragments = parse_remark(remark_raw)
+
+        ai_parsed = None
+        if ai_client is not None and (not_avail_raw or fixed_raw or req_raw or remark_raw):
+            from scheduler.ai.rule_parser import parse_row_ai
+            try:
+                ai_parsed = parse_row_ai(not_avail_raw, fixed_raw, req_raw, remark_raw, client=ai_client)
+            except Exception as exc:
+                warnings.append('AI 复核失败（%s %s）：%s；已仅采用正则解析结果' % (name, course, exc))
+
+        _echo('不能排课节次', not_avail_raw, _fmt_slots_display(not_avail_slots, calendar),
+              _fmt_slots_display({(d, p) for d, p in ai_parsed.not_available}, calendar) if ai_parsed else None)
+        _echo('固定节次', fixed_raw, _fmt_slots_display(fixed_slots, calendar),
+              _fmt_slots_display({(d, p) for d, p in ai_parsed.fixed_slots}, calendar) if ai_parsed else None)
+        _echo('排课要求', req_raw, _fmt_fragments_display(req_fragments),
+              _fmt_fragments_display(ai_parsed.requirement) if ai_parsed else None)
+        _echo('备注', remark_raw, _fmt_fragments_display(remark_fragments),
+              _fmt_fragments_display(ai_parsed.remark) if ai_parsed else None)
+
+        if not courses[course].external and fixed_slots:
+            pins[course] |= fixed_slots
+
+        if not courses[course].external:
+            for frag in req_fragments + remark_fragments:
+                rtype, params = frag['type'], frag['params']
+                if rtype in _FAMILY_SCOPED:
+                    scope = {'grade': grade, 'family': cfg.family_of(grade, course)}
+                elif rtype in _COURSE_SCOPED:
+                    scope = {'grade': grade, 'course': course}
+                else:
+                    scope = {'grade': grade}
+                    params = {k: v for k, v in params.items() if k != 'self_parity'}
+                key = (rtype, tuple(sorted(scope.items())), json.dumps(params, sort_keys=True))
+                if key in rule_seen:
+                    continue
+                rule_seen.add(key)
+                rules.append({'type': rtype, 'scope': scope, 'params': params,
+                              'mode': 'hard' if rtype != 'spacing' else 'soft'})
+
+    for name in sorted(forbidden):
+        if not forbidden[name]:
+            continue
+        rules.append({
+            'type': 'forbid_slots',
+            'scope': {'grade': grade, 'teacher': name},
+            'params': {'slots': sorted([d, p] for d, p in forbidden[name])},
+            'mode': 'hard',
+        })
+    for course in sorted(pins):
+        rules.append({
+            'type': 'pin_window',
+            'scope': {'grade': grade, 'course': course},
+            'params': {'slots': sorted([d, p] for d, p in pins[course])},
+            'mode': 'hard',
+        })
+    reserved = cfg.reserved_slots.get(grade) or []
+    if reserved:
+        rules.append({
+            'type': 'forbid_slots',
+            'scope': {'grade': grade},
+            'params': {'slots': sorted([d, p] for d, p in reserved)},
+            'mode': 'hard',
+        })
+    for rule in rules:
+        if rule['mode'] == 'soft':
+            rule.setdefault('enabled', True)
+            rule.setdefault('weight', 5)
+
+    teacher_facts = [
+        {'name': name, 'duties': sorted(duties[name]), 'forbidden': sorted([d, p] for d, p in forbidden[name])}
+        for name in sorted(set(duties) | set(forbidden))
+    ]
+
+    return RuleImportResult(rules=rules, teacher_facts=teacher_facts, warnings=warnings, rule_echo=rule_echo)
+
+
+def write_rules_generated_yaml_for_grade(new_rules: List[dict], grade: str, path) -> None:
+    """按年级整体替换 rules.generated.yaml 里这个年级的规则，其他年级的规则原样保留。"""
+    p = Path(path)
+    existing = []
+    if p.exists():
+        data = yaml.safe_load(p.read_text(encoding='utf-8')) or {}
+        existing = data.get('rules') or []
+    kept = [r for r in existing if (r.get('scope') or {}).get('grade') != grade]
+    p.write_text(yaml.safe_dump({'rules': kept + new_rules}, allow_unicode=True, sort_keys=False),
+                encoding='utf-8')
+
+
+def merge_teacher_facts_into_teaching_yaml(teacher_facts: List[dict], grade: str, path) -> None:
+    """把排课说明解析出的教师职务/禁排信息合并进 teaching.yaml——只替换这条
+    导入路径提到的教师，没提到的教师（比如任课表已有但排课说明没填规则的）原样
+    保留，不清空。要求 teaching.yaml 已经是该年级的数据（先完成任课表导入）。"""
+    p = Path(path)
+    if not p.exists():
+        raise ValueError('请先在「任课表」步骤完成导入，再导入排课规则')
+    data = yaml.safe_load(p.read_text(encoding='utf-8')) or {}
+    if data.get('grade') != grade:
+        raise ValueError('当前任课表是 %r 的数据，和排课规则的年级 %r 不一致'
+                         % (data.get('grade'), grade))
+    by_name = {t['name']: t for t in data.get('teachers', [])}
+    for fact in teacher_facts:
+        by_name[fact['name']] = fact
+    data['teachers'] = [by_name[name] for name in sorted(by_name)]
+    p.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding='utf-8')
+
+
+# ---- 排课说明.xlsx 填写模板：给教务示范每一类文本该怎么写 ----
+# 例子取自 ruletext.py 实测覆盖的真实写法（不能排课节次共 22 种，这里只挑有
+# 代表性的几种），不是穷举——穷举的完整清单在「填写说明」sheet 里用文字列出。
+
+_RULE_SHEET_EXAMPLES = [
+    # (姓名, 任教年级, 学科, 职务, 固定节次, 不能排课节次, 排课要求, 备注)
+    ('示例-张老师', '初三', '语文', '班主任', '', '周二上午不排课', '', ''),
+    ('示例-李老师', '初三', '数学', '', '', '周一4、5节，周三上午不排课', '', ''),
+    ('示例-王老师', '初三', '英语', '', '', '周五第4，5节不排课', '', ''),
+    ('示例-赵老师', '初三', '体育', '', '周一第9节', '', '', ''),
+    ('示例-钱老师', '初三', '体育', '', '周二第8、9节', '', '', ''),
+    ('示例-孙老师', '初三', '物理', '', '', '', '保证每天有1节', ''),
+    ('示例-周老师', '初三', '英语', '', '', '', '同一个班当天不能排2节', ''),
+    ('示例-吴老师', '初三', '化学', '', '', '', '保证周一三四每天1节', ''),
+    ('示例-郑老师', '初三', '美术', '', '', '', '与心理课分单双周上，即"心美"周课时1节', ''),
+    ('示例-冯老师', '初三', '心理', '', '', '', '与美术课分单双周上，即"心美"周课时1节', ''),
+    ('示例-陈老师', '初三', '数学', '', '', '', '', '其中一天为连堂课'),
+    ('示例-褚老师', '初三', '语文', '', '', '', '', '两个班之间要隔开1节'),
+]
+
+_RULE_SHEET_NOTES = [
+    '这是排课规则文本的填写示例，不是可以直接导入的真实数据——正式导入前请把',
+    '「示例」开头的行整体删除，换成你们学校的真实教师和文本。',
+    '',
+    '姓名 / 任教年级 / 学科：与「任课表」步骤里的教师姓名、课程名保持一致，按',
+    '姓名+学科匹配，不需要再填任教班和周课时（那两项已经在任课表里维护）。',
+    '',
+    '职务：逗号分隔，比如"班主任"或"备课组长，班主任"。',
+    '',
+    '固定节次 / 不能排课节次：都用「周X」开头，多个时间段用逗号连接、按"周X"',
+    '重新切分（所以数字之间的逗号不会被误当成分段符），比如：',
+    '  周一4、5节，周三上午不排课     —— 周一第4、5节 加 周三整个上午',
+    '  周五第4，5节不排课             —— 逗号在数字之间，是"第4节、第5节"',
+    '  周二上午2、3、4节不排课        —— 上午第2、3、4节（下午同理，第N节=',
+    '                                   第5+N节，如"下午2节"是全天第7节）',
+    '不写"上午/下午"、只写数字时按全天绝对节次算；不写数字、只写"上午/下午"',
+    '时代表一整个半天。固定节次的语义是"窗口"——这门课的周课时会被排在这些',
+    '节次里，不是要求全部占满（比如窗口2格、周课时1节，就是2选1）。',
+    '',
+    '排课要求：目前支持这几种写法（照抄替换数字即可，其余写法解析不了会报错）：',
+    '  保证每天有1节                          —— 该学科系每天至少1节',
+    '  同一个班当天不能排2节                  —— 该学科系当天最多1节（数字是',
+    '                                            "不能排"的那个数，实际上限要',
+    '                                            再减1）',
+    '  保证周一三四每天1节                    —— 只在写到的这几天每天1节',
+    '  与心理课分单双周上，即"心美"周课时1节   —— 美术那一行这么写',
+    '  与美术课分单双周上，即"心美"周课时1节   —— 心理那一行这么写（谁单周谁',
+    '                                            双周由系统统一分配，不用管）',
+    '',
+    '备注：目前支持这几种写法，可以写在同一段里：',
+    '  其中一天为连堂课                       —— 一周里有一天要连续两节',
+    '  两个班之间要隔开1节                    —— 两个班的课之间至少隔1节',
+    '',
+    '解析结果会在导入预览页面逐条回显，确认没有歧义再提交——如果开启了 AI',
+    '复核，两边解析结果不一致的地方也会在预览里标出来，供你核对。',
+]
+
+
+def build_rules_sheet_template() -> 'openpyxl.Workbook':
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = '排课说明'
+    ws.append(['占位表头行，程序从第3行起读'])
+    ws.append(['姓名', '任教年级', '学科', '职务', '固定节次', '不能排课节次', '排课要求', '备注'])
+    for row in _RULE_SHEET_EXAMPLES:
+        ws.append(list(row))
+
+    notes = wb.create_sheet('填写说明')
+    for line in _RULE_SHEET_NOTES:
+        notes.append([line])
+    notes.column_dimensions['A'].width = 90
+    return wb

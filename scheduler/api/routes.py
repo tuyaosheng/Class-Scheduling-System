@@ -6,13 +6,16 @@ from typing import Dict, List, Tuple
 
 import yaml
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import ValidationError
 
 from scheduler.core.calendar_import import CalendarParseError, parse_calendar_workbook
 from scheduler.core.config import ConfigError, load_config
 from scheduler.core.importer import (
-    build_dataset_from_pivot, import_teaching_table,
-    merge_teaching_and_rules, write_rules_yaml, write_teaching_yaml,
+    build_dataset_from_pivot, build_rules_sheet_template, import_rule_text_table,
+    import_teaching_table, merge_teacher_facts_into_teaching_yaml,
+    merge_teaching_and_rules, write_rules_generated_yaml_for_grade,
+    write_rules_yaml, write_teaching_yaml,
 )
 from scheduler.core.models import Course, GradeCalendar, Teacher, Venue
 from scheduler.core.rules import RULE_TYPES, Rule, RuleError
@@ -27,6 +30,7 @@ from .schemas import (
     ImportSessionSummary, ImportSessionsListResponse, ParsedCalendarSheetItem,
     AlternatePairItem, AlternatePairsGetResponse, AlternatePairsPutRequest,
     PlanGetResponse, PlanPutRequest, RuleItem, RulesGetResponse, RulesPutRequest,
+    RuleSheetParseResponse, RuleSheetPutRequest, RuleSheetPutResponse,
     TeachingTableEntry, TeachingTablePutRequest, TeachingTableResponse,
     VenueItem, VenuesGetResponse, VenuesPutRequest,
 )
@@ -574,6 +578,68 @@ def put_teaching_table(body: TeachingTablePutRequest):
                                  entries=entries, warnings=result.warnings)
 
 
+def _get_ai_client_or_none():
+    """AI 复核是尽力而为、不是必需项——没配置 API key 时安静跳过，不报错
+    （子项目5：正则结果永远是真正生效的规则，AI 只是"再捋一下"的第二意见）。"""
+    from scheduler.core.settings_store import get_ai_api_key
+    api_key = get_ai_api_key()
+    if not api_key:
+        return None
+    import anthropic
+    return anthropic.Anthropic(api_key=api_key)
+
+
+@router.get('/config/rules-sheet/template')
+def get_rules_sheet_template():
+    wb = build_rules_sheet_template()
+    out_path = Path(tempfile.mkdtemp()) / '排课说明模板.xlsx'
+    wb.save(out_path)
+    return FileResponse(
+        out_path,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        filename=out_path.name,
+    )
+
+
+@router.post('/config/rules-sheet/parse', response_model=RuleSheetParseResponse)
+async def parse_rules_sheet(grade: str = '初三', file: UploadFile = File(...)):
+    """上传后只解析、不落盘——预览确认无误再调 PUT 才真正写 rules.generated.yaml
+    和 teaching.yaml。正则结果永远算一遍；AI 客户端已配置时额外跑复核对比。"""
+    cfg = _load_config_or_400()
+    ai_client = _get_ai_client_or_none()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        suffix = Path(file.filename or '').suffix or '.xlsx'
+        path = Path(tmpdir) / f'rules{suffix}'
+        path.write_bytes(await file.read())
+        try:
+            result = import_rule_text_table(path, cfg, grade=grade, ai_client=ai_client)
+        except (ValueError, ValidationError, ConfigError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    return RuleSheetParseResponse(grade=grade, rules=result.rules, teacher_facts=result.teacher_facts,
+                                  warnings=result.warnings, rule_echo=result.rule_echo,
+                                  ai_reviewed=ai_client is not None)
+
+
+@router.put('/config/rules-sheet', response_model=RuleSheetPutResponse)
+def put_rules_sheet(body: RuleSheetPutRequest):
+    """确认导入——把预览页面已经算好的 rules/teacher_facts 写盘。
+    rules.generated.yaml 按年级整体替换（其他年级不受影响）；teaching.yaml
+    按教师姓名合并职务/禁排，没提到的教师原样保留（见 merge_teacher_facts_into_teaching_yaml）。
+    """
+    DEFAULT_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        merge_teacher_facts_into_teaching_yaml(
+            body.teacher_facts, body.grade, DEFAULT_CONFIG_DIR / 'teaching.yaml')
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    write_rules_generated_yaml_for_grade(
+        body.rules, body.grade, DEFAULT_CONFIG_DIR / 'rules.generated.yaml')
+
+    return RuleSheetPutResponse(ok=True, rules_written=len(body.rules),
+                                teachers_updated=len(body.teacher_facts))
+
+
 @router.put('/config/courses', response_model=CoursesGetResponse)
 def put_courses(body: CoursesPutRequest):
     cfg = _load_config_or_400()
@@ -613,8 +679,6 @@ def put_courses(body: CoursesPutRequest):
 
     return CoursesGetResponse(courses=body.courses)
 
-
-from fastapi.responses import FileResponse
 
 # 模块级常量，方便测试用 monkeypatch 模拟『模板文件缺失』而不必真的动仓库根目录下
 # 那份未纳入 git 管理的 课程表模板.xlsx（见 finding I3）。

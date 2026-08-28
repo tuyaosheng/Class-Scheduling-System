@@ -20,6 +20,49 @@ export interface ImportPreview {
   }>
 }
 
+export interface RuleTextEchoItem {
+  raw: string
+  parsed: string
+  ai_parsed: string | null
+  mismatch: boolean
+}
+
+export interface RuleSheetParseResponse {
+  grade: string
+  rules: Array<Record<string, unknown>>
+  teacher_facts: Array<{ name: string; duties: string[]; forbidden: number[][] }>
+  warnings: string[]
+  rule_echo: Record<string, RuleTextEchoItem[]>
+  ai_reviewed: boolean
+}
+
+export interface RuleSheetPutResponse {
+  ok: boolean
+  rules_written: number
+  teachers_updated: number
+}
+
+export async function parseRulesSheet(grade: string, file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  const params = new URLSearchParams({ grade })
+  return request<RuleSheetParseResponse>(`/api/config/rules-sheet/parse?${params.toString()}`, {
+    method: 'POST',
+    body: form,
+  })
+}
+
+export async function putRulesSheet(
+  grade: string, rules: Array<Record<string, unknown>>,
+  teacherFacts: Array<{ name: string; duties: string[]; forbidden: number[][] }>,
+) {
+  return request<RuleSheetPutResponse>('/api/config/rules-sheet', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grade, rules, teacher_facts: teacherFacts }),
+  })
+}
+
 export interface ConfigStatus {
   ready: boolean
   grade: string | null

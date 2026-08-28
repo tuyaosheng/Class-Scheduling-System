@@ -31,6 +31,34 @@ class ImportConfirmResponse(BaseModel):
     rules_path: str
 
 
+class RuleTextEchoItem(BaseModel):
+    raw: str
+    parsed: str
+    ai_parsed: Optional[str] = None
+    mismatch: bool = False
+
+
+class RuleSheetParseResponse(BaseModel):
+    grade: str
+    rules: List[dict]
+    teacher_facts: List[dict]
+    warnings: List[str]
+    rule_echo: Dict[str, List[RuleTextEchoItem]]
+    ai_reviewed: bool
+
+
+class RuleSheetPutRequest(BaseModel):
+    grade: str
+    rules: List[dict]
+    teacher_facts: List[dict]
+
+
+class RuleSheetPutResponse(BaseModel):
+    ok: bool
+    rules_written: int
+    teachers_updated: int
+
+
 class ConfigStatus(BaseModel):
     ready: bool
     grade: Optional[str] = None

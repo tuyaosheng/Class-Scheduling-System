@@ -11,6 +11,7 @@ import GradesSettings from './components/GradesSettings.vue'
 import CalendarSettings from './components/CalendarSettings.vue'
 import ImportPanel from './components/ImportPanel.vue'
 import RulesSettings from './components/RulesSettings.vue'
+import RulesSheetSettings from './components/RulesSheetSettings.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import SolvePanel from './components/SolvePanel.vue'
 import TeachingTableSettings from './components/TeachingTableSettings.vue'
@@ -154,12 +155,13 @@ function onJobId(id: string) {
           <TeachingTableSettings v-if="activeGrade" :grade="activeGrade" @saved="onImportConfirmed" />
         </div>
 
-        <div v-else-if="currentStep === 6" class="step-block">
+        <div v-else-if="currentStep === 6" class="step-block wide">
           <div class="step-eyebrow">第 6 步 · 共 9 步</div>
-          <h1 class="page-title">排课规则</h1>
-          <p class="alert alert-warning">这是临时的开发视图，规则类型仍是内部英文名——后续会换成挑不懂 DSL 也能用的界面。大部分规则应由排课说明导入自动生成，这里只用来手调少数政策性规则（比如教师半天连堂上限）。</p>
+          <RulesSheetSettings v-if="activeGrade" :grade="activeGrade" @saved="onImportConfirmed" />
+          <p class="alert alert-warning">下面这些是补充/过渡用的规则视图：「政策性规则」用于手调少数数值型规则（比如教师半天连堂上限），规则类型仍是内部英文名，后续会换成白话界面；「两份 Excel 一次性导入」是旧版流程的临时保留，任课信息和规则解析绑在一起，跟上面新的「任课表」+「排课规则」两步有重叠，只在需要旧格式排课说明.xlsx（仍含任教班/周课时）时使用。</p>
+          <h2 class="page-title">政策性规则（临时视图）</h2>
           <RulesSettings />
-          <p class="alert alert-warning">下面这个"两份 Excel 一次性导入"是旧版流程的临时保留——它同时处理任课信息和规则解析，跟上面新的「任课表」步骤有重叠。排课说明.xlsx 的规则解析还没独立出一个专门步骤之前，需要完整规则（教师禁排等）时仍要用它；只想改任课表本身，用第 5 步就够。</p>
+          <h2 class="page-title">两份 Excel 一次性导入（旧版，临时保留）</h2>
           <ImportPanel @confirmed="onImportConfirmed" />
         </div>
 
