@@ -45,13 +45,11 @@ class AIParseError(RuntimeError):
 
 
 def _default_client():
-    import anthropic
-    from scheduler.core.settings_store import get_ai_api_key
-    api_key = get_ai_api_key()
-    if not api_key:
-        raise AIParseError("未配置 Anthropic API key：请在系统「设置 → AI 设置」里填写,"
-                           "或设置环境变量 ANTHROPIC_API_KEY")
-    return anthropic.Anthropic(api_key=api_key)
+    from scheduler.ai.client import AiConfigError, get_ai_client
+    try:
+        return get_ai_client()
+    except AiConfigError as exc:
+        raise AIParseError(str(exc)) from exc
 
 
 def parse_row_ai(not_available_text, fixed_slots_text, requirement_text, remark_text,
@@ -65,13 +63,7 @@ def parse_row_ai(not_available_text, fixed_slots_text, requirement_text, remark_
             remark=remark_text or "（空）",
             rule_types=sorted(RULE_TYPES),
         )
-        response = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=1024,
-            system=_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw_text = response.content[0].text
+        raw_text = client.complete(_SYSTEM_PROMPT, prompt, max_tokens=1024)
     except AIParseError:
         raise
     except Exception as exc:

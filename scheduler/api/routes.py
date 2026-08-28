@@ -48,41 +48,60 @@ def _mask_key(key: str) -> str:
 
 @router.get('/settings/ai', response_model=AiSettingsGetResponse)
 def get_ai_settings():
+    """两个供应商的配置状态都要报——用户在两者之间切换时，界面得知道另一
+    个供应商是不是已经配过了，不能只看当前选中的那个（见子项目8：两者
+    并存，OpenAI 兼容协议为主，Anthropic 保留为可选项）。"""
     from scheduler.core import settings_store
-    local = settings_store.get_setting('ai.api_key')
-    env = os.environ.get('ANTHROPIC_API_KEY')
-    if local:
-        return AiSettingsGetResponse(configured=True, source='local',
-                                     masked_key=_mask_key(local))
-    if env:
-        return AiSettingsGetResponse(configured=True, source='env')
-    return AiSettingsGetResponse(configured=False, source='none')
+    provider = settings_store.get_setting('ai.provider') or 'openai'
+
+    openai_key = settings_store.get_setting('ai.openai.api_key')
+    anthropic_local = settings_store.get_setting('ai.api_key')
+    anthropic_env = os.environ.get('ANTHROPIC_API_KEY')
+
+    return AiSettingsGetResponse(
+        provider=provider,
+        openai_configured=bool(openai_key),
+        openai_base_url=settings_store.get_setting('ai.openai.base_url'),
+        openai_model=settings_store.get_setting('ai.openai.model'),
+        openai_masked_key=_mask_key(openai_key) if openai_key else None,
+        anthropic_configured=bool(anthropic_local or anthropic_env),
+        anthropic_source='local' if anthropic_local else ('env' if anthropic_env else 'none'),
+        anthropic_masked_key=_mask_key(anthropic_local) if anthropic_local else None,
+    )
 
 
 @router.put('/settings/ai', response_model=dict)
 def put_ai_settings(body: AiSettingsPutRequest):
+    """只更新提交的那个供应商的字段——切换 provider 不会清空另一个供应商
+    已经存好的凭据，回切回去时不用重新填。字段留空表示"不改这一项"
+    （比如 API key 已经配过、这次只想改 base_url/model）。"""
     from scheduler.core import settings_store
-    key = body.api_key.strip()
-    if not key:
-        raise HTTPException(status_code=400, detail='API key 不能为空')
-    settings_store.set_setting('ai.api_key', key)
+    if body.provider not in ('openai', 'anthropic'):
+        raise HTTPException(status_code=400, detail='未知的 AI 供应商：%r' % body.provider)
+    settings_store.set_setting('ai.provider', body.provider)
+
+    if body.provider == 'openai':
+        if body.openai_base_url and body.openai_base_url.strip():
+            settings_store.set_setting('ai.openai.base_url', body.openai_base_url.strip())
+        if body.openai_api_key and body.openai_api_key.strip():
+            settings_store.set_setting('ai.openai.api_key', body.openai_api_key.strip())
+        if body.openai_model and body.openai_model.strip():
+            settings_store.set_setting('ai.openai.model', body.openai_model.strip())
+    else:
+        if body.anthropic_api_key and body.anthropic_api_key.strip():
+            settings_store.set_setting('ai.api_key', body.anthropic_api_key.strip())
     return {'ok': True}
 
 
 @router.post('/settings/ai/test', response_model=dict)
 def test_ai_settings():
-    from scheduler.core.settings_store import get_ai_api_key
-    api_key = get_ai_api_key()
-    if not api_key:
-        raise HTTPException(status_code=400,
-                           detail='未配置 API key：请先在「设置 → AI 设置」里填写')
-    import anthropic
+    from scheduler.ai.client import AiConfigError, get_ai_client
     try:
-        client = anthropic.Anthropic(api_key=api_key)
-        client.messages.create(
-            model='claude-sonnet-4-5', max_tokens=1,
-            messages=[{'role': 'user', 'content': 'ping'}],
-        )
+        client = get_ai_client()
+    except AiConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    try:
+        client.complete('', 'ping', max_tokens=1)
     except Exception as exc:
         raise HTTPException(status_code=400,
                            detail='AI 连接失败：%s' % exc)

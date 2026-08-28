@@ -66,7 +66,10 @@ describe('App navigation', () => {
   it('opening settings shows AiSettings and hides the step content; a nav click returns to it', async () => {
     stubGrades()
     vi.spyOn(api, 'getConfigStatus').mockResolvedValue({ ready: false, grade: null, classes: 0, tasks: 0 })
-    vi.spyOn(api, 'getAiSettings').mockResolvedValue({ configured: false, source: 'none', masked_key: null })
+    vi.spyOn(api, 'getAiSettings').mockResolvedValue({
+      provider: 'openai', openai_configured: false, openai_base_url: null, openai_model: null,
+      openai_masked_key: null, anthropic_configured: false, anthropic_source: 'none', anthropic_masked_key: null,
+    })
     const wrapper = mount(App)
     await new Promise((resolve) => setTimeout(resolve, 0))
 

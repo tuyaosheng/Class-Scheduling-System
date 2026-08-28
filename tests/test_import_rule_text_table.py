@@ -33,7 +33,9 @@ def _write_rule_sheet(path, rows):
 
 
 class FakeAiClient:
-    """返回跟正则完全一致的解析结果——用来验证「一致时不标记 mismatch」。"""
+    """返回跟正则完全一致的解析结果——用来验证「一致时不标记 mismatch」。
+    模拟 scheduler.ai.client 的统一接口（complete），不是某个供应商 SDK
+    的形状。"""
 
     def __init__(self, not_available=None, fixed_slots=None, requirement=None, remark=None):
         self._payload = {
@@ -43,20 +45,9 @@ class FakeAiClient:
             'remark': remark or [],
         }
 
-    class _Msg:
-        def __init__(self, text):
-            self.content = [type('C', (), {'text': text})()]
-
-    @property
-    def messages(self):
+    def complete(self, system, user, max_tokens=1024):
         import json
-        payload = self._payload
-        outer = self
-
-        class _M:
-            def create(self, **kwargs):
-                return outer._Msg(json.dumps(payload))
-        return _M()
+        return json.dumps(self._payload)
 
 
 def test_forbid_slots_rule_generated_from_not_available_column(tmp_path, cfg):
@@ -127,8 +118,7 @@ def test_ai_review_disagreeing_with_regex_is_flagged_as_mismatch(tmp_path, cfg):
 
 def test_ai_review_failure_falls_back_to_regex_with_a_warning(tmp_path, cfg):
     class BrokenClient:
-        @property
-        def messages(self):
+        def complete(self, system, user, max_tokens=1024):
             raise RuntimeError('boom')
 
     path = tmp_path / '排课说明.xlsx'

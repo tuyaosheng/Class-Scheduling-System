@@ -144,24 +144,19 @@ def test_merge_builds_rule_echo_for_review(tmp_path, cfg):
 
 def test_merge_ai_engine_uses_parse_row_ai(tmp_path, cfg):
     import json
-    from types import SimpleNamespace
 
-    class FakeMessages:
+    class FakeClient:
         def __init__(self):
             self.call_count = 0
 
-        def create(self, **kwargs):
+        def complete(self, system, user, max_tokens=1024):
             self.call_count += 1
             payload = {
                 "not_available": [], "fixed_slots": [],
                 "requirement": [{"type": "daily_min", "params": {"n": 1}}],
                 "remark": [],
             }
-            return SimpleNamespace(content=[SimpleNamespace(text=json.dumps(payload))])
-
-    class FakeClient:
-        def __init__(self):
-            self.messages = FakeMessages()
+            return json.dumps(payload)
 
     teaching_path = tmp_path / "任课表.xlsx"
     _write_teaching_table(teaching_path)
@@ -176,7 +171,7 @@ def test_merge_ai_engine_uses_parse_row_ai(tmp_path, cfg):
     # 关键断言：证明 AI 代码路径真的被调用了（原断言在正则也能推出同一结果的
     # 输入文本下形同虚设——即使 rule_engine="ai" 被静默忽略、实际走了正则，
     # 也会得到同样的 daily_min 片段，测不出问题）。
-    assert client.messages.call_count == 2   # 排课说明两行，每行一次 AI 调用
+    assert client.call_count == 2   # 排课说明两行，每行一次 AI 调用
     daily_min = [r for r in result.rules if r["type"] == "daily_min"]
     assert len(daily_min) >= 1
 
@@ -209,19 +204,15 @@ def test_merge_ai_engine_rule_echo_keeps_requirement_and_remark_separate(tmp_pat
     """排课要求与备注在 AI 模式下要各自只回显自己那一列的解析结果，
     不能像修复前那样把 requirement+remark 合并片段同时塞进两个 key。"""
     import json
-    from types import SimpleNamespace
 
-    class FakeMessages:
-        def create(self, **kwargs):
+    class FakeClient:
+        def complete(self, system, user, max_tokens=1024):
             payload = {
                 "not_available": [], "fixed_slots": [],
                 "requirement": [{"type": "daily_min", "params": {"n": 1}}],
                 "remark": [{"type": "spacing", "params": {"n": 2}}],
             }
-            return SimpleNamespace(content=[SimpleNamespace(text=json.dumps(payload))])
-
-    class FakeClient:
-        messages = FakeMessages()
+            return json.dumps(payload)
 
     teaching_path = tmp_path / "任课表.xlsx"
     _write_teaching_table(teaching_path)
@@ -245,18 +236,14 @@ def test_merge_ai_engine_uses_ai_not_available_for_forbidden_slots(tmp_path, cfg
     答案（周五第9节），断言最终 forbidden 是 AI 的答案而不是正则的答案。
     """
     import json
-    from types import SimpleNamespace
 
-    class FakeMessages:
-        def create(self, **kwargs):
+    class FakeClient:
+        def complete(self, system, user, max_tokens=1024):
             payload = {
                 "not_available": [[4, 9]],
                 "fixed_slots": [], "requirement": [], "remark": [],
             }
-            return SimpleNamespace(content=[SimpleNamespace(text=json.dumps(payload))])
-
-    class FakeClient:
-        messages = FakeMessages()
+            return json.dumps(payload)
 
     teaching_path = tmp_path / "任课表.xlsx"
     _write_teaching_table(teaching_path)
@@ -279,18 +266,14 @@ def test_merge_ai_engine_rule_echo_shows_ai_not_available_not_regex(tmp_path, cf
     假 AI 答案（周五第9节，即 day=4, period=9），断言 rule_echo 显示的是 AI 的答案。
     """
     import json
-    from types import SimpleNamespace
 
-    class FakeMessages:
-        def create(self, **kwargs):
+    class FakeClient:
+        def complete(self, system, user, max_tokens=1024):
             payload = {
                 "not_available": [[4, 9]],
                 "fixed_slots": [], "requirement": [], "remark": [],
             }
-            return SimpleNamespace(content=[SimpleNamespace(text=json.dumps(payload))])
-
-    class FakeClient:
-        messages = FakeMessages()
+            return json.dumps(payload)
 
     teaching_path = tmp_path / "任课表.xlsx"
     _write_teaching_table(teaching_path)

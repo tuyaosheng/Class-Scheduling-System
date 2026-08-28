@@ -184,13 +184,22 @@ class AdjustResponse(BaseModel):
 
 
 class AiSettingsGetResponse(BaseModel):
-    configured: bool
-    source: str
-    masked_key: Optional[str] = None
+    provider: str
+    openai_configured: bool
+    openai_base_url: Optional[str] = None
+    openai_model: Optional[str] = None
+    openai_masked_key: Optional[str] = None
+    anthropic_configured: bool
+    anthropic_source: str
+    anthropic_masked_key: Optional[str] = None
 
 
 class AiSettingsPutRequest(BaseModel):
-    api_key: str
+    provider: str
+    openai_base_url: Optional[str] = None
+    openai_api_key: Optional[str] = None
+    openai_model: Optional[str] = None
+    anthropic_api_key: Optional[str] = None
 
 
 class CourseItem(BaseModel):

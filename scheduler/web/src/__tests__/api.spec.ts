@@ -79,20 +79,24 @@ describe('confirmImport / getConfigStatus / getPlan / putPlan / startSolve', () 
 })
 
 describe('ai settings', () => {
-  it('getAiSettings performs a GET and returns source', async () => {
-    mockFetchOnce({ configured: true, source: 'local', masked_key: 'sk-s…cdef' })
+  it('getAiSettings performs a GET and returns the provider status', async () => {
+    mockFetchOnce({
+      provider: 'openai', openai_configured: true, openai_base_url: 'https://x/v1',
+      openai_model: 'gpt-test', openai_masked_key: 'sk-s…cdef', anthropic_configured: false,
+      anthropic_source: 'none', anthropic_masked_key: null,
+    })
     const settings = await getAiSettings()
-    expect(settings.configured).toBe(true)
-    expect(settings.source).toBe('local')
+    expect(settings.provider).toBe('openai')
+    expect(settings.openai_configured).toBe(true)
   })
 
-  it('putAiSettings posts the key', async () => {
+  it('putAiSettings posts the provider and fields', async () => {
     const fetchMock = mockFetchOnce({ ok: true })
-    await putAiSettings('sk-abc')
+    await putAiSettings({ provider: 'openai', openai_api_key: 'sk-abc' })
     const [url, options] = fetchMock.mock.calls[0]
     expect(url).toContain('/api/settings/ai')
     expect(options.method).toBe('PUT')
-    expect(JSON.parse(options.body)).toEqual({ api_key: 'sk-abc' })
+    expect(JSON.parse(options.body)).toEqual({ provider: 'openai', openai_api_key: 'sk-abc' })
   })
 
   it('testAiSettings posts and returns ok', async () => {

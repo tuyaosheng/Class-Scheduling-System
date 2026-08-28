@@ -84,9 +84,22 @@ export interface SolveRequest {
 }
 
 export interface AiSettingsResponse {
-  configured: boolean
-  source: string
-  masked_key: string | null
+  provider: string
+  openai_configured: boolean
+  openai_base_url: string | null
+  openai_model: string | null
+  openai_masked_key: string | null
+  anthropic_configured: boolean
+  anthropic_source: string
+  anthropic_masked_key: string | null
+}
+
+export interface AiSettingsPutRequest {
+  provider: string
+  openai_base_url?: string
+  openai_api_key?: string
+  openai_model?: string
+  anthropic_api_key?: string
 }
 
 export interface CourseItem {
@@ -167,11 +180,11 @@ export async function getAiSettings() {
   return request<AiSettingsResponse>('/api/settings/ai')
 }
 
-export async function putAiSettings(apiKey: string) {
+export async function putAiSettings(body: AiSettingsPutRequest) {
   return request<{ ok: boolean }>('/api/settings/ai', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ api_key: apiKey }),
+    body: JSON.stringify(body),
   })
 }
 

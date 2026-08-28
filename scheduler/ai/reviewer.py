@@ -49,13 +49,11 @@ class AIReviewError(RuntimeError):
 
 
 def _default_client():
-    import anthropic
-    from scheduler.core.settings_store import get_ai_api_key
-    api_key = get_ai_api_key()
-    if not api_key:
-        raise AIReviewError("未配置 Anthropic API key：请在系统「设置 → AI 设置」里填写，"
-                            "或设置环境变量 ANTHROPIC_API_KEY")
-    return anthropic.Anthropic(api_key=api_key)
+    from scheduler.ai.client import AiConfigError, get_ai_client
+    try:
+        return get_ai_client()
+    except AiConfigError as exc:
+        raise AIReviewError(str(exc)) from exc
 
 
 def _schedule_text(solution, dataset) -> str:
@@ -165,11 +163,7 @@ def review_schedule(solution, dataset, cfg, rules, violations, *, client=None) -
             violations_text=_violations_text(violations),
             stats_text=_stats_text(solution, dataset, cfg),
         )
-        response = client.messages.create(
-            model='claude-sonnet-4-5', max_tokens=2048,
-            system=_SYSTEM_PROMPT, messages=[{'role': 'user', 'content': prompt}],
-        )
-        raw_text = response.content[0].text
+        raw_text = client.complete(_SYSTEM_PROMPT, prompt, max_tokens=2048)
     except AIReviewError:
         raise
     except Exception as exc:

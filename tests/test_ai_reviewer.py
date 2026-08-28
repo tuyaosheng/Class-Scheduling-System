@@ -15,19 +15,17 @@ CAL = GradeCalendar(days=['周一', '周二', '周三', '周四', '周五'],
                     periods_per_day=9, midday_break_after=5)
 
 
-class FakeMessages:
+class FakeClient:
+    """模拟 scheduler.ai.client 统一接口（complete），不是某个供应商 SDK 的
+    形状——reviewer.py 现在只依赖这一层抽象。"""
+
     def __init__(self, text):
         self._text = text
         self.calls = []
 
-    def create(self, **kwargs):
-        self.calls.append(kwargs)
-        return SimpleNamespace(content=[SimpleNamespace(text=self._text)])
-
-
-class FakeClient:
-    def __init__(self, text):
-        self.messages = FakeMessages(text)
+    def complete(self, system, user, max_tokens=1024):
+        self.calls.append((system, user, max_tokens))
+        return self._text
 
 
 def _dataset():
@@ -104,7 +102,7 @@ def test_review_schedule_sends_deterministic_facts_not_left_for_ai_to_recompute(
     violations = [SimpleNamespace(kind='教师分身', detail='梁老师撞课')]
     review_schedule(_solution_two_math_same_day(), _dataset(), _cfg(), [], violations, client=client)
 
-    prompt = client.messages.calls[0]['messages'][0]['content']
+    prompt = client.calls[0][1]
     assert '梁老师撞课' in prompt
     assert '7班' in prompt and '数学' in prompt
 
@@ -116,20 +114,27 @@ def test_raises_on_malformed_json():
 
 
 def test_raises_when_client_call_fails():
-    class BrokenMessages:
-        def create(self, **kwargs):
-            raise ConnectionError('网络不通')
-
     class BrokenClient:
-        messages = BrokenMessages()
+        def complete(self, system, user, max_tokens=1024):
+            raise ConnectionError('网络不通')
 
     with pytest.raises(AIReviewError, match='审核失败'):
         review_schedule(_solution_two_math_same_day(), _dataset(), _cfg(), [], [], client=BrokenClient())
 
 
-def test_raises_on_missing_api_key(monkeypatch):
+def test_raises_on_missing_api_key_for_the_anthropic_provider(monkeypatch):
+    """默认供应商是 OpenAI 兼容协议，这里显式选中 anthropic 来测它自己的缺 key 报错。"""
     import scheduler.core.settings_store as store
     monkeypatch.delenv('ANTHROPIC_API_KEY', raising=False)
-    monkeypatch.setattr(store, 'get_setting', lambda key: None)
+    monkeypatch.setattr(store, 'get_setting',
+                        lambda key: 'anthropic' if key == 'ai.provider' else None)
     with pytest.raises(AIReviewError, match='API key'):
+        review_schedule(_solution_two_math_same_day(), _dataset(), _cfg(), [], [])
+
+
+def test_raises_on_incomplete_openai_compatible_config(monkeypatch):
+    import scheduler.core.settings_store as store
+    monkeypatch.delenv('OPENAI_API_KEY', raising=False)
+    monkeypatch.setattr(store, 'get_setting', lambda key: None)
+    with pytest.raises(AIReviewError, match='OpenAI 兼容协议'):
         review_schedule(_solution_two_math_same_day(), _dataset(), _cfg(), [], [])
