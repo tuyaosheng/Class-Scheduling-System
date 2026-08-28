@@ -9,6 +9,7 @@ describe('RulesSettings', () => {
       rules: [{
         type: 'teacher_max_run', scope: { grade: '初三' }, params: { max_len: 2 },
         mode: 'soft', enabled: true, weight: 10,
+        description: '[年级=初三] 教师半天连堂不超过 2 节',
       }],
       rule_types: ['teacher_max_run', 'daily_min', 'daily_max'],
     })
@@ -22,6 +23,20 @@ describe('RulesSettings', () => {
     expect((wrapper.find('[data-test="rule-params"]').element as HTMLTextAreaElement).value)
       .toBe('{"max_len":2}')
     expect(wrapper.find('[data-test="rule-weight"]').exists()).toBe(true)
+    expect(wrapper.find('[data-test="rule-description"]').text()).toBe('[年级=初三] 教师半天连堂不超过 2 节')
+  })
+
+  it('shows a Chinese label for each rule type instead of the raw English DSL name', async () => {
+    vi.spyOn(api, 'getRules').mockResolvedValue({
+      rules: [],
+      rule_types: ['forbid_slots', 'daily_min', 'teacher_max_run'],
+    })
+    const wrapper = mount(RulesSettings)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    await wrapper.find('[data-test="add-rule-button"]').trigger('click')
+    const options = wrapper.find('[data-test="rule-type"]').findAll('option')
+    expect(options.map((o) => o.text())).toEqual(['禁排时段', '每天最少节数', '教师半天连堂上限'])
   })
 
   it('hides the weight slider for hard rules', async () => {

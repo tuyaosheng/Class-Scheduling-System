@@ -20,10 +20,11 @@ from scheduler.ai.reviewer import AIReviewError, review_schedule
 from scheduler.core import adjust
 from scheduler.core.compiler import compile_model
 from scheduler.core.config import load_config
+from scheduler.core.cross_grade import compute_cross_grade_lock_rules
 from scheduler.core.diagnose import format_conflict, minimal_conflict
 from scheduler.core.models import Dataset, Teacher, TeachingTask
 from scheduler.core.precheck import precheck
-from scheduler.core.rules import load_rules
+from scheduler.core.rules import Rule, load_rules
 from scheduler.core.solver import Placement, Solution, _STATUS_NAME
 from scheduler.core.verifier import verify
 
@@ -124,6 +125,20 @@ def _run_job(job_id, grade, count, min_diff, max_seconds, loop, queue):
         )
         rules = load_rules(DEFAULT_CONFIG_DIR / 'rules.yaml',
                            DEFAULT_CONFIG_DIR / 'rules.generated.yaml')
+
+        # 跨年级避让：把其它年级"最近一次求解出的第一个候选方案"当作既定
+        # 事实，换算成本年级的教师禁排规则，求解阶段就避开，不留到导出前
+        # 再事后校验（见 cross_grade.py 顶部注释）。
+        other_entries = {}
+        for row in sessions.list_jobs():
+            other_grade = row['grade']
+            if other_grade == grade or other_grade in other_entries or not row['candidate_count']:
+                continue
+            other_job = sessions.get_job(row['job_id'])
+            if other_job and other_job.dataset and other_job.solutions:
+                other_entries[other_grade] = (other_job.dataset, other_job.solutions[0])
+        lock_rules = compute_cross_grade_lock_rules(grade, dataset.calendar, other_entries)
+        rules += [Rule(**r) for r in lock_rules]
 
         job.dataset, job.cfg, job.rules = dataset, cfg, rules
         sessions.save_job(job)

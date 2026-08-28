@@ -18,14 +18,14 @@ from scheduler.core.importer import (
     write_rules_yaml, write_teaching_yaml,
 )
 from scheduler.core.models import Course, GradeCalendar, Teacher, Venue
-from scheduler.core.rules import RULE_TYPES, Rule, RuleError
+from scheduler.core.rules import RULE_TYPES, Rule, RuleError, describe
 
 from . import sessions
 from .schemas import (
     AiSettingsGetResponse, AiSettingsPutRequest,
     CalendarGetResponse, CalendarParseResponse, CalendarPutRequest,
     ConfigStatus, CourseItem, CoursesGetResponse, CoursesPutRequest,
-    CrossGradeConflictItem, ExportAllCheckResponse, ExportAllRequest,
+    ExportAllRequest,
     GradeItem, GradesGetResponse, GradesPutRequest,
     ImportConfirmRequest, ImportConfirmResponse, ImportPreview,
     ImportSessionSummary, ImportSessionsListResponse, ParsedCalendarSheetItem,
@@ -407,8 +407,11 @@ def get_rules():
     """
     rules_path = DEFAULT_CONFIG_DIR / 'rules.yaml'
     raw = _load_yaml_dict_or_400(rules_path, 'rules.yaml') if rules_path.exists() else {}
-    return RulesGetResponse(rules=[RuleItem(**r) for r in raw.get('rules', [])],
-                            rule_types=sorted(RULE_TYPES))
+    items = []
+    for r in raw.get('rules', []):
+        rule = Rule(**r)
+        items.append(RuleItem(**rule.model_dump(), description=describe(rule)))
+    return RulesGetResponse(rules=items, rule_types=sorted(RULE_TYPES))
 
 
 @router.put('/config/rules', response_model=RulesGetResponse)
@@ -425,7 +428,8 @@ def put_rules(body: RulesPutRequest):
         yaml.safe_dump({'rules': [r.model_dump(exclude_defaults=True) for r in validated]},
                        allow_unicode=True, sort_keys=False),
         encoding='utf-8')
-    return RulesGetResponse(rules=body.rules, rule_types=sorted(RULE_TYPES))
+    items = [RuleItem(**r.model_dump(), description=describe(r)) for r in validated]
+    return RulesGetResponse(rules=items, rule_types=sorted(RULE_TYPES))
 
 
 def _scan_alternate_pairs(path: Path, grade: str, courses: dict, editable: bool) -> list:
@@ -724,44 +728,16 @@ def _load_export_entries(selections):
     return entries
 
 
-def _describe_cross_grade_conflict(c) -> str:
-    return ('%s 在%s %s-%s 同时排了 %s%d班%s 和 %s%d班%s'
-           % (c.teacher, c.day, c.start_a, c.end_a,
-              c.grade_a, c.class_a, c.course_a, c.grade_b, c.class_b, c.course_b))
-
-
-@router.post('/export/all/check', response_model=ExportAllCheckResponse)
-def check_export_all(body: ExportAllRequest):
-    """导出前的跨年级统一校验——只检查，不落盘。各年级独立求解，互不知道
-    彼此，同一位教师可能被两个年级各自排到"同一时刻"，必须按真实钟点区间
-    比对（不同年级作息形状可能不同，"第几节"不可比），见 cross_grade.py。"""
-    from scheduler.core.cross_grade import find_cross_grade_conflicts
-
-    entries = _load_export_entries(body.selections)
-    conflicts, skipped = find_cross_grade_conflicts(
-        {grade: (dataset, solution) for grade, (dataset, solution, _cfg) in entries.items()})
-    return ExportAllCheckResponse(
-        conflicts=[CrossGradeConflictItem(**c.model_dump()) for c in conflicts],
-        skipped_grades=skipped)
-
-
 @router.post('/export/all')
 def export_all(body: ExportAllRequest):
-    """确认校验通过后才真正导出——服务端重新校验一遍，不信任前端的"我已经
-    check 过了"，避免前端跳过校验直接调这个接口拿到有冲突的课表。"""
+    """打包导出各年级已选定的候选方案。跨年级教师冲突现在在求解阶段就靠
+    `compute_cross_grade_lock_rules` 避开了（见 ws.py 的 `_run_job`），
+    这里不再做导出前事后校验——原来的做法已废弃，见 cross_grade.py 顶部注释。"""
     import zipfile
 
-    from scheduler.core.cross_grade import find_cross_grade_conflicts
     from scheduler.core.exporter import export_excel
 
     entries = _load_export_entries(body.selections)
-    conflicts, _skipped = find_cross_grade_conflicts(
-        {grade: (dataset, solution) for grade, (dataset, solution, _cfg) in entries.items()})
-    if conflicts:
-        detail = ('跨年级校验未通过，存在 %d 处教师时间冲突，不能导出：%s'
-                  % (len(conflicts), '；'.join(_describe_cross_grade_conflict(c) for c in conflicts[:5])))
-        raise HTTPException(status_code=400, detail=detail)
-
     out_dir = Path(tempfile.mkdtemp())
     zip_path = out_dir / '全部课表.zip'
     with zipfile.ZipFile(zip_path, 'w') as zf:

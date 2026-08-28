@@ -106,6 +106,11 @@ _TYPE_TEMPLATE = {
     'alternate_weeks': '{pair} 单双周轮换共用同一格',
     'venue_capacity': '场地 {venue} 同时最多 {capacity} 个班',
     'teacher_max_run': '教师半天连堂不超过 {max_len} 节',
+    # 以下三种类型只在 RULE_TYPES/RELAXABLE 里声明过，compiler.py/verifier.py
+    # 均未实现——保留声明是 M4 的软约束候选项，写了也不会生效。
+    'preferred_periods': '（未实现）偏好节次',
+    'avoid_after': '（未实现）避免排在指定节次之后',
+    'teacher_balance': '（未实现）教师负荷均衡',
 }
 
 

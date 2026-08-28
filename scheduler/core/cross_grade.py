@@ -1,37 +1,24 @@
-"""跨年级统一校验：导出全部课表前，按教师姓名 + 真实钟点区间比对多个年级
-的排课冲突。
+"""跨年级教师冲突：求解阶段就避开，不是排完了再事后校验。
 
-各年级独立求解，互不知道彼此存在——同一位教师如果同时在两个年级任课，
-理论上可能被两个年级各自排在"同一时刻"。这里不能比较"第几节"，因为
-不同年级的作息形状（节数、午休边界、钟点表）可能不一样，必须换算成
-真实的（星期几, 起止钟点）区间才能判断是否重叠。
+各年级仍然独立求解（现有单年级引擎不用改），但求解某个年级之前，先把
+其它年级"最近一次求解出的第一个候选方案"当作既定事实，按教师姓名 +
+真实钟点区间换算成本年级的 forbid_slots 硬约束——这样同一位老师就不会
+被两个年级同时排到同一个真实时刻，从源头上不产生冲突，不需要导出前
+再跑一遍检测（原来的做法，已废弃，见 CLAUDE.md 子项目9设计变更）。
+
+不能比较"第几节"，因为不同年级的作息形状（节数、午休边界、钟点表）
+可能不一样，必须换算成真实的（星期几, 起止钟点）区间才能判断是否重叠。
 
 这一层独立于单年级的 verify()，不共享 class_id/compiler.x 键空间（见
 CLAUDE.md「M7 前置重构」一节：那里说的"合排"特指塞进同一个 CP-SAT 模型
-统一求解，这里只是求解完之后额外比对一次，不涉及那两条缺口）。
+统一求解，这里只是求解某年级前，把其它年级的既定事实转成普通的
+forbid_slots 规则喂给同一个单年级编译器，不涉及那两条缺口）。
 """
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
-from pydantic import BaseModel
-
-from .models import Dataset
+from .models import Dataset, GradeCalendar
 from .solver import Solution
-
-
-class CrossGradeConflict(BaseModel):
-    teacher: str
-    day: str
-    grade_a: str
-    class_a: int
-    course_a: str
-    start_a: str
-    end_a: str
-    grade_b: str
-    class_b: int
-    course_b: str
-    start_b: str
-    end_b: str
 
 
 def _to_minutes(hhmm: str) -> int:
@@ -39,46 +26,59 @@ def _to_minutes(hhmm: str) -> int:
     return int(h) * 60 + int(m)
 
 
-def find_cross_grade_conflicts(
-    entries: Dict[str, Tuple[Dataset, Solution]],
-) -> Tuple[List[CrossGradeConflict], List[str]]:
-    """entries: grade -> (dataset, solution)。
+def compute_cross_grade_lock_rules(
+    grade: str, calendar: GradeCalendar,
+    other_entries: Dict[str, Tuple[Dataset, Solution]],
+) -> List[dict]:
+    """把 other_entries（其它年级 -> (dataset, 已锁定的候选方案)）换算成
+    `grade` 自己坐标系下的 forbid_slots 规则列表（每位跨年级任课的教师一条）。
 
-    返回 (冲突列表, 因缺少真实钟点表而被跳过的年级列表)——年级日历没配
-    `clock_times` 时没法按真实时间比较，宁可跳过并提示，也不能瞎猜。
+    `calendar` 或某个其它年级没配 `clock_times` 时，涉及该方（或全部）的
+    换算直接跳过——没法按真实时间比较，宁可不生成约束，也不能拿"第几节"
+    硬凑出一个可能是错的禁排。
     """
-    events = []   # (teacher, day, start_min, end_min, start_str, end_str, grade, class_id, course)
-    skipped: List[str] = []
-    for grade, (dataset, solution) in entries.items():
-        calendar = dataset.calendar
-        if not calendar.clock_times:
-            skipped.append(grade)
+    if not calendar.clock_times:
+        return []
+
+    external_by_teacher: Dict[str, List[Tuple[str, int, int]]] = defaultdict(list)
+    for other_grade, (other_dataset, other_solution) in other_entries.items():
+        if other_grade == grade:
             continue
-        for p in solution.placements:
-            day_idx, period = calendar.slot_of(p.slot)
-            if period - 1 >= len(calendar.clock_times):
+        other_calendar = other_dataset.calendar
+        if not other_calendar.clock_times:
+            continue
+        for p in other_solution.placements:
+            day_idx, period = other_calendar.slot_of(p.slot)
+            if period - 1 >= len(other_calendar.clock_times):
                 continue
-            day_name = calendar.days[day_idx]
-            start, end = calendar.clock_times[period - 1]
-            events.append((p.teacher, day_name, _to_minutes(start), _to_minutes(end),
-                          start, end, grade, p.class_id, p.course))
+            day_name = other_calendar.days[day_idx]
+            start, end = other_calendar.clock_times[period - 1]
+            external_by_teacher[p.teacher].append((day_name, _to_minutes(start), _to_minutes(end)))
 
-    by_teacher_day = defaultdict(list)
-    for ev in events:
-        by_teacher_day[(ev[0], ev[1])].append(ev)
+    rules: List[dict] = []
+    for teacher in sorted(external_by_teacher):
+        windows_by_day: Dict[str, List[Tuple[int, int]]] = defaultdict(list)
+        for day_name, start_min, end_min in external_by_teacher[teacher]:
+            windows_by_day[day_name].append((start_min, end_min))
 
-    conflicts: List[CrossGradeConflict] = []
-    for items in by_teacher_day.values():
-        items.sort(key=lambda e: e[2])
-        for i in range(len(items)):
-            for j in range(i + 1, len(items)):
-                a, b = items[i], items[j]
-                if a[6] == b[6]:
-                    continue   # 同年级内部冲突已经由各自的 verify() 保证不存在
-                if a[2] < b[3] and b[2] < a[3]:   # 区间重叠
-                    conflicts.append(CrossGradeConflict(
-                        teacher=a[0], day=a[1],
-                        grade_a=a[6], class_a=a[7], course_a=a[8], start_a=a[4], end_a=a[5],
-                        grade_b=b[6], class_b=b[7], course_b=b[8], start_b=b[4], end_b=b[5],
-                    ))
-    return conflicts, sorted(skipped)
+        forbidden = set()
+        for day_idx, day_name in enumerate(calendar.days):
+            day_windows = windows_by_day.get(day_name)
+            if not day_windows:
+                continue
+            for period in range(1, calendar.periods_per_day + 1):
+                if period - 1 >= len(calendar.clock_times):
+                    continue
+                start, end = calendar.clock_times[period - 1]
+                s_min, e_min = _to_minutes(start), _to_minutes(end)
+                if any(s_min < we and ws < e_min for ws, we in day_windows):
+                    forbidden.add((day_idx, period))
+
+        if forbidden:
+            rules.append({
+                'type': 'forbid_slots',
+                'scope': {'grade': grade, 'teacher': teacher},
+                'params': {'slots': sorted([d, p] for d, p in forbidden)},
+                'mode': 'hard',
+            })
+    return rules

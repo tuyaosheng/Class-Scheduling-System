@@ -341,6 +341,7 @@ export interface RuleItem {
   mode: string
   enabled: boolean
   weight: number
+  description?: string
 }
 
 export async function getRules() {
@@ -424,34 +425,6 @@ export interface ExportSelectionItem {
   grade: string
   job_id: string
   candidate_index: number
-}
-
-export interface CrossGradeConflictItem {
-  teacher: string
-  day: string
-  grade_a: string
-  class_a: number
-  course_a: string
-  start_a: string
-  end_a: string
-  grade_b: string
-  class_b: number
-  course_b: string
-  start_b: string
-  end_b: string
-}
-
-export interface ExportAllCheckResponse {
-  conflicts: CrossGradeConflictItem[]
-  skipped_grades: string[]
-}
-
-export async function checkExportAll(selections: ExportSelectionItem[]) {
-  return request<ExportAllCheckResponse>('/api/export/all/check', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ selections }),
-  })
 }
 
 export async function exportAll(selections: ExportSelectionItem[]): Promise<Blob> {

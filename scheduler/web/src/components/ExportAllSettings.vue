@@ -1,21 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import {
-  checkExportAll, exportAll, getGrades, listSolveJobs,
-  type CrossGradeConflictItem, type SolveJobSummary,
-} from '../api'
+import { exportAll, getGrades, listSolveJobs, type SolveJobSummary } from '../api'
 
 const grades = ref<string[]>([])
 const jobs = ref<SolveJobSummary[]>([])
 const selectedJob = ref<Record<string, string>>({})       // grade -> job_id
 const selectedCandidate = ref<Record<string, number>>({}) // grade -> candidate_index
 const loading = ref(false)
-const checking = ref(false)
 const exporting = ref(false)
 const error = ref('')
 const notice = ref('')
-const conflicts = ref<CrossGradeConflictItem[] | null>(null)
-const skippedGrades = ref<string[]>([])
 
 function jobsFor(grade: string): SolveJobSummary[] {
   return jobs.value.filter((j) => j.grade === grade && j.candidate_count > 0)
@@ -55,23 +49,6 @@ const candidateCountFor = (grade: string): number => {
   return job?.candidate_count ?? 0
 }
 
-async function runCheck() {
-  error.value = ''
-  notice.value = ''
-  conflicts.value = null
-  checking.value = true
-  try {
-    const resp = await checkExportAll(selections.value)
-    conflicts.value = resp.conflicts
-    skippedGrades.value = resp.skipped_grades
-    if (!resp.conflicts.length) notice.value = '校验通过，没有发现跨年级教师时间冲突'
-  } catch (err) {
-    error.value = (err as Error).message
-  } finally {
-    checking.value = false
-  }
-}
-
 async function runExport() {
   error.value = ''
   notice.value = ''
@@ -97,8 +74,9 @@ async function runExport() {
   <section class="card">
     <h2>导出全部课表</h2>
     <p class="hint">
-      各年级独立求解，导出前统一校验一次教师跨年级时间冲突（按真实钟点区间比对，
-      不同年级作息形状不同时不能只比较"第几节"）。校验不通过不能导出。
+      各年级独立求解，但求解某年级时会自动避开其它年级"最近一次求解"里同一位
+      教师已经占用的真实时段（按真实钟点区间换算，不比较"第几节"），所以这里
+      直接打包导出，不需要再校验一遍。
     </p>
 
     <p v-if="error" data-test="error" class="alert alert-critical">{{ error }}</p>
@@ -121,26 +99,7 @@ async function runExport() {
       </div>
     </div>
 
-    <ul v-if="skippedGrades.length" class="warning-list">
-      <li class="alert alert-warning">
-        以下年级没有配置真实钟点表（calendars.yaml 的 clock_times），无法参与跨年级校验：
-        {{ skippedGrades.join('、') }}
-      </li>
-    </ul>
-
-    <ul v-if="conflicts && conflicts.length" data-test="conflicts" class="conflict-list">
-      <li v-for="(c, i) in conflicts" :key="i" class="alert alert-critical">
-        {{ c.teacher }} 在{{ c.day }} {{ c.start_a }}-{{ c.end_a }} 同时排了
-        {{ c.grade_a }}{{ c.class_a }}班{{ c.course_a }} 和
-        {{ c.grade_b }}{{ c.class_b }}班{{ c.course_b }}（{{ c.start_b }}-{{ c.end_b }}）
-      </li>
-    </ul>
-
     <div class="actions">
-      <button data-test="check-button" class="btn btn-secondary" :disabled="checking || !selections.length"
-              @click="runCheck">
-        {{ checking ? '校验中…' : '校验' }}
-      </button>
       <button data-test="export-button" class="btn btn-primary" :disabled="exporting || !selections.length"
               @click="runExport">
         {{ exporting ? '导出中…' : '导出全部' }}
@@ -183,16 +142,6 @@ async function runExport() {
 .no-job-hint {
   color: var(--text-muted);
   font-size: 13px;
-}
-
-.warning-list,
-.conflict-list {
-  list-style: none;
-  margin: 16px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .actions {

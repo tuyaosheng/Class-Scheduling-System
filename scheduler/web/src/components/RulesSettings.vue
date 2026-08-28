@@ -7,6 +7,29 @@ const SCOPE_LABEL: Record<string, string> = {
   grade: '年级', family: '学科系', course: '课程', teacher: '教师', class: '班级',
 }
 
+// 跟后端 scheduler/core/rules.py 的 _TYPE_TEMPLATE 对应——教务看不懂内部
+// 英文 DSL 类型名，这里给每种类型一个中文短标签；未实现的三种（M4 软约束
+// 候选项，compiler.py/verifier.py 都没做）如实标注，不隐藏也不假装生效。
+const TYPE_LABEL: Record<string, string> = {
+  forbid_slots: '禁排时段',
+  pin_window: '锁定窗口',
+  daily_min: '每天最少节数',
+  daily_max: '每天最多节数',
+  weekday_exact: '指定星期节数',
+  consecutive: '连堂',
+  spacing: '两班间隔',
+  alternate_weeks: '单双周轮换',
+  venue_capacity: '场地容量',
+  teacher_max_run: '教师半天连堂上限',
+  preferred_periods: '偏好节次（未实现）',
+  avoid_after: '避免排在指定节次后（未实现）',
+  teacher_balance: '教师负荷均衡（未实现）',
+}
+
+function typeLabel(type: string): string {
+  return TYPE_LABEL[type] ?? type
+}
+
 interface Row {
   type: string
   scope: Record<string, string>
@@ -14,6 +37,7 @@ interface Row {
   mode: string
   enabled: boolean
   weight: number
+  description: string
 }
 
 const rows = ref<Row[]>([])
@@ -43,6 +67,7 @@ function toRow(item: RuleItem): Row {
   return {
     type: item.type, scope, paramsText: JSON.stringify(item.params),
     mode: item.mode, enabled: item.enabled, weight: item.weight,
+    description: item.description ?? '',
   }
 }
 
@@ -81,7 +106,7 @@ function addRow() {
   rows.value.push({
     type: ruleTypes.value[0] ?? 'daily_min',
     scope: Object.fromEntries(SCOPE_DIMS.map((d) => [d, ''])),
-    paramsText: '{}', mode: 'hard', enabled: true, weight: 0,
+    paramsText: '{}', mode: 'hard', enabled: true, weight: 0, description: '',
   })
 }
 
@@ -122,6 +147,7 @@ async function save() {
       这里只编辑手写的政策级规则（<code>rules.yaml</code>）——比如每天至少/至多几节、
       连堂、教师负荷这类全局或按学科系设定的规则。导入 Excel 生成的逐位教师禁排规则走
       「导入」流程，不在这里编辑。作用域五维留空表示不限；同一维填多个值用逗号分隔。
+      每条规则下方的说明文字是上次保存时的内容，改动参数后要点"保存"才会刷新。
     </p>
 
     <div v-for="(row, i) in rows" :key="i" data-test="rule-row" class="rule-card">
@@ -129,7 +155,7 @@ async function save() {
         <label class="field">
           类型
           <select data-test="rule-type" v-model="row.type">
-            <option v-for="t in ruleTypes" :key="t" :value="t">{{ t }}</option>
+            <option v-for="t in ruleTypes" :key="t" :value="t">{{ typeLabel(t) }}</option>
           </select>
         </label>
         <label class="field checkbox-field">
@@ -138,6 +164,10 @@ async function save() {
         </label>
         <button data-test="remove-rule" class="btn btn-secondary" @click="removeRow(i)">删除</button>
       </div>
+
+      <p v-if="row.description" data-test="rule-description" class="rule-description">
+        {{ row.description }}
+      </p>
 
       <div class="scope-row">
         <label v-for="dim in SCOPE_DIMS" :key="dim" class="field scope-field">
@@ -181,6 +211,15 @@ async function save() {
   color: var(--text-secondary);
   margin: 8px 0 16px;
   line-height: 1.6;
+}
+
+.rule-description {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--page-bg);
+  color: var(--text-primary);
+  font-size: 13px;
 }
 
 .rule-card {
