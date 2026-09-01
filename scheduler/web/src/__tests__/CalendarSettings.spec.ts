@@ -102,4 +102,64 @@ describe('CalendarSettings', () => {
     expect(putSpy).not.toHaveBeenCalled()
     expect(wrapper.find('[data-test="error"]').text()).toContain('选择')
   })
+
+  it('manual editing opens with the existing calendar prefilled and saves via putCalendar', async () => {
+    vi.spyOn(api, 'getGrades').mockResolvedValue({ grades: [{ name: '初三', classes: 32 }] })
+    vi.spyOn(api, 'getCalendar').mockResolvedValue({
+      grade: '初三', days: ['周一', '周二', '周三', '周四', '周五'],
+      periods_per_day: 2, midday_break_after: 1, clock_times: [['08:00', '08:45'], ['14:00', '14:45']],
+    })
+    const putSpy = vi.spyOn(api, 'putCalendar').mockResolvedValue({
+      grade: '初三', days: ['周一', '周二', '周三', '周四', '周五'],
+      periods_per_day: 2, midday_break_after: 1, clock_times: [['08:00', '08:45'], ['14:30', '15:15']],
+    })
+    const wrapper = mount(CalendarSettings)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    await wrapper.find('[data-test="edit-calendar-button"]').trigger('click')
+    const rows = wrapper.findAll('[data-test="clock-time-row"]')
+    expect(rows).toHaveLength(2)
+    expect((rows[0].find('[data-test="clock-time-start"]').element as HTMLInputElement).value).toBe('08:00')
+
+    await rows[1].find('[data-test="clock-time-start"]').setValue('14:30')
+    await rows[1].find('[data-test="clock-time-end"]').setValue('15:15')
+    await wrapper.find('[data-test="save-calendar-edit"]').trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(putSpy).toHaveBeenCalledWith('初三', {
+      days: ['周一', '周二', '周三', '周四', '周五'],
+      periods_per_day: 2, midday_break_after: 1,
+      clock_times: [['08:00', '08:45'], ['14:30', '15:15']],
+    })
+    expect(wrapper.find('[data-test="calendar-edit-panel"]').exists()).toBe(false)
+  })
+
+  it('changing periods-per-day resizes the clock-time row list', async () => {
+    vi.spyOn(api, 'getGrades').mockResolvedValue({ grades: [{ name: '初三', classes: 32 }] })
+    vi.spyOn(api, 'getCalendar').mockResolvedValue({
+      grade: '初三', days: ['周一', '周二', '周三', '周四', '周五'],
+      periods_per_day: 2, midday_break_after: 1, clock_times: [['08:00', '08:45'], ['14:00', '14:45']],
+    })
+    const wrapper = mount(CalendarSettings)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    await wrapper.find('[data-test="edit-calendar-button"]').trigger('click')
+    await wrapper.find('[data-test="edit-periods-per-day"]').setValue(3)
+    expect(wrapper.findAll('[data-test="clock-time-row"]')).toHaveLength(3)
+  })
+
+  it('cancelling the edit closes the panel without saving', async () => {
+    vi.spyOn(api, 'getGrades').mockResolvedValue({ grades: [{ name: '初三', classes: 32 }] })
+    vi.spyOn(api, 'getCalendar').mockRejectedValue(new Error('not found'))
+    const putSpy = vi.spyOn(api, 'putCalendar')
+    const wrapper = mount(CalendarSettings)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    await wrapper.find('[data-test="edit-calendar-button"]').trigger('click')
+    expect(wrapper.find('[data-test="calendar-edit-panel"]').exists()).toBe(true)
+    await wrapper.find('[data-test="cancel-calendar-edit"]').trigger('click')
+
+    expect(wrapper.find('[data-test="calendar-edit-panel"]').exists()).toBe(false)
+    expect(putSpy).not.toHaveBeenCalled()
+  })
 })

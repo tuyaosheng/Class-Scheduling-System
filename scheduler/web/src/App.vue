@@ -14,6 +14,7 @@ import ImportPanel from './components/ImportPanel.vue'
 import RulesSettings from './components/RulesSettings.vue'
 import RulesSheetSettings from './components/RulesSheetSettings.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
+import MergedSolveSettings from './components/MergedSolveSettings.vue'
 import SolvePanel from './components/SolvePanel.vue'
 import TeachingTableSettings from './components/TeachingTableSettings.vue'
 
@@ -171,6 +172,7 @@ function onJobId(id: string) {
           <h1 class="page-title">排课与调整</h1>
           <SolvePanel @job-id="onJobId" @candidates="onCandidates" />
           <CandidateTabs :candidates="candidates" :job-id="jobId" :classes="classes" :grade="activeGrade" />
+          <MergedSolveSettings />
         </div>
 
         <ComingSoonPanel v-else-if="currentStep === 8"

@@ -110,6 +110,23 @@ class SolveJobsListResponse(BaseModel):
     jobs: List[SolveJobSummary]
 
 
+class MergedSolveRequest(BaseModel):
+    grades: List[str]
+    max_seconds: int = 60
+
+
+class MergedSolveResultItem(BaseModel):
+    grade: str
+    job_id: str
+    status: str
+    wall_time: float
+    violations: int
+
+
+class MergedSolveResponse(BaseModel):
+    results: List[MergedSolveResultItem]
+
+
 class ImportSessionSummary(BaseModel):
     token: str
     grade: str
@@ -202,6 +219,7 @@ class CoursesPutRequest(BaseModel):
 class VenueItem(BaseModel):
     name: str
     capacity: Optional[int] = None
+    grade_capacity: Dict[str, int] = {}
 
 
 class VenuesGetResponse(BaseModel):

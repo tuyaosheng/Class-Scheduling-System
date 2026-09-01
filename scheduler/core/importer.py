@@ -382,7 +382,7 @@ def merge_teaching_and_rules(teaching_path, rules_path, cfg, grade='初三',
 
         if rule_engine == 'ai':
             from scheduler.ai.rule_parser import parse_row_ai
-            parsed = parse_row_ai(not_avail_raw, fixed_raw, req_raw, remark_raw, client=ai_client)
+            parsed = parse_row_ai(not_avail_raw, fixed_raw, req_raw, remark_raw, calendar, client=ai_client)
             forbidden[rules_teacher] |= {(d, p) for d, p in parsed.not_available}
             fixed_slots = {(d, p) for d, p in parsed.fixed_slots}
             fragments = parsed.requirement + parsed.remark
@@ -614,7 +614,7 @@ def import_rule_text_table(path, cfg, grade='初三', ai_client=None) -> RuleImp
         if ai_client is not None and (not_avail_raw or fixed_raw or req_raw or remark_raw):
             from scheduler.ai.rule_parser import parse_row_ai
             try:
-                ai_parsed = parse_row_ai(not_avail_raw, fixed_raw, req_raw, remark_raw, client=ai_client)
+                ai_parsed = parse_row_ai(not_avail_raw, fixed_raw, req_raw, remark_raw, calendar, client=ai_client)
             except Exception as exc:
                 warnings.append('AI 复核失败（%s %s）：%s；已仅采用正则解析结果' % (name, course, exc))
 

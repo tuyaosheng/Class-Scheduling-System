@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { exportUrl } from '../api'
+import { onMounted, ref, watch } from 'vue'
+import { exportUrl, getCalendar } from '../api'
 import ScheduleGrid from './ScheduleGrid.vue'
 import TeacherScheduleGrid from './TeacherScheduleGrid.vue'
 import VenueOccupancyGrid from './VenueOccupancyGrid.vue'
@@ -24,6 +24,28 @@ const props = defineProps<{ candidates: Candidate[]; jobId: string | null; class
 
 const activeIndex = ref(1)
 const viewMode = ref<ViewMode>('class')
+
+// 课表格子组件（ScheduleGrid/TeacherScheduleGrid/VenueOccupancyGrid）都支持
+// 传入真实的 days/periodsPerDay，不传就默认按 9 节/天渲染——不同年级的
+// 节数/星期可能不一样（比如七年级 8 节/天），这里按当前年级去取一次真实
+// 作息表，取不到（还没配）就让子组件继续用默认值，不阻塞渲染。
+const calendarDays = ref<string[] | undefined>(undefined)
+const calendarPeriodsPerDay = ref<number | undefined>(undefined)
+
+async function loadCalendar() {
+  if (!props.grade) return
+  try {
+    const cal = await getCalendar(props.grade)
+    calendarDays.value = cal.days
+    calendarPeriodsPerDay.value = cal.periods_per_day
+  } catch {
+    calendarDays.value = undefined
+    calendarPeriodsPerDay.value = undefined
+  }
+}
+
+onMounted(loadCalendar)
+watch(() => props.grade, loadCalendar)
 
 function activate(index: number) {
   activeIndex.value = index
@@ -62,9 +84,12 @@ function activate(index: number) {
         </nav>
 
         <ScheduleGrid v-if="viewMode === 'class'"
-                      :classes="classes" :placements="c.placements" :job-id="jobId" :candidate-index="c.index" />
-        <TeacherScheduleGrid v-else-if="viewMode === 'teacher'" :placements="c.placements" />
-        <VenueOccupancyGrid v-else-if="viewMode === 'venue'" :placements="c.placements" :grade="grade" />
+                      :classes="classes" :placements="c.placements" :job-id="jobId" :candidate-index="c.index"
+                      :days="calendarDays" :periods-per-day="calendarPeriodsPerDay" />
+        <TeacherScheduleGrid v-else-if="viewMode === 'teacher'" :placements="c.placements"
+                             :days="calendarDays" :periods-per-day="calendarPeriodsPerDay" />
+        <VenueOccupancyGrid v-else-if="viewMode === 'venue'" :placements="c.placements" :grade="grade"
+                            :days="calendarDays" :periods-per-day="calendarPeriodsPerDay" />
         <SolveMonitor v-else :candidates="candidates" :active-index="activeIndex" />
 
         <IssueList title="本方案违规明细" tone="critical" :items="c.violations" />

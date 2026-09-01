@@ -135,3 +135,33 @@ def test_venue_capacity_counts_separate_tasks(cfg):
                   params={'venue': '操场', 'capacity': 1})]
     solver, status = solve(compile_model(make_dataset(tasks), cfg, rules))
     assert status == cp_model.INFEASIBLE
+
+
+def test_venue_grade_capacity_override_applies_within_that_grade(cfg):
+    """操场共享容量是 2（够用），但『初三』单独分配只有 1 个位置——M7 合排
+    设计：设了 grade_capacity 的年级不算跨年级共享，只在本年级内部按这个
+    数字生效（见 CLAUDE.md「M7 合排」、compiler.py::add_venue_constraints）。"""
+    from scheduler.core.models import Venue
+    cfg2 = cfg.model_copy(deep=True)
+    cfg2.venues = dict(cfg2.venues)
+    cfg2.venues['操场'] = Venue(name='操场', capacity=2, grade_capacity={'初三': 1})
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='体育', teacher='王老师', periods=45),
+        TeachingTask(id=1, grade='初三', class_id=2, course='体育', teacher='李老师', periods=45),
+    ]
+    solver, status = solve(compile_model(make_dataset(tasks), cfg2, []))
+    assert status == cp_model.INFEASIBLE
+
+
+def test_venue_without_grade_capacity_falls_back_to_the_shared_pool(cfg):
+    """没设 grade_capacity 的年级继续用共享容量——不应该被上一个测试的行为带偏。"""
+    from scheduler.core.models import Venue
+    cfg2 = cfg.model_copy(deep=True)
+    cfg2.venues = dict(cfg2.venues)
+    cfg2.venues['操场'] = Venue(name='操场', capacity=2, grade_capacity={'七年级': 1})
+    tasks = [
+        TeachingTask(id=0, grade='初三', class_id=1, course='体育', teacher='王老师', periods=45),
+        TeachingTask(id=1, grade='初三', class_id=2, course='体育', teacher='李老师', periods=45),
+    ]
+    solver, status = solve(compile_model(make_dataset(tasks), cfg2, []))
+    assert status in (cp_model.OPTIMAL, cp_model.FEASIBLE)

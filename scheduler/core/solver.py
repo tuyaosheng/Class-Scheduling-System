@@ -8,7 +8,6 @@ from typing import List, Optional
 from ortools.sat.python import cp_model
 from pydantic import BaseModel
 
-from . import calendar as cal
 from .compiler import compile_model
 
 _STATUS_NAME = {
@@ -27,14 +26,6 @@ class Placement(BaseModel):
     teacher: str
     slot: int
     parity: Optional[str] = None
-
-    @property
-    def day(self) -> int:
-        return cal.slot_of(self.slot)[0]
-
-    @property
-    def period(self) -> int:
-        return cal.slot_of(self.slot)[1]
 
 
 class Solution(BaseModel):

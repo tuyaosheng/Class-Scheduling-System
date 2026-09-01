@@ -113,6 +113,7 @@ export interface CourseItem {
 export interface VenueItem {
   name: string
   capacity: number | null
+  grade_capacity?: Record<string, number>
 }
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -415,6 +416,22 @@ export async function getSolveJobDetail(jobId: string) {
 
 export async function deleteSolveJob(jobId: string) {
   return request<{ ok: boolean }>(`/api/solve/${jobId}`, { method: 'DELETE' })
+}
+
+export interface MergedSolveResultItem {
+  grade: string
+  job_id: string
+  status: string
+  wall_time: number
+  violations: number
+}
+
+export async function solveMerged(grades: string[], maxSeconds: number) {
+  return request<{ results: MergedSolveResultItem[] }>('/api/solve/merged', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ grades, max_seconds: maxSeconds }),
+  })
 }
 
 export async function clearSolveJobs() {

@@ -71,14 +71,32 @@ async function save() {
 // ---------------------------------------------------------------- 场地容量
 // 场地是物理房间，不分年级——所有年级共用同一份场地目录，跟上面按年级
 // 维护的课程目录是两件独立的事，各自有各自的保存按钮。
+//
+// 每个场地默认是"跨年级共享一个容量池"（capacity）；留空 gradeCapacity
+// 就表示这个场地对当前年级仍然走共享池，不需要单独处理。填了本年级的
+// 值，就表示这个场地对本年级是"单独分配"的一份，不参与跨年级避让——
+// 见 M7 合排设计（compiler.py::add_venue_constraints）。
 
-const venueRows = ref<Array<{ name: string; capacity: string }>>([])
+interface VenueRow {
+  name: string
+  capacity: string
+  gradeCapacityAll: Record<string, number>   // 其它年级的单独分配值，保存时原样带回去，不能丢
+  gradeCapacityForGrade: string              // 当前年级的单独分配值（编辑用）
+}
+
+const venueRows = ref<VenueRow[]>([])
 const venueError = ref('')
 const venueNotice = ref('')
 const venueSaving = ref(false)
 
-function toVenueRow(v: VenueItem) {
-  return { name: v.name, capacity: v.capacity === null ? '' : String(v.capacity) }
+function toVenueRow(v: VenueItem): VenueRow {
+  const all = v.grade_capacity ?? {}
+  return {
+    name: v.name,
+    capacity: v.capacity === null ? '' : String(v.capacity),
+    gradeCapacityAll: all,
+    gradeCapacityForGrade: all[props.grade] !== undefined ? String(all[props.grade]) : '',
+  }
 }
 
 async function refreshVenues() {
@@ -92,6 +110,7 @@ async function refreshVenues() {
 }
 
 onMounted(refreshVenues)
+watch(() => props.grade, refreshVenues)
 
 async function saveVenues() {
   venueError.value = ''
@@ -103,7 +122,14 @@ async function saveVenues() {
       // 跟 Row 类型声明的 capacity: string 不一致——这里统一转成字符串再判断，
       // 不能直接调 .trim()，否则数字输入会在这里报 "capacity.trim is not a function"。
       const raw = String(r.capacity).trim()
-      return { name: r.name.trim(), capacity: raw === '' ? null : Number(raw) }
+      const gradeRaw = String(r.gradeCapacityForGrade).trim()
+      const gradeCapacity = { ...r.gradeCapacityAll }
+      if (gradeRaw === '') {
+        delete gradeCapacity[props.grade]
+      } else {
+        gradeCapacity[props.grade] = Number(gradeRaw)
+      }
+      return { name: r.name.trim(), capacity: raw === '' ? null : Number(raw), grade_capacity: gradeCapacity }
     })
     const resp = await putVenues(items)
     venueRows.value = resp.venues.map(toVenueRow)
@@ -167,13 +193,18 @@ async function saveVenues() {
 
   <section class="card venue-card">
     <h2>场地容量</h2>
-    <p class="hint">场地是物理房间，所有年级共用同一份——同一时间格能容纳几个班上课，供排课时判断是否冲突。留空表示不限制。</p>
+    <p class="hint">
+      场地是物理房间，所有年级共用同一份——同一时间格能容纳几个班上课，供排课时判断是否冲突。留空表示不限制。
+      "{{ grade }}单独分配"留空表示这个场地对{{ grade }}走跨年级共享的容量池；填了数字就表示这个场地对{{ grade }}
+      单独划出这么多个位置，不跟其它年级互相避让（比如操场按年级分区使用时可以这样设置）。
+    </p>
 
     <table class="venue-table">
       <thead>
         <tr>
           <th>场地名</th>
-          <th>容量（同时几个班）</th>
+          <th>共享容量（同时几个班）</th>
+          <th>{{ grade }}单独分配</th>
         </tr>
       </thead>
       <tbody>
@@ -181,6 +212,9 @@ async function saveVenues() {
           <td>{{ row.name }}</td>
           <td>
             <input data-test="venue-capacity" type="number" min="1" v-model="row.capacity" placeholder="不限" />
+          </td>
+          <td>
+            <input data-test="venue-grade-capacity" type="number" min="0" v-model="row.gradeCapacityForGrade" placeholder="跨年级共享" />
           </td>
         </tr>
       </tbody>

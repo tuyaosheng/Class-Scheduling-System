@@ -39,9 +39,25 @@ class CompiledModel:
         return self.dataset.calendar
 
 
-def compile_model(dataset, cfg, rules, *, with_assumptions=False) -> CompiledModel:
+def compile_model(dataset, cfg, rules, *, with_assumptions=False,
+                  model=None, finalize=True) -> CompiledModel:
+    """编译一个年级的约束进 `model`。
+
+    `model`：不传就新建一个（现有单年级用法不变）；M7 合排会把同一个
+    `cp_model.CpModel()` 依次传给多个年级各自的 compile_model 调用，让
+    三个年级的变量/约束共存于一个模型里，供之后加跨年级联动约束（见
+    `merge_solver.py`）——每个年级内部的建模逻辑完全不变，只是不再各自
+    新建模型。task id 必须在传入前就全局唯一（合排前由调用方重新编号），
+    否则不同年级的变量会在 `x` 字典里互相覆盖。
+
+    `finalize`：是否在这次调用里把 `soft_terms` 汇总成 `model.Minimize(...)`。
+    单年级用法保持 True；合排时每个年级各自贡献一部分 soft_terms，只应该
+    在全部年级都编译完之后统一 Minimize 一次，中途调用会被后一次覆盖掉——
+    所以合排编排者传 finalize=False，自己在最后做一次总的 Minimize。
+    """
     calendar = dataset.calendar
-    model = cp_model.CpModel()
+    if model is None:
+        model = cp_model.CpModel()
     x = {(t.id, s): model.NewBoolVar('x_%d_%d' % (t.id, s))
          for t in dataset.tasks for s in range(calendar.n_slots)}
     compiled = CompiledModel(model, x, dataset, cfg)
@@ -63,7 +79,7 @@ def compile_model(dataset, cfg, rules, *, with_assumptions=False) -> CompiledMod
             else:
                 soft_handler(compiled, rule)
     add_venue_constraints(compiled)
-    if compiled.soft_terms:
+    if finalize and compiled.soft_terms:
         compiled.model.Minimize(sum(w * v for v, w in compiled.soft_terms))
     return compiled
 
@@ -279,10 +295,17 @@ def _limit_venue(c: CompiledModel, venue: str, capacity: int) -> None:
 
 
 def add_venue_constraints(c: CompiledModel) -> None:
-    """按 venues.yaml 的容量自动加约束。capacity 为 None 表示不限制。"""
+    """按 venues.yaml 的容量自动加约束。capacity 为 None 表示不限制。
+
+    `grade_capacity` 里配了本年级的值就优先用它——这个场地对本年级来说
+    是"按年级单独分配"的，不参与跨年级共享判定（见 Venue.grade_capacity、
+    CLAUDE.md「M7 合排」）；没配就落回共享的 `capacity`。
+    """
+    grade = c.dataset.grade
     for venue in c.cfg.venues.values():
-        if venue.capacity is not None:
-            _limit_venue(c, venue.name, venue.capacity)
+        capacity = venue.grade_capacity.get(grade, venue.capacity)
+        if capacity is not None:
+            _limit_venue(c, venue.name, capacity)
 
 
 # ---------------------------------------------------------------- 软约束

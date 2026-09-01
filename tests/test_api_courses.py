@@ -121,6 +121,20 @@ def test_put_venues_updates_capacity(client, tmp_path, monkeypatch):
     assert reread['操场']['capacity'] == 4
 
 
+def test_put_venues_round_trips_grade_capacity(client, tmp_path, monkeypatch):
+    _use_tmp_config(tmp_path, monkeypatch)
+    venues = client.get('/api/config/venues').json()['venues']
+    for v in venues:
+        if v['name'] == '操场':
+            v['grade_capacity'] = {'初三': 1}
+
+    resp = client.put('/api/config/venues', json={'venues': venues})
+    assert resp.status_code == 200
+
+    reread = {v['name']: v for v in client.get('/api/config/venues').json()['venues']}
+    assert reread['操场']['grade_capacity'] == {'初三': 1}
+
+
 def test_put_venues_rejects_removing_one_still_referenced_by_a_course(client, tmp_path, monkeypatch):
     _use_tmp_config(tmp_path, monkeypatch)
     venues = client.get('/api/config/venues').json()['venues']

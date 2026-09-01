@@ -111,7 +111,11 @@ class Course(BaseModel):
 
 class Venue(BaseModel):
     name: str
-    capacity: Optional[int] = None   # None = 不限制
+    capacity: Optional[int] = None   # None = 不限制；跨年级共用同一个容量池
+    # 按年级单独分配容量——设了某年级的值，这个场地对该年级就不算"跨年级
+    # 共享"，只在本年级内部生效（比如操场按年级分区，不需要跨年级互相
+    # 避让）。没设的年级仍然落回 capacity（共享池）。见「M7 合排」。
+    grade_capacity: Dict[str, int] = Field(default_factory=dict)
 
 
 class Teacher(BaseModel):

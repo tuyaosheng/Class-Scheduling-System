@@ -30,7 +30,8 @@ from scheduler.core.verifier import verify
 
 from . import sessions
 from .schemas import (
-    AdjustRequest, AdjustResponse, CandidateItem, FindingItem, MoveItem, RevertedMoveItem,
+    AdjustRequest, AdjustResponse, CandidateItem, FindingItem, MergedSolveRequest,
+    MergedSolveResponse, MergedSolveResultItem, MoveItem, RevertedMoveItem,
     ReviewResponse, SolveJobCreated, SolveJobDetail, SolveJobSummary, SolveJobsListResponse,
     SolveRequest,
 )
@@ -219,6 +220,72 @@ async def start_solve(body: SolveRequest):
 @ws_router.get('/solve/jobs', response_model=SolveJobsListResponse)
 def list_solve_jobs():
     return SolveJobsListResponse(jobs=[SolveJobSummary(**row) for row in sessions.list_jobs()])
+
+
+def _latest_job_with_dataset(grade: str):
+    for row in sessions.list_jobs():
+        if row['grade'] != grade:
+            continue
+        job = sessions.get_job(row['job_id'])
+        if job is not None and job.dataset is not None:
+            return job
+    return None
+
+
+@ws_router.post('/solve/merged', response_model=MergedSolveResponse)
+def solve_merged_grades(body: MergedSolveRequest):
+    """M7 合排：联合求解多个年级，保证跨年级教师/共享场地不冲突。
+
+    每个年级复用"该年级最近一次求解"留下的 Dataset/规则快照作为教学数据
+    来源（teaching.yaml 同一时刻只服务一个年级，合排没法像单年级那样重新
+    从 teaching.yaml 读——这一点跟子项目9"求解阶段避让"取其它年级最近
+    一次结果的做法是同一个思路）。求解结果按年级各自存成一条普通的
+    SolveJob（只有 1 个候选方案），直接复用现有的历史列表/导出/AI 审核/
+    拖拽调整整套基础设施，不需要为合排另外做一套。
+    """
+    if len(body.grades) < 2:
+        raise HTTPException(status_code=400, detail='合排至少需要选择 2 个年级')
+    if len(set(body.grades)) != len(body.grades):
+        raise HTTPException(status_code=400, detail='年级列表里有重复')
+
+    cfg = load_config(DEFAULT_CONFIG_DIR)
+    datasets: dict = {}
+    rules_by_grade: dict = {}
+    for grade in body.grades:
+        job = _latest_job_with_dataset(grade)
+        if job is None:
+            raise HTTPException(status_code=400,
+                               detail='%s 还没有求解过，无法合排——请先在"排课与调整"里单独求解一次' % grade)
+        datasets[grade] = job.dataset
+        rules_by_grade[grade] = job.rules
+
+    issue_texts = []
+    for grade, dataset in datasets.items():
+        issues = precheck(dataset, cfg, rules_by_grade[grade])
+        if issues:
+            issue_texts.append('%s：%s' % (grade, '，'.join(i.detail for i in issues)))
+    if issue_texts:
+        raise HTTPException(status_code=400, detail='预检未通过，不能合排——%s' % '；'.join(issue_texts))
+
+    from scheduler.core.merge_solver import solve_merged
+    solutions = solve_merged(datasets, cfg, rules_by_grade, max_seconds=body.max_seconds)
+
+    results = []
+    for grade, solution in solutions.items():
+        violations = verify(solution, datasets[grade], cfg, rules_by_grade[grade])
+        job = sessions.create_job(grade)
+        job.dataset = datasets[grade]
+        job.cfg = cfg
+        job.rules = rules_by_grade[grade]
+        job.solutions = [solution]
+        job.violations = [violations]
+        job.status = 'done' if solution.status in ('OPTIMAL', 'FEASIBLE') else solution.status.lower()
+        sessions.save_job(job)
+        results.append(MergedSolveResultItem(
+            grade=grade, job_id=job.job_id, status=solution.status,
+            wall_time=solution.wall_time, violations=len(violations)))
+
+    return MergedSolveResponse(results=results)
 
 
 @ws_router.delete('/solve/jobs')

@@ -3,6 +3,12 @@ import json
 import pytest
 
 from scheduler.ai.rule_parser import AIParseError, ParsedRow, parse_row_ai
+from scheduler.core.models import GradeCalendar
+
+CAL_9 = GradeCalendar(days=['周一', '周二', '周三', '周四', '周五'],
+                      periods_per_day=9, midday_break_after=5)
+CAL_8 = GradeCalendar(days=['周一', '周二', '周三', '周四', '周五'],
+                      periods_per_day=8, midday_break_after=4)
 
 
 class FakeClient:
@@ -27,7 +33,7 @@ def test_parses_valid_json_into_parsed_row():
         "remark": [],
     }
     client = FakeClient(json.dumps(payload))
-    result = parse_row_ai("周四下午不排课", "周二第9节", "保证每天有1节", "", client=client)
+    result = parse_row_ai("周四下午不排课", "周二第9节", "保证每天有1节", "", CAL_9, client=client)
     assert isinstance(result, ParsedRow)
     assert result.not_available == [[3, 6], [3, 7]]
     assert result.fixed_slots == [[1, 9]]
@@ -35,10 +41,31 @@ def test_parses_valid_json_into_parsed_row():
     assert result.remark == []
 
 
+def test_prompt_reflects_the_grades_real_calendar_not_a_hardcoded_shape():
+    """真实发生过的问题：提示词曾经写死"节次用1-9，第9节是下午第4节"，对
+    七年级（8节/天，午休第4节后）这种不同形状的年级是错的换算规则——AI
+    会照着错误的偏移把"下午第3节"翻成第9节（应该是第7节）。提示词现在必须
+    按传入的 calendar 动态生成，两种不同形状的年级要看到不同的说明文字。"""
+    client_9 = FakeClient(json.dumps({"not_available": [], "fixed_slots": [], "requirement": [], "remark": []}))
+    parse_row_ai("", "", "", "", CAL_9, client=client_9)
+    system_9 = client_9.calls[0][0]
+    assert '1-9' in system_9
+    assert '第5+N节' in system_9
+    assert '第9节是下午第4节' in system_9
+
+    client_8 = FakeClient(json.dumps({"not_available": [], "fixed_slots": [], "requirement": [], "remark": []}))
+    parse_row_ai("", "", "", "", CAL_8, client=client_8)
+    system_8 = client_8.calls[0][0]
+    assert '1-8' in system_8
+    assert '第4+N节' in system_8
+    assert '第8节是下午第4节' in system_8
+    assert system_8 != system_9
+
+
 def test_raises_on_malformed_json():
     client = FakeClient("这不是 JSON")
     with pytest.raises(AIParseError, match="解析失败"):
-        parse_row_ai("", "", "", "", client=client)
+        parse_row_ai("", "", "", "", CAL_9, client=client)
 
 
 def test_raises_on_unknown_rule_type():
@@ -49,7 +76,7 @@ def test_raises_on_unknown_rule_type():
     }
     client = FakeClient(json.dumps(payload))
     with pytest.raises(AIParseError, match="未知规则类型"):
-        parse_row_ai("", "", "", "", client=client)
+        parse_row_ai("", "", "", "", CAL_9, client=client)
 
 
 def test_raises_when_client_call_fails():
@@ -58,7 +85,7 @@ def test_raises_when_client_call_fails():
             raise ConnectionError("网络不通")
 
     with pytest.raises(AIParseError, match="解析失败"):
-        parse_row_ai("", "", "", "", client=BrokenClient())
+        parse_row_ai("", "", "", "", CAL_9, client=BrokenClient())
 
 
 def test_raises_on_missing_api_key_for_the_anthropic_provider(monkeypatch):
@@ -73,7 +100,7 @@ def test_raises_on_missing_api_key_for_the_anthropic_provider(monkeypatch):
     monkeypatch.setattr(store, 'get_setting',
                         lambda key: 'anthropic' if key == 'ai.provider' else None)
     with pytest.raises(AIParseError, match="API key"):
-        parse_row_ai("", "", "", "")
+        parse_row_ai("", "", "", "", CAL_9)
 
 
 def test_raises_on_incomplete_openai_compatible_config(monkeypatch):
@@ -83,4 +110,4 @@ def test_raises_on_incomplete_openai_compatible_config(monkeypatch):
     monkeypatch.delenv('OPENAI_API_KEY', raising=False)
     monkeypatch.setattr(store, 'get_setting', lambda key: None)
     with pytest.raises(AIParseError, match="OpenAI 兼容协议"):
-        parse_row_ai("", "", "", "")
+        parse_row_ai("", "", "", "", CAL_9)

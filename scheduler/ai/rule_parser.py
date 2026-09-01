@@ -11,13 +11,24 @@ from pydantic import BaseModel, Field, ValidationError
 
 from scheduler.core.rules import RULE_TYPES
 
-_SYSTEM_PROMPT = (
+_SYSTEM_PROMPT_TEMPLATE = (
     "你是中小学排课系统的规则文本解析器。你会收到教务 Excel 里一位教师的四段"
     "中文自然语言文本（不能排课节次/固定节次/排课要求/备注），任务是把它们"
     "翻译成结构化 JSON，不做任何排课决策，只做文本理解与格式转换。"
-    "时间格式：星期用 0-4（0=周一...4=周五），节次用 1-9（下午第N节=第5+N节，"
-    "第9节是下午第4节）。只返回 JSON 本体，不要任何解释文字、不要代码块标记。"
+    "时间格式：星期用 0-4（0=周一...4=周五），{period_desc}。"
+    "只返回 JSON 本体，不要任何解释文字、不要代码块标记。"
 )
+
+
+def _period_desc(calendar) -> str:
+    """按该年级真实作息表（节数、午休边界）生成节次换算说明——不同年级的
+    节数、上下午分界可能不一样（比如七年级 8 节/午休第4节后，初三 9 节/
+    午休第5节后），不能写死"1-9""第9节是下午第4节"这种只对某一个年级
+    成立的换算规则，否则 AI 会对其他年级算错下午节次偏移。"""
+    afternoon_len = calendar.periods_per_day - calendar.midday_break_after
+    return ('节次用 1-%d（上午 1-%d 节，下午第N节=第%d+N节，即第%d节是下午第%d节）'
+           % (calendar.periods_per_day, calendar.midday_break_after,
+              calendar.midday_break_after, calendar.periods_per_day, afternoon_len))
 
 _USER_TEMPLATE = (
     "不能排课节次：{not_available}\n"
@@ -53,9 +64,10 @@ def _default_client():
 
 
 def parse_row_ai(not_available_text, fixed_slots_text, requirement_text, remark_text,
-                 *, client=None) -> ParsedRow:
+                 calendar, *, client=None) -> ParsedRow:
     try:
         client = client or _default_client()
+        system_prompt = _SYSTEM_PROMPT_TEMPLATE.format(period_desc=_period_desc(calendar))
         prompt = _USER_TEMPLATE.format(
             not_available=not_available_text or "（空）",
             fixed_slots=fixed_slots_text or "（空）",
@@ -63,7 +75,7 @@ def parse_row_ai(not_available_text, fixed_slots_text, requirement_text, remark_
             remark=remark_text or "（空）",
             rule_types=sorted(RULE_TYPES),
         )
-        raw_text = client.complete(_SYSTEM_PROMPT, prompt, max_tokens=1024)
+        raw_text = client.complete(system_prompt, prompt, max_tokens=1024)
     except AIParseError:
         raise
     except Exception as exc:

@@ -138,8 +138,31 @@ describe('CourseSettings', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(putVenuesSpy).toHaveBeenCalledWith([
-      { name: '物理实验室', capacity: 4 }, { name: '操场', capacity: null },
+      { name: '物理实验室', capacity: 4, grade_capacity: {} },
+      { name: '操场', capacity: null, grade_capacity: {} },
     ])
     expect(wrapper.find('[data-test="venue-notice"]').text()).toBe('已保存')
+  })
+
+  it('editing the grade-specific capacity preserves other grades\' overrides', async () => {
+    vi.spyOn(api, 'getCourses').mockResolvedValue({ courses: [] })
+    vi.spyOn(api, 'getVenues').mockResolvedValue({
+      venues: [{ name: '操场', capacity: 6, grade_capacity: { 七年级: 2 } }],
+    })
+    const putVenuesSpy = vi.spyOn(api, 'putVenues').mockResolvedValue({
+      venues: [{ name: '操场', capacity: 6, grade_capacity: { 七年级: 2, 初三: 3 } }],
+    })
+    const wrapper = mount(CourseSettings, { props: { grade: '初三' } })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const gradeCapacityInput = wrapper.find('[data-test="venue-grade-capacity"]')
+    expect((gradeCapacityInput.element as HTMLInputElement).value).toBe('')
+    await gradeCapacityInput.setValue('3')
+    await wrapper.find('[data-test="save-venues-button"]').trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(putVenuesSpy).toHaveBeenCalledWith([
+      { name: '操场', capacity: 6, grade_capacity: { 七年级: 2, 初三: 3 } },
+    ])
   })
 })
